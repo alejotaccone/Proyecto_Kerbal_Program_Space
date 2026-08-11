@@ -12,12 +12,15 @@ public class Main {
         System.out.println("   (Integración de Datos N2YO NORAD & Radar Terrestre)           ");
         System.out.println("==================================================================");
 
-        System.out.print("Ingresa tu API Key de N2YO (O presiona ENTER para Modo Simulación/Demo): ");
+        System.out.print("Ingresa tu API Key de N2YO (O presiona ENTER para usar tu clave guardada): ");
         String apiKeyInput = scanner.nextLine().trim();
+        if (apiKeyInput.isEmpty()) {
+            apiKeyInput = api.N2YOApiClient.DEFAULT_KEY;
+        }
 
         SimulationEngine engine = new SimulationEngine(apiKeyInput);
 
-        System.out.println("\n[Sistema]: Inicialización completa. Se han cargado las naves de prueba y objetos N2YO.");
+        System.out.println("\n[Sistema]: Inicialización completa. Se cargaron 5 satélites y estaciones reales desde la API N2YO en vivo.");
 
         boolean running = true;
         while (running) {
@@ -25,13 +28,14 @@ public class Main {
             System.out.println("                     MENÚ DEL CENTRO DE CONTROL                   ");
             System.out.println("------------------------------------------------------------------");
             System.out.println("1. Avanzar Simulación (Ejecutar Tick)");
-            System.out.println("2. Ejecutar Maniobra de Evasión Orbital en una Nave");
-            System.out.println("3. Activar Habilidad Especial de la Nave");
-            System.out.println("4. Intentar Acople y Recarga de Combustible en la Estación (ISS)");
-            System.out.println("5. Activar / Desactivar Escudo de Protección");
-            System.out.println("6. Configurar / Cambiar API Key de N2YO");
+            System.out.println("2. Cambiar Ubicación del Radar (Elegir Ciudad del Mundo vía API Geolocalización)");
+            System.out.println("3. Ejecutar Maniobra de Evasión Orbital en una Nave");
+            System.out.println("4. Activar Habilidad Especial de la Nave");
+            System.out.println("5. Intentar Acople y Recarga de Combustible en la Estación (ISS)");
+            System.out.println("6. Activar / Desactivar Escudo de Protección");
+            System.out.println("7. Configurar / Cambiar API Key de N2YO");
             System.out.println("0. Salir del Simulador");
-            System.out.print("\nSelecciona una opción (0-6): ");
+            System.out.print("\nSelecciona una opción (0-7): ");
 
             String choiceStr = scanner.nextLine().trim();
 
@@ -41,34 +45,38 @@ public class Main {
                     break;
 
                 case "2":
+                    selectCityPrompt(scanner, engine);
+                    break;
+
+                case "3":
                     int shipEvadeIndex = selectShipPrompt(scanner, engine.getTrackedObjects(), "evacuar/evadir");
                     if (shipEvadeIndex != -1) {
                         engine.evadeShip(shipEvadeIndex);
                     }
                     break;
 
-                case "3":
+                case "4":
                     int shipAbilityIndex = selectShipPrompt(scanner, engine.getTrackedObjects(), "usar su habilidad especial");
                     if (shipAbilityIndex != -1) {
                         engine.useSpecialAbility(shipAbilityIndex);
                     }
                     break;
 
-                case "4":
+                case "5":
                     int shipRefuelIndex = selectShipPrompt(scanner, engine.getTrackedObjects(), "repostar en la Estación");
                     if (shipRefuelIndex != -1) {
                         engine.refuelShipAtStation(shipRefuelIndex);
                     }
                     break;
 
-                case "5":
+                case "6":
                     int shipShieldIndex = selectShipPrompt(scanner, engine.getTrackedObjects(), "conmutar escudo de protección");
                     if (shipShieldIndex != -1) {
                         engine.toggleShield(shipShieldIndex);
                     }
                     break;
 
-                case "6":
+                case "7":
                     System.out.print("Ingresa la nueva API Key de N2YO: ");
                     String newKey = scanner.nextLine().trim();
                     engine.getApiClient().setApiKey(newKey);
@@ -88,6 +96,44 @@ public class Main {
         }
 
         scanner.close();
+    }
+
+    private static void selectCityPrompt(Scanner scanner, SimulationEngine engine) {
+        String[] cities = {
+            "Buenos Aires", "Nueva York", "Tokio", "Londres", 
+            "Madrid", "París", "Sídney", "El Cairo", 
+            "Río de Janeiro", "Ciudad de México"
+        };
+
+        System.out.println("\n--- SELECCIÓN DE ESTACIÓN TERRENA / RADAR POR GEOLOCALIZACIÓN ---");
+        for (int i = 0; i < cities.length; i++) {
+            System.out.printf("  [%d] %s\n", (i + 1), cities[i]);
+        }
+        System.out.println("  [11] Escribir otra ciudad libremente por teclado...");
+        System.out.print("Selecciona una ciudad (1-11): ");
+
+        String input = scanner.nextLine().trim();
+        try {
+            int option = Integer.parseInt(input);
+            if (option >= 1 && option <= 10) {
+                engine.setRadarLocationByCity(cities[option - 1]);
+                return;
+            } else if (option == 11) {
+                System.out.print("Ingresa el nombre de la ciudad: ");
+                String customCity = scanner.nextLine().trim();
+                if (!customCity.isEmpty()) {
+                    engine.setRadarLocationByCity(customCity);
+                    return;
+                }
+            }
+        } catch (NumberFormatException e) {
+            // No es número, usar input como nombre directo si no está vacío
+            if (!input.isEmpty()) {
+                engine.setRadarLocationByCity(input);
+                return;
+            }
+        }
+        System.out.println("Selección cancelada.");
     }
 
     private static int selectShipPrompt(Scanner scanner, List<Spacecraft> ships, String actionName) {

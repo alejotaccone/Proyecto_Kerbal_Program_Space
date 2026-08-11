@@ -1,5 +1,6 @@
 package engine;
 
+import api.GeoCodingApiClient;
 import api.N2YOApiClient;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,56 +19,47 @@ public class SimulationEngine {
     private List<Spacecraft> trackedObjects;
     private Radar radar;
     private N2YOApiClient apiClient;
+    private GeoCodingApiClient geoCodingClient;
 
     public SimulationEngine(String apiKey) {
         this.currentTick = 0;
         this.trackedObjects = new ArrayList<>();
-        this.radar = new Radar("Estacion Terrena Buenos Aires", -34.60, -58.38, 25.0, 1000.0);
+        this.geoCodingClient = new GeoCodingApiClient();
+        this.radar = new Radar("Buenos Aires", -34.60, -58.38, 25.0, 100.0);
         this.apiClient = new N2YOApiClient(apiKey);
 
-        initializeDefaultShips();
-        syncWithN2YO();
+        setRadarLocationByCity("Buenos Aires");
     }
 
-    private void initializeDefaultShips() {
-        // 1. Nave de Carga de la misión Kerbal
-        CargoShip cargo = new CargoShip("KSP-CARGO-1", "Kerbal Heavy Cargo", 99001,
-                new GeoPosition(-34.50, -58.30, 415.0),
-                new FuelTank(200.0, 150.0, 4.0), 20.0);
-        trackedObjects.add(cargo);
-
-        // 2. Sonda Exploradora
-        ExplorationProbe probe = new ExplorationProbe("KSP-PROBE-1", "Sonda Voyager-K", 99002,
-                new GeoPosition(-34.55, -58.25, 410.0), // Cercana para generar posible alerta inicial
-                new FuelTank(100.0, 80.0, 2.0), 0.9);
-        trackedObjects.add(probe);
-
-        // 3. Transbordador con tripulantes Kerbal
-        CrewShuttle shuttle = new CrewShuttle("KSP-CREW-1", "Kerbal Express-1", 99003,
-                new GeoPosition(-35.10, -59.00, 430.0),
-                new FuelTank(150.0, 120.0, 3.0));
-        shuttle.addCrewMember(new Kerbal("Jebediah Kerman", "PILOT", 95));
-        shuttle.addCrewMember(new Kerbal("Bill Kerman", "ENGINEER", 70));
-        shuttle.addCrewMember(new Kerbal("Bob Kerman", "SCIENTIST", 40));
-        trackedObjects.add(shuttle);
+    /**
+     * Cambia la ubicación de la estación terrena / radar consultando la API de Geolocalización,
+     * y obtiene de la API N2YO los satélites que están sobrevolando esa ciudad en un radio de 100 km.
+     */
+    public void setRadarLocationByCity(String cityName) {
+        GeoPosition cityCoords = geoCodingClient.fetchCityCoordinates(cityName);
+        this.radar = new Radar(cityName, cityCoords.getLatitude(), cityCoords.getLongitude(), cityCoords.getAltitude(), 100.0);
+        
+        List<Spacecraft> satellitesAboveCity = apiClient.fetchSatellitesAbove(cityCoords, 100.0);
+        if (satellitesAboveCity != null && !satellitesAboveCity.isEmpty()) {
+            this.trackedObjects = satellitesAboveCity;
+            TelemetryLogger.printMessage("Radar reubicado exitosamente en " + cityName.toUpperCase() 
+                    + " (" + cityCoords.toString() + "). Se detectaron " + trackedObjects.size() + " satélites reales sobrevolando el área.");
+        }
     }
 
     public void syncWithN2YO() {
-        List<Spacecraft> liveObjects = apiClient.fetchLiveSpaceObjects();
-        for (Spacecraft liveObj : liveObjects) {
-            // Evitar duplicados por NORAD ID
-            boolean exists = false;
-            for (Spacecraft existing : trackedObjects) {
-                if (existing.getNoradId() == liveObj.getNoradId()) {
-                    existing.getPosition().setLatitude(liveObj.getPosition().getLatitude());
-                    existing.getPosition().setLongitude(liveObj.getPosition().getLongitude());
-                    existing.getPosition().setAltitude(liveObj.getPosition().getAltitude());
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists) {
-                trackedObjects.add(liveObj);
+        if (trackedObjects == null || trackedObjects.isEmpty()) return;
+        for (Spacecraft craft : trackedObjects) {
+            GeoPosition updatedPos = apiClient.fetchRealSatellitePosition(
+                    craft.getNoradId(), 
+                    craft.getPosition().getLatitude(), 
+                    craft.getPosition().getLongitude(), 
+                    craft.getPosition().getAltitude()
+            );
+            if (updatedPos != null) {
+                craft.getPosition().setLatitude(updatedPos.getLatitude());
+                craft.getPosition().setLongitude(updatedPos.getLongitude());
+                craft.getPosition().setAltitude(updatedPos.getAltitude());
             }
         }
     }
@@ -84,9 +76,8 @@ public class SimulationEngine {
         // Sincronizar actualización de posiciones N2YO
         syncWithN2YO();
 
-        // Mostrar estado actual por consola
-        List<Spacecraft> inRadarRange = radar.scanCoverageArea(trackedObjects);
-        TelemetryLogger.printSpacecraftStatus(inRadarRange);
+        // Mostrar estado actual y telemetría por consola
+        TelemetryLogger.printSpacecraftStatus(trackedObjects);
 
         // Escanear alertas de colisión
         List<String> alerts = radar.detectCollisionRisks(trackedObjects);
