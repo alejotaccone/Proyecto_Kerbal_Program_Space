@@ -870,6 +870,9 @@ public class MainGUI extends JFrame {
                     // Repintar el radar
                     radarPanel.repaint();
 
+                    // Evaluar eventos de crisis y colisión
+                    evaluarEventosCrisis();
+
                 } catch (Exception ex) {
                     logConsola("[ERROR]: Fallo en tick #" + tickActual + ": " + ex.getMessage());
                 } finally {
@@ -879,6 +882,90 @@ public class MainGUI extends JFrame {
             }
         };
         tickWorker.execute();
+    }
+
+    /**
+     * Revisa si hay una amenaza activa (RogueDebris) cerca de su objetivo y lanza el Pop-up interactivo.
+     */
+    private void evaluarEventosCrisis() {
+        if (engine == null || engine.getTrackedObjects() == null) return;
+        
+        model.spacecraft.RogueDebris threat = null;
+        for (Spacecraft s : engine.getTrackedObjects()) {
+            if (s instanceof model.spacecraft.RogueDebris) {
+                threat = (model.spacecraft.RogueDebris) s;
+                break;
+            }
+        }
+        
+        if (threat != null && threat.getTarget() != null) {
+            Spacecraft target = threat.getTarget();
+            double dist = threat.getPosition().distanceTo(target.getPosition());
+            
+            // Si está a menos de 100km, se activa la crisis interactiva
+            if (dist < 100.0) {
+                // Pausar simulación y radar
+                simulationTimer.stop();
+                radarSweepTimer.stop();
+                
+                String mensaje = "¡ALERTA DE IMPACTO INMINENTE!\n\n"
+                        + "La Basura Espacial Hostil [" + threat.getName() + "]\n"
+                        + "se encuentra a " + String.format("%.1f", dist) + " km de la nave [" + target.getName() + "].\n\n"
+                        + "¿Qué orden de emergencia desea ejecutar, Comandante?";
+                
+                Object[] opciones = {
+                    "Forzar Evasión (-15L Combustible)",
+                    "Resistir con Escudos (Requiere Escudo Activo)",
+                    "Ignorar (Aceptar Impacto Crítico)"
+                };
+                
+                int seleccion = JOptionPane.showOptionDialog(
+                        this,
+                        mensaje,
+                        "CRISIS DE COLISIÓN DETECTADA",
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE,
+                        null, // Icono custom null
+                        opciones,
+                        opciones[0]);
+                
+                // Procesar la decisión del jugador
+                if (seleccion == 0) { // Evasión
+                    boolean success = target.evade(0.5, 0.5);
+                    if (success) {
+                        logConsola("[CRISIS]: ¡Evasión exitosa! [" + target.getName() + "] maniobró a tiempo.");
+                    } else {
+                        logConsola("[CRISIS FATAL]: [" + target.getName() + "] no tuvo combustible para evadir. NAVE DESTRUIDA.");
+                        engine.removeShip(target);
+                    }
+                } else if (seleccion == 1) { // Escudos
+                    if (target.isShieldActive()) {
+                        logConsola("[CRISIS]: [" + target.getName() + "] resistió el impacto. El escudo ha sido sobrecargado y destruido.");
+                        target.deactivateShield();
+                    } else {
+                        logConsola("[CRISIS FATAL]: [" + target.getName() + "] intentó resistir sin escudos activados. NAVE DESTRUIDA.");
+                        engine.removeShip(target);
+                    }
+                } else { // Ignorar
+                    logConsola("[CRISIS FATAL]: [" + target.getName() + "] ha recibido un impacto directo. NAVE DESTRUIDA.");
+                    engine.removeShip(target);
+                }
+                
+                // La amenaza pasa de largo o explota, desaparece del radar
+                engine.removeShip(threat);
+                
+                // Actualizar interfaz gráfica inmediatamente
+                actualizarComboNaves();
+                actualizarMonitorNave();
+                radarPanel.repaint();
+                
+                // Reanudar la simulación
+                if (simulationRunning) {
+                    simulationTimer.start();
+                    radarSweepTimer.start();
+                }
+            }
+        }
     }
 
 

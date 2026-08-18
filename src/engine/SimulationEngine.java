@@ -101,6 +101,45 @@ public class SimulationEngine {
         currentTick++;
         TelemetryLogger.printHeader(currentTick, radar.getObserverCity());
 
+        // Lógica de Evento Crítico: 8% de probabilidad de generar un RogueDebris apuntando a una nave
+        if (trackedObjects.size() > 0 && Math.random() < 0.08) {
+            boolean hasRogue = false;
+            for (Spacecraft s : trackedObjects) {
+                if (s instanceof model.spacecraft.RogueDebris) {
+                    hasRogue = true; break;
+                }
+            }
+            if (!hasRogue) {
+                // Elegir un objetivo al azar que no sea estación o basura
+                Spacecraft target = null;
+                List<Spacecraft> temp = new ArrayList<>(trackedObjects);
+                java.util.Collections.shuffle(temp);
+                for (Spacecraft s : temp) {
+                    if (!(s instanceof SpaceStation) && !(s instanceof model.spacecraft.SpaceDebris)) {
+                        target = s;
+                        break;
+                    }
+                }
+                if (target != null) {
+                    // Aparecer a ~150km de distancia en una dirección aleatoria
+                    double angle = Math.random() * 2 * Math.PI;
+                    double distDeg = 1.5; // aprox 150km
+                    double spawnLat = target.getPosition().getLatitude() + Math.cos(angle) * distDeg;
+                    double spawnLng = target.getPosition().getLongitude() + Math.sin(angle) * distDeg;
+                    
+                    model.spacecraft.RogueDebris rogue = new model.spacecraft.RogueDebris(
+                            "RD-" + (int)(Math.random()*1000), 
+                            "ANOMALIA CINETICA", 
+                            new GeoPosition(spawnLat, spawnLng, target.getPosition().getAltitude()), 
+                            9.5, 
+                            target);
+                    
+                    trackedObjects.add(rogue);
+                    TelemetryLogger.printMessage("¡ALERTA DEL SISTEMA! Anomalía detectada entrando al sector del radar.");
+                }
+            }
+        }
+
         // Mover cada nave en órbita según sus reglas de polimorfismo
         for (Spacecraft craft : trackedObjects) {
             craft.move();
@@ -115,6 +154,15 @@ public class SimulationEngine {
         // Escanear alertas de colisión
         List<String> alerts = radar.detectCollisionRisks(trackedObjects);
         TelemetryLogger.printAlerts(alerts);
+    }
+    
+    public void removeShip(Spacecraft ship) {
+        if (ship != null && trackedObjects.contains(ship)) {
+            trackedObjects.remove(ship);
+            if (monitoredShipIndex >= trackedObjects.size()) {
+                monitoredShipIndex = -1; // Reset monitor if out of bounds
+            }
+        }
     }
 
     // ==================== ACCIONES SOBRE NAVES ====================
