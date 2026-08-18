@@ -1,4 +1,5 @@
 import engine.SimulationEngine;
+import engine.TelemetryLogger;
 import java.util.List;
 import java.util.Scanner;
 import model.spacecraft.Spacecraft;
@@ -9,7 +10,7 @@ public class Main {
 
         System.out.println("==================================================================");
         System.out.println("   KERBAL PROGRAM SPACE - CENTRO DE CONTROL Y MONITOREO ORBITAL   ");
-        System.out.println("   (Integración de Datos N2YO NORAD & Radar Terrestre)           ");
+        System.out.println("   (Integracion de Datos N2YO NORAD & Radar Terrestre)            ");
         System.out.println("==================================================================");
 
         System.out.print("Ingresa tu API Key de N2YO (O presiona ENTER para usar tu clave guardada): ");
@@ -20,22 +21,27 @@ public class Main {
 
         SimulationEngine engine = new SimulationEngine(apiKeyInput);
 
-        System.out.println("\n[Sistema]: Inicialización completa. Se cargaron 5 satélites y estaciones reales desde la API N2YO en vivo.");
+        // Lanzar la segunda consola de monitoreo de nave
+        TelemetryLogger.launchMonitorConsole();
+
+        System.out.println("\n[Sistema]: Inicializacion completa. Satelites cargados desde la API N2YO en vivo.");
+        System.out.println("[Sistema]: Se abrio una segunda ventana para monitorear naves individualmente.");
 
         boolean running = true;
         while (running) {
             System.out.println("\n------------------------------------------------------------------");
-            System.out.println("                     MENÚ DEL CENTRO DE CONTROL                   ");
+            System.out.println("                     MENU DEL CENTRO DE CONTROL                   ");
             System.out.println("------------------------------------------------------------------");
-            System.out.println("1. Avanzar Simulación (Ejecutar Tick)");
-            System.out.println("2. Cambiar Ubicación del Radar (Elegir Ciudad del Mundo vía API Geolocalización)");
-            System.out.println("3. Ejecutar Maniobra de Evasión Orbital en una Nave");
+            System.out.println("1. Avanzar Simulacion (Ejecutar Tick)");
+            System.out.println("2. Cambiar Ubicacion del Radar (Elegir Ciudad via API Geolocalizacion)");
+            System.out.println("3. Ejecutar Maniobra de Evasion Orbital en una Nave");
             System.out.println("4. Activar Habilidad Especial de la Nave");
-            System.out.println("5. Intentar Acople y Recarga de Combustible en la Estación (ISS)");
-            System.out.println("6. Activar / Desactivar Escudo de Protección");
+            System.out.println("5. Intentar Acople y Recarga de Combustible en la Estacion (ISS)");
+            System.out.println("6. Activar / Desactivar Escudo de Proteccion");
             System.out.println("7. Configurar / Cambiar API Key de N2YO");
+            System.out.println("8. Seleccionar Nave para Monitor (Segunda Consola)");
             System.out.println("0. Salir del Simulador");
-            System.out.print("\nSelecciona una opción (0-7): ");
+            System.out.print("\nSelecciona una opcion (0-8): ");
 
             String choiceStr = scanner.nextLine().trim();
 
@@ -63,14 +69,14 @@ public class Main {
                     break;
 
                 case "5":
-                    int shipRefuelIndex = selectShipPrompt(scanner, engine.getTrackedObjects(), "repostar en la Estación");
+                    int shipRefuelIndex = selectShipPrompt(scanner, engine.getTrackedObjects(), "repostar en la Estacion");
                     if (shipRefuelIndex != -1) {
                         engine.refuelShipAtStation(shipRefuelIndex);
                     }
                     break;
 
                 case "6":
-                    int shipShieldIndex = selectShipPrompt(scanner, engine.getTrackedObjects(), "conmutar escudo de protección");
+                    int shipShieldIndex = selectShipPrompt(scanner, engine.getTrackedObjects(), "conmutar escudo de proteccion");
                     if (shipShieldIndex != -1) {
                         engine.toggleShield(shipShieldIndex);
                     }
@@ -84,13 +90,24 @@ public class Main {
                     engine.syncWithN2YO();
                     break;
 
+                case "8":
+                    int shipMonitorIndex = selectShipPrompt(scanner, engine.getTrackedObjects(), "monitorear en la segunda consola");
+                    if (shipMonitorIndex != -1) {
+                        engine.selectShipForMonitoring(shipMonitorIndex);
+                        System.out.println(">> Nave seleccionada para monitoreo. Revisa la segunda ventana.");
+                    }
+                    break;
+
                 case "0":
                     running = false;
-                    System.out.println("\n=== CERRANDO CENTRO DE CONTROL ESPACIAL. ¡HASTA LUEGO! ===");
+                    // Limpiar archivo de monitor al salir
+                    try { java.nio.file.Files.deleteIfExists(java.nio.file.Path.of("nave_monitor.txt")); } catch (Exception e) {}
+                    try { java.nio.file.Files.deleteIfExists(java.nio.file.Path.of("monitor.ps1")); } catch (Exception e) {}
+                    System.out.println("\n=== CERRANDO CENTRO DE CONTROL ESPACIAL. HASTA LUEGO! ===");
                     break;
 
                 default:
-                    System.out.println("Opción inválida. Intenta nuevamente.");
+                    System.out.println("Opcion invalida. Intenta nuevamente.");
                     break;
             }
         }
@@ -101,11 +118,11 @@ public class Main {
     private static void selectCityPrompt(Scanner scanner, SimulationEngine engine) {
         String[] cities = {
             "Buenos Aires", "Nueva York", "Tokio", "Londres", 
-            "Madrid", "París", "Sídney", "El Cairo", 
-            "Río de Janeiro", "Ciudad de México"
+            "Madrid", "Paris", "Sidney", "El Cairo", 
+            "Rio de Janeiro", "Ciudad de Mexico"
         };
 
-        System.out.println("\n--- SELECCIÓN DE ESTACIÓN TERRENA / RADAR POR GEOLOCALIZACIÓN ---");
+        System.out.println("\n--- SELECCION DE ESTACION TERRENA / RADAR POR GEOLOCALIZACION ---");
         for (int i = 0; i < cities.length; i++) {
             System.out.printf("  [%d] %s\n", (i + 1), cities[i]);
         }
@@ -127,13 +144,12 @@ public class Main {
                 }
             }
         } catch (NumberFormatException e) {
-            // No es número, usar input como nombre directo si no está vacío
             if (!input.isEmpty()) {
                 engine.setRadarLocationByCity(input);
                 return;
             }
         }
-        System.out.println("Selección cancelada.");
+        System.out.println("Seleccion cancelada.");
     }
 
     private static int selectShipPrompt(Scanner scanner, List<Spacecraft> ships, String actionName) {
@@ -147,7 +163,7 @@ public class Main {
             Spacecraft s = ships.get(i);
             System.out.printf("  [%d] %s (%s) - Pos: %s\n", (i + 1), s.getName(), s.getType(), s.getPosition().toString());
         }
-        System.out.print("Número de nave (1-" + ships.size() + ") o 0 para cancelar: ");
+        System.out.print("Numero de nave (1-" + ships.size() + ") o 0 para cancelar: ");
 
         try {
             int selection = Integer.parseInt(scanner.nextLine().trim());
@@ -158,7 +174,7 @@ public class Main {
             // Entrada inválida
         }
 
-        System.out.println("Operación cancelada.");
+        System.out.println("Operacion cancelada.");
         return -1;
     }
 }

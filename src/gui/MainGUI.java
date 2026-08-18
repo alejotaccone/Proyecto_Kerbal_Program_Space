@@ -88,6 +88,10 @@ public class MainGUI extends JFrame {
     private JTextArea txtConsola;
     private JScrollPane scrollConsola;
 
+    // Monitor de Nave Seleccionada (EAST)
+    private JTextArea txtMonitorNave;
+    private boolean isUpdatingCombo = false;
+
     // =========================================================================
     // LÓGICA DE BACKEND Y TIMERS
     // =========================================================================
@@ -158,6 +162,7 @@ public class MainGUI extends JFrame {
         add(splitPane, BorderLayout.CENTER);
         add(crearPanelConsola(), BorderLayout.SOUTH);
         add(crearBarraSuperior(), BorderLayout.NORTH);
+        add(crearPanelMonitorNave(), BorderLayout.EAST);
 
         // Configurar los timers
         configurarTimers();
@@ -408,6 +413,112 @@ public class MainGUI extends JFrame {
 
         return panel;
     }
+    
+    /**
+     * Crea el panel lateral (EAST) que actúa como consola secundaria estática 
+     * para la nave seleccionada.
+     */
+    private JPanel crearPanelMonitorNave() {
+        JPanel panelOuter = new JPanel(new BorderLayout());
+        panelOuter.setPreferredSize(new Dimension(320, 0));
+        panelOuter.setBackground(COLOR_PANEL_BG);
+        panelOuter.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 2, 0, 0, COLOR_BORDER),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        panelOuter.add(crearEtiquetaSeccion("▶ CONSOLA DE NAVE SELECCIONADA"), BorderLayout.NORTH);
+
+        txtMonitorNave = new JTextArea();
+        txtMonitorNave.setEditable(false);
+        txtMonitorNave.setBackground(new Color(8, 12, 8));
+        txtMonitorNave.setForeground(new Color(150, 255, 150));
+        txtMonitorNave.setFont(new Font("Consolas", Font.PLAIN, 12));
+        txtMonitorNave.setMargin(new Insets(10, 10, 10, 10));
+        txtMonitorNave.setText("\nNo hay nave seleccionada");
+
+        JScrollPane scroll = new JScrollPane(txtMonitorNave);
+        scroll.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1));
+        scroll.setBackground(COLOR_PANEL_BG);
+        scroll.getViewport().setBackground(COLOR_PANEL_BG);
+
+        // Separador para que no quede pegado al título
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setBackground(COLOR_PANEL_BG);
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
+        centerPanel.add(scroll, BorderLayout.CENTER);
+
+        panelOuter.add(centerPanel, BorderLayout.CENTER);
+        return panelOuter;
+    }
+
+    /**
+     * Actualiza el contenido estático del monitor de nave secundaria.
+     * Solo se llama cuando se selecciona una nave manualmente o se realiza una acción.
+     */
+    private void actualizarMonitorNave() {
+        if (engine == null || engine.getTrackedObjects() == null) {
+            txtMonitorNave.setText("\nNo hay nave seleccionada");
+            return;
+        }
+        
+        int idx = cmbNaves.getSelectedIndex();
+        if (idx < 0 || idx >= engine.getTrackedObjects().size()) {
+            txtMonitorNave.setText("\nNo hay nave seleccionada");
+            return;
+        }
+
+        Spacecraft ship = engine.getTrackedObjects().get(idx);
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== DATOS DE LA NAVE ===\n\n");
+        sb.append("Nombre: ").append(ship.getName()).append("\n");
+        sb.append("Tipo:   ").append(ship.getType()).append("\n");
+        sb.append("NORAD:  ").append(ship.getNoradId()).append("\n\n");
+        
+        sb.append("--- ÚLTIMA POSICIÓN REGISTRADA ---\n");
+        sb.append(String.format("Latitud:  %.4f°\n", ship.getPosition().getLatitude()));
+        sb.append(String.format("Longitud: %.4f°\n", ship.getPosition().getLongitude()));
+        sb.append(String.format("Altitud:  %.1f km\n\n", ship.getPosition().getAltitude()));
+        
+        sb.append("--- ESTADO ---\n");
+        sb.append("Velocidad: ").append(String.format("%.1f km/h\n", ship.getVelocityKmH()));
+        sb.append("Escudo:    ").append(ship.isShieldActive() ? "ACTIVADO\n" : "DESACTIVADO\n");
+        
+        if (ship.getFuelTank() != null) {
+            sb.append(String.format("Combust:   %.1f%%\n", ship.getFuelTank().getPercentage()));
+            sb.append(String.format("Nivel:     %.1f / %.1f L\n", ship.getFuelTank().getCurrentLevel(), ship.getFuelTank().getCapacity()));
+        } else {
+            sb.append("Combust:   N/A (Sin motor)\n");
+        }
+
+        if (ship instanceof CrewShuttle) {
+            sb.append("\n--- TRIPULACIÓN ---\n");
+            CrewShuttle shuttle = (CrewShuttle) ship;
+            if (shuttle.getCrew().isEmpty()) {
+                sb.append("Sin tripulación a bordo\n");
+            } else {
+                for (model.components.Kerbal k : shuttle.getCrew()) {
+                    sb.append("- ").append(k.getName()).append(" (").append(k.getRole()).append(")\n");
+                }
+            }
+        } else if (ship instanceof model.spacecraft.CargoShip) {
+            model.spacecraft.CargoShip cargo = (model.spacecraft.CargoShip) ship;
+            sb.append("\n--- CARGA ---\n");
+            sb.append(String.format("Capacidad: %.1f ton\n", cargo.getCargoCapacityTons()));
+            sb.append(String.format("Actual:    %.1f ton\n", cargo.getCurrentCargoTons()));
+        } else if (ship instanceof model.spacecraft.ExplorationProbe) {
+            model.spacecraft.ExplorationProbe probe = (model.spacecraft.ExplorationProbe) ship;
+            sb.append("\n--- SISTEMAS ---\n");
+            sb.append(String.format("Eficiencia Solar: %.0f%%\n", probe.getSolarEfficiency() * 100));
+        } else if (ship instanceof SpaceDebris) {
+            SpaceDebris debris = (SpaceDebris) ship;
+            sb.append("\n--- RIESGO ---\n");
+            sb.append(String.format("Peligrosidad: %.1f/10\n", debris.getHazardLevel()));
+        }
+        
+        txtMonitorNave.setText(sb.toString());
+        txtMonitorNave.setCaretPosition(0);
+    }
 
     // =========================================================================
     // COMPONENTES REUTILIZABLES DE UI
@@ -633,6 +744,7 @@ public class MainGUI extends JFrame {
             if (idx >= 0 && engine != null) {
                 engine.evadeShip(idx);
                 logAccionNave(idx, "Maniobra de evasión ejecutada");
+                actualizarMonitorNave();
             }
         });
 
@@ -642,6 +754,7 @@ public class MainGUI extends JFrame {
             if (idx >= 0 && engine != null) {
                 engine.useSpecialAbility(idx);
                 logAccionNave(idx, "Habilidad especial activada");
+                actualizarMonitorNave();
             }
         });
 
@@ -651,6 +764,7 @@ public class MainGUI extends JFrame {
             if (idx >= 0 && engine != null) {
                 engine.refuelShipAtStation(idx);
                 logAccionNave(idx, "Intento de acople y recarga");
+                actualizarMonitorNave();
             }
         });
 
@@ -662,6 +776,14 @@ public class MainGUI extends JFrame {
                 Spacecraft craft = engine.getTrackedObjects().get(idx);
                 String estado = craft.isShieldActive() ? "ACTIVADO" : "DESACTIVADO";
                 logConsola("[Acción]: Escudo de [" + craft.getName() + "] → " + estado);
+                actualizarMonitorNave();
+            }
+        });
+
+        // ---- COMBOBOX: Seleccionar Nave ----
+        cmbNaves.addActionListener(e -> {
+            if (!isUpdatingCombo) {
+                actualizarMonitorNave();
             }
         });
     }
@@ -804,6 +926,7 @@ public class MainGUI extends JFrame {
     private void actualizarComboNaves() {
         if (engine == null || engine.getTrackedObjects() == null) return;
         
+        isUpdatingCombo = true;
         // Guardar la posición actual del divider antes de modificar el combo
         int dividerPos = splitPane.getDividerLocation();
         
@@ -820,6 +943,7 @@ public class MainGUI extends JFrame {
         
         // Restaurar la posición del divider para que no se mueva
         splitPane.setDividerLocation(dividerPos);
+        isUpdatingCombo = false;
     }
 
     /** Habilita o deshabilita los botones de acciones sobre naves */
