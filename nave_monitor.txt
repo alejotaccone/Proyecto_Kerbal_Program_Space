@@ -2,38 +2,36 @@
        MONITOR DE NAVE - KERBAL PROGRAM SPACE
 ==================================================================
 
-  Nave:     RELAY 2 (N2YO API)
-  Tipo:     Sonda Exploradora Solar
-  NORAD ID: 737
-  ID:       SAT-737
+  Nave:     COSMOS 2294 (GLONASS) (N2YO API)
+  Tipo:     Basura Espacial / Chatarra
+  NORAD ID: 23398
+  ID:       SAT-23398
 
 ------------------------------------------------------------------
   POSICION ACTUAL
 ------------------------------------------------------------------
-  Latitud:  -14,5424
-  Longitud: -53,4523
-  Altitud:  4964,5 km
+  Latitud:  36,7045
+  Longitud: 138,7011
+  Altitud:  19119,9 km
 
 ------------------------------------------------------------------
   COMBUSTIBLE
 ------------------------------------------------------------------
-  [############--------] 63,3%
-  Nivel: 76,0 / 120,0 L
-  Consumo por movimiento: 1,5 L
+  N/A (Sin motor - Objeto a la deriva)
 
 ------------------------------------------------------------------
   ESTADO GENERAL
 ------------------------------------------------------------------
-  Escudo:    >> ACTIVADO <<
-  Velocidad: 27500,0 km/h
+  Escudo:    DESACTIVADO
+  Velocidad: 28000,0 km/h
 
 ------------------------------------------------------------------
-  PANELES SOLARES
+  PELIGROSIDAD
 ------------------------------------------------------------------
-  Eficiencia solar: 95%
+  Nivel de riesgo: 8,2 / 10
 
 ==================================================================
   ULTIMA ACCION REGISTRADA
 ==================================================================
-  Escudo de la nave [RELAY 2 (N2YO API)] ACTIVADO.
+  MANIOBRA FALLIDA! La nave [COSMOS 2294 (GLONASS) (N2YO API)] no tiene suficiente combustible.
 ==================================================================

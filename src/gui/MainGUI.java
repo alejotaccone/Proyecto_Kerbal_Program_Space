@@ -90,6 +90,7 @@ public class MainGUI extends JFrame {
 
     // Monitor de Nave Seleccionada (EAST)
     private JTextArea txtMonitorNave;
+    private JLabel lblImagenNave;
     private boolean isUpdatingCombo = false;
 
     // =========================================================================
@@ -434,6 +435,16 @@ public class MainGUI extends JFrame {
 
         panelOuter.add(crearEtiquetaSeccion(">> CONSOLA DE NAVE SELECCIONADA"), BorderLayout.NORTH);
 
+        lblImagenNave = new JLabel("[ SIN NAVE SELECCIONADA ]", SwingConstants.CENTER);
+        lblImagenNave.setPreferredSize(new Dimension(290, 170));
+        lblImagenNave.setMinimumSize(new Dimension(290, 170));
+        lblImagenNave.setMaximumSize(new Dimension(Integer.MAX_VALUE, 170));
+        lblImagenNave.setBackground(new Color(8, 12, 8));
+        lblImagenNave.setOpaque(true);
+        lblImagenNave.setForeground(COLOR_TEXT_DIM);
+        lblImagenNave.setFont(new Font("Consolas", Font.ITALIC, 11));
+        lblImagenNave.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1));
+
         txtMonitorNave = new JTextArea();
         txtMonitorNave.setEditable(false);
         txtMonitorNave.setBackground(new Color(8, 12, 8));
@@ -447,14 +458,58 @@ public class MainGUI extends JFrame {
         scroll.setBackground(COLOR_PANEL_BG);
         scroll.getViewport().setBackground(COLOR_PANEL_BG);
 
-        // Separador para que no quede pegado al título
-        JPanel centerPanel = new JPanel(new BorderLayout());
+        // Panel central con la imagen arriba y los datos abajo
+        JPanel centerPanel = new JPanel(new BorderLayout(0, 8));
         centerPanel.setBackground(COLOR_PANEL_BG);
         centerPanel.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
+        centerPanel.add(lblImagenNave, BorderLayout.NORTH);
         centerPanel.add(scroll, BorderLayout.CENTER);
 
         panelOuter.add(centerPanel, BorderLayout.CENTER);
         return panelOuter;
+    }
+
+    /**
+     * Carga y escala suavemente la imagen de la nave seleccionada desde la carpeta Img.
+     */
+    private void cargarImagenNave(String nombreImagen) {
+        if (nombreImagen == null || nombreImagen.trim().isEmpty()) {
+            lblImagenNave.setIcon(null);
+            lblImagenNave.setText("[ SIN NAVE SELECCIONADA ]");
+            return;
+        }
+
+        try {
+            java.io.File file = new java.io.File("src/Img/" + nombreImagen);
+            if (!file.exists()) {
+                file = new java.io.File("Img/" + nombreImagen);
+            }
+
+            if (file.exists()) {
+                java.awt.image.BufferedImage imgOriginal = javax.imageio.ImageIO.read(file);
+                if (imgOriginal != null) {
+                    int targetW = 290;
+                    int targetH = 170;
+
+                    double ratioW = (double) targetW / imgOriginal.getWidth();
+                    double ratioH = (double) targetH / imgOriginal.getHeight();
+                    double scale = Math.min(ratioW, ratioH);
+
+                    int newW = (int) (imgOriginal.getWidth() * scale);
+                    int newH = (int) (imgOriginal.getHeight() * scale);
+
+                    Image scaled = imgOriginal.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
+                    lblImagenNave.setIcon(new ImageIcon(scaled));
+                    lblImagenNave.setText("");
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            // Ignorar y mostrar fallback
+        }
+
+        lblImagenNave.setIcon(null);
+        lblImagenNave.setText("[ " + nombreImagen + " ]");
     }
 
     /**
@@ -463,17 +518,21 @@ public class MainGUI extends JFrame {
      */
     private void actualizarMonitorNave() {
         if (engine == null || engine.getTrackedObjects() == null) {
+            cargarImagenNave(null);
             txtMonitorNave.setText("\nNo hay nave seleccionada");
             return;
         }
         
         int idx = cmbNaves.getSelectedIndex();
         if (idx < 0 || idx >= engine.getTrackedObjects().size()) {
+            cargarImagenNave(null);
             txtMonitorNave.setText("\nNo hay nave seleccionada");
             return;
         }
 
         Spacecraft ship = engine.getTrackedObjects().get(idx);
+        cargarImagenNave(ship.getImg());
+
         StringBuilder sb = new StringBuilder();
         sb.append("=== DATOS DE LA NAVE ===\n\n");
         sb.append("Nombre: ").append(ship.getName()).append("\n");

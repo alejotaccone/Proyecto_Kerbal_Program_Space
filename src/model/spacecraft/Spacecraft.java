@@ -11,6 +11,7 @@ public abstract class Spacecraft {
     protected FuelTank fuelTank;
     protected boolean shieldActive;
     protected double velocityKmH;
+    protected String img;
 
     public Spacecraft(String id, String name, int noradId, GeoPosition position, FuelTank fuelTank, double velocityKmH) {
         this.id = id;
@@ -20,6 +21,7 @@ public abstract class Spacecraft {
         this.fuelTank = fuelTank;
         this.shieldActive = false;
         this.velocityKmH = velocityKmH;
+        this.img = "Spacecraft.jpg";
     }
 
     public abstract void move();
@@ -76,6 +78,14 @@ public abstract class Spacecraft {
 
     public void setVelocityKmH(double velocityKmH) {
         this.velocityKmH = velocityKmH;
+    }
+
+    public String getImg() {
+        return img;
+    }
+
+    public void setImg(String img) {
+        this.img = img;
     }
 
     @Override
