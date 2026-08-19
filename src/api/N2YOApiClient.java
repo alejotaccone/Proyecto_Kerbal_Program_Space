@@ -50,10 +50,15 @@ public class N2YOApiClient {
         if (observerPos == null) return fetchLiveSpaceObjects();
 
         try {
+            // N2YO requiere el radio de búsqueda en GRADOS. 1 grado latitud ≈ 111 km.
+            double radiusDeg = searchRadiusKm / 111.0;
+            if (radiusDeg > 90.0) radiusDeg = 90.0; // Límite máximo de la API
+            if (radiusDeg < 1.0) radiusDeg = 1.0;   // Límite mínimo para no fallar
+            
             // N2YO /above/{lat}/{lng}/{alt}/{radius_deg}/{category_id}/&apiKey={key}
             // Se fuerza Locale.US para que la latitud y longitud usen el punto '.' como separador decimal en la URL HTTP.
-            String url = String.format(Locale.US, "%sabove/%.4f/%.4f/%.1f/45/0/&apiKey=%s", 
-                    BASE_URL, observerPos.getLatitude(), observerPos.getLongitude(), observerPos.getAltitude(), apiKey);
+            String url = String.format(Locale.US, "%sabove/%.4f/%.4f/%.1f/%.1f/0/&apiKey=%s", 
+                    BASE_URL, observerPos.getLatitude(), observerPos.getLongitude(), observerPos.getAltitude(), radiusDeg, apiKey);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))

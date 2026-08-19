@@ -9,7 +9,6 @@ import model.geometry.GeoPosition;
 import radar.Radar;
 
 import javax.swing.*;
-import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.*;
@@ -79,6 +78,7 @@ public class MainGUI extends JFrame {
     private JButton btnSpecialAbility;
     private JButton btnRefuel;
     private JButton btnToggleShield;
+    private JButton btnGenerarCrisis;
 
     // Panel central del radar (CENTER)
     private RadarPanel radarPanel;
@@ -225,7 +225,7 @@ public class MainGUI extends JFrame {
         panel.setBackground(COLOR_PANEL_BG);
 
         // ---- SECCIÓN: CONFIGURACIÓN DEL RADAR ----
-        panel.add(crearEtiquetaSeccion("▶ CONFIGURACIÓN DEL RADAR"));
+        panel.add(crearEtiquetaSeccion(">> CONFIGURACIÓN DEL RADAR"));
         panel.add(Box.createVerticalStrut(8));
 
         // Campo: Ciudad (ComboBox editable con ciudades predefinidas)
@@ -267,22 +267,22 @@ public class MainGUI extends JFrame {
         panel.add(Box.createVerticalStrut(12));
 
         // Botones de control de simulación
-        btnIniciar = crearBoton("▶  INICIAR SIMULACIÓN", COLOR_TEXT_PRIMARY);
+        btnIniciar = crearBoton(">> INICIAR SIMULACIÓN", COLOR_TEXT_PRIMARY);
         panel.add(btnIniciar);
         panel.add(Box.createVerticalStrut(6));
 
-        btnDetener = crearBoton("■  DETENER SIMULACIÓN", COLOR_ACCENT_RED);
+        btnDetener = crearBoton("[X] DETENER SIMULACIÓN", COLOR_ACCENT_RED);
         btnDetener.setEnabled(false);
         panel.add(btnDetener);
         panel.add(Box.createVerticalStrut(6));
 
-        btnCambiarCiudad = crearBoton("⟳  CAMBIAR CIUDAD", COLOR_ACCENT_CYAN);
+        btnCambiarCiudad = crearBoton("[R] CAMBIAR CIUDAD", COLOR_ACCENT_CYAN);
         btnCambiarCiudad.setEnabled(false);
         panel.add(btnCambiarCiudad);
         panel.add(Box.createVerticalStrut(15));
 
         // ---- SECCIÓN: ESTADO ----
-        panel.add(crearEtiquetaSeccion("▶ ESTADO DEL SISTEMA"));
+        panel.add(crearEtiquetaSeccion(">> ESTADO DEL SISTEMA"));
         panel.add(Box.createVerticalStrut(6));
 
         lblEstado = new JLabel("● Desconectado");
@@ -300,7 +300,7 @@ public class MainGUI extends JFrame {
         panel.add(Box.createVerticalStrut(15));
 
         // ---- SECCIÓN: ACCIONES RÁPIDAS ----
-        panel.add(crearEtiquetaSeccion("▶ ACCIONES SOBRE NAVES"));
+        panel.add(crearEtiquetaSeccion(">> ACCIONES SOBRE NAVES"));
         panel.add(Box.createVerticalStrut(8));
 
         panel.add(crearEtiquetaCampo("Seleccionar Nave:"));
@@ -313,28 +313,33 @@ public class MainGUI extends JFrame {
         panel.add(cmbNaves);
         panel.add(Box.createVerticalStrut(8));
 
-        btnEvadeShip = crearBoton("⚡ Maniobra Evasión", COLOR_ACCENT_YELLOW);
+        btnEvadeShip = crearBoton("[~] Maniobra Evasión", COLOR_ACCENT_YELLOW);
         btnEvadeShip.setEnabled(false);
         panel.add(btnEvadeShip);
         panel.add(Box.createVerticalStrut(4));
 
-        btnSpecialAbility = crearBoton("★ Habilidad Especial", COLOR_ACCENT_CYAN);
+        btnSpecialAbility = crearBoton("[*] Habilidad Especial", COLOR_ACCENT_CYAN);
         btnSpecialAbility.setEnabled(false);
         panel.add(btnSpecialAbility);
         panel.add(Box.createVerticalStrut(4));
 
-        btnRefuel = crearBoton("⛽ Acoplar y Recargar", COLOR_ACCENT_ORANGE);
+        btnRefuel = crearBoton("[+] Acoplar y Recargar", COLOR_ACCENT_ORANGE);
         btnRefuel.setEnabled(false);
         panel.add(btnRefuel);
         panel.add(Box.createVerticalStrut(4));
 
-        btnToggleShield = crearBoton("🛡 Activar/Desact. Escudo", COLOR_TEXT_SECONDARY);
+        btnToggleShield = crearBoton("[O] Activar/Desact. Escudo", COLOR_TEXT_SECONDARY);
         btnToggleShield.setEnabled(false);
         panel.add(btnToggleShield);
+        panel.add(Box.createVerticalStrut(8));
+        
+        btnGenerarCrisis = crearBoton("[!] Generar Anomalía", COLOR_ACCENT_RED);
+        btnGenerarCrisis.setEnabled(false);
+        panel.add(btnGenerarCrisis);
         panel.add(Box.createVerticalStrut(15));
 
         // ---- SECCIÓN: LEYENDA DEL RADAR ----
-        panel.add(crearEtiquetaSeccion("▶ LEYENDA DEL RADAR"));
+        panel.add(crearEtiquetaSeccion(">> LEYENDA DEL RADAR"));
         panel.add(Box.createVerticalStrut(6));
         panel.add(crearItemLeyenda("●", COLOR_ACCENT_CYAN, "Estación Espacial"));
         panel.add(crearItemLeyenda("●", COLOR_TEXT_PRIMARY, "Sonda / Satélite"));
@@ -427,7 +432,7 @@ public class MainGUI extends JFrame {
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
-        panelOuter.add(crearEtiquetaSeccion("▶ CONSOLA DE NAVE SELECCIONADA"), BorderLayout.NORTH);
+        panelOuter.add(crearEtiquetaSeccion(">> CONSOLA DE NAVE SELECCIONADA"), BorderLayout.NORTH);
 
         txtMonitorNave = new JTextArea();
         txtMonitorNave.setEditable(false);
@@ -652,6 +657,14 @@ public class MainGUI extends JFrame {
                 logConsola("[ERROR]: Debes ingresar una ciudad para el radar.");
                 return;
             }
+            
+            double radioParsed = 100.0;
+            try {
+                radioParsed = Double.parseDouble(radioStr);
+            } catch (NumberFormatException ex) {
+                logConsola("[Advertencia]: Radio inválido. Usando 100 km por defecto.");
+            }
+            final double radioF = radioParsed;
 
             // Deshabilitar el botón inmediatamente para evitar doble-clic
             btnIniciar.setEnabled(false);
@@ -663,12 +676,12 @@ public class MainGUI extends JFrame {
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
                 @Override
                 protected Void doInBackground() {
-                    // Crear el SimulationEngine con la API key
-                    engine = new SimulationEngine(apiKey);
+                    // Crear el SimulationEngine con la API key y el radio
+                    engine = new SimulationEngine(apiKey, radioF);
                     
                     // Si el usuario eligió una ciudad diferente a Buenos Aires, reubicar
                     if (!ciudad.equalsIgnoreCase("Buenos Aires")) {
-                        engine.setRadarLocationByCity(ciudad);
+                        engine.setRadarLocationByCity(ciudad, radioF);
                     }
                     return null;
                 }
@@ -696,7 +709,7 @@ public class MainGUI extends JFrame {
                         int navesCount = (engine.getTrackedObjects() != null) ? engine.getTrackedObjects().size() : 0;
                         lblNavesDetectadas.setText("Naves rastreadas: " + navesCount);
 
-                        logConsola("[Sistema]: ¡Simulación iniciada! Radar posicionado en " + ciudad.toUpperCase() + ".");
+                        logConsola("[Sistema]: ¡Simulación iniciada! Radar posicionado en " + ciudad.toUpperCase() + " con radio " + radioF + " km.");
                         logConsola("[Sistema]: Rastreando " + navesCount + " objetos orbitales en tiempo real.");
                         logConsola("──────────────────────────────────────────────────────────────");
                     } catch (Exception ex) {
@@ -717,13 +730,22 @@ public class MainGUI extends JFrame {
         btnCambiarCiudad.addActionListener(e -> {
             String ciudad = obtenerCiudadSeleccionada();
             if (ciudad.isEmpty() || engine == null) return;
+            
+            String radioStr = txtRadio.getText().trim();
+            double radioParsed = 100.0;
+            try {
+                radioParsed = Double.parseDouble(radioStr);
+            } catch (NumberFormatException ex) {
+                // ignorar
+            }
+            final double radioF = radioParsed;
 
-            logConsola("[Sistema]: Reubicando radar a \"" + ciudad + "\"...");
+            logConsola("[Sistema]: Reubicando radar a \"" + ciudad + "\" con radio " + radioF + " km...");
             
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
                 @Override
                 protected Void doInBackground() {
-                    engine.setRadarLocationByCity(ciudad);
+                    engine.setRadarLocationByCity(ciudad, radioF);
                     return null;
                 }
                 @Override
@@ -777,6 +799,20 @@ public class MainGUI extends JFrame {
                 String estado = craft.isShieldActive() ? "ACTIVADO" : "DESACTIVADO";
                 logConsola("[Acción]: Escudo de [" + craft.getName() + "] → " + estado);
                 actualizarMonitorNave();
+            }
+        });
+
+        // ---- BOTÓN: Generar Anomalía (Crisis) ----
+        btnGenerarCrisis.addActionListener(e -> {
+            if (engine != null && engine.getTrackedObjects() != null && !engine.getTrackedObjects().isEmpty()) {
+                boolean success = engine.triggerCrisisEvent();
+                if (success) {
+                    logConsola("[ALERTA SISTEMA]: ¡Has inyectado una anomalía cinética (Rogue Debris) en el sector!");
+                    actualizarComboNaves();
+                    radarPanel.repaint();
+                } else {
+                    logConsola("[INFO]: No se pudo inyectar la anomalía (no hay blancos válidos o ya hay una activa).");
+                }
             }
         });
 
@@ -1039,6 +1075,7 @@ public class MainGUI extends JFrame {
         btnSpecialAbility.setEnabled(enabled);
         btnRefuel.setEnabled(enabled);
         btnToggleShield.setEnabled(enabled);
+        btnGenerarCrisis.setEnabled(enabled);
     }
 
     /** Obtiene la ciudad seleccionada o escrita en el combo de ciudades */

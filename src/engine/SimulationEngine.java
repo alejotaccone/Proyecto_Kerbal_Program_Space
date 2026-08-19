@@ -24,16 +24,16 @@ public class SimulationEngine {
     private int monitoredShipIndex;
     private String lastMonitorAction;
 
-    public SimulationEngine(String apiKey) {
+    public SimulationEngine(String apiKey, double radiusKm) {
         this.currentTick = 0;
         this.trackedObjects = new ArrayList<>();
         this.geoCodingClient = new GeoCodingApiClient();
-        this.radar = new Radar("Buenos Aires", -34.60, -58.38, 25.0, 100.0);
+        this.radar = new Radar("Buenos Aires", -34.60, -58.38, 25.0, radiusKm);
         this.apiClient = new N2YOApiClient(apiKey);
         this.monitoredShipIndex = -1;
         this.lastMonitorAction = "";
 
-        setRadarLocationByCity("Buenos Aires");
+        setRadarLocationByCity("Buenos Aires", radiusKm);
     }
 
     // ==================== MONITOR DE NAVE ====================
@@ -63,13 +63,13 @@ public class SimulationEngine {
 
     /**
      * Cambia la ubicación de la estación terrena / radar consultando la API de Geolocalización,
-     * y obtiene de la API N2YO los satélites que están sobrevolando esa ciudad en un radio de 100 km.
+     * y obtiene de la API N2YO los satélites que están sobrevolando esa ciudad.
      */
-    public void setRadarLocationByCity(String cityName) {
+    public void setRadarLocationByCity(String cityName, double radiusKm) {
         GeoPosition cityCoords = geoCodingClient.fetchCityCoordinates(cityName);
-        this.radar = new Radar(cityName, cityCoords.getLatitude(), cityCoords.getLongitude(), cityCoords.getAltitude(), 100.0);
+        this.radar = new Radar(cityName, cityCoords.getLatitude(), cityCoords.getLongitude(), cityCoords.getAltitude(), radiusKm);
         
-        List<Spacecraft> satellitesAboveCity = apiClient.fetchSatellitesAbove(cityCoords, 100.0);
+        List<Spacecraft> satellitesAboveCity = apiClient.fetchSatellitesAbove(cityCoords, radiusKm);
         if (satellitesAboveCity != null && !satellitesAboveCity.isEmpty()) {
             this.trackedObjects = satellitesAboveCity;
             this.monitoredShipIndex = -1; // Resetear selección al cambiar de ciudad
@@ -103,41 +103,7 @@ public class SimulationEngine {
 
         // Lógica de Evento Crítico: 8% de probabilidad de generar un RogueDebris apuntando a una nave
         if (trackedObjects.size() > 0 && Math.random() < 0.08) {
-            boolean hasRogue = false;
-            for (Spacecraft s : trackedObjects) {
-                if (s instanceof model.spacecraft.RogueDebris) {
-                    hasRogue = true; break;
-                }
-            }
-            if (!hasRogue) {
-                // Elegir un objetivo al azar que no sea estación o basura
-                Spacecraft target = null;
-                List<Spacecraft> temp = new ArrayList<>(trackedObjects);
-                java.util.Collections.shuffle(temp);
-                for (Spacecraft s : temp) {
-                    if (!(s instanceof SpaceStation) && !(s instanceof model.spacecraft.SpaceDebris)) {
-                        target = s;
-                        break;
-                    }
-                }
-                if (target != null) {
-                    // Aparecer a ~150km de distancia en una dirección aleatoria
-                    double angle = Math.random() * 2 * Math.PI;
-                    double distDeg = 1.5; // aprox 150km
-                    double spawnLat = target.getPosition().getLatitude() + Math.cos(angle) * distDeg;
-                    double spawnLng = target.getPosition().getLongitude() + Math.sin(angle) * distDeg;
-                    
-                    model.spacecraft.RogueDebris rogue = new model.spacecraft.RogueDebris(
-                            "RD-" + (int)(Math.random()*1000), 
-                            "ANOMALIA CINETICA", 
-                            new GeoPosition(spawnLat, spawnLng, target.getPosition().getAltitude()), 
-                            9.5, 
-                            target);
-                    
-                    trackedObjects.add(rogue);
-                    TelemetryLogger.printMessage("¡ALERTA DEL SISTEMA! Anomalía detectada entrando al sector del radar.");
-                }
-            }
+            triggerCrisisEvent();
         }
 
         // Mover cada nave en órbita según sus reglas de polimorfismo
@@ -154,6 +120,51 @@ public class SimulationEngine {
         // Escanear alertas de colisión
         List<String> alerts = radar.detectCollisionRisks(trackedObjects);
         TelemetryLogger.printAlerts(alerts);
+    }
+    
+    // ==================== EVENTOS DE CRISIS ====================
+    
+    public boolean triggerCrisisEvent() {
+        if (trackedObjects == null || trackedObjects.isEmpty()) return false;
+        
+        boolean hasRogue = false;
+        for (Spacecraft s : trackedObjects) {
+            if (s instanceof model.spacecraft.RogueDebris) {
+                hasRogue = true; break;
+            }
+        }
+        
+        if (!hasRogue) {
+            // Elegir un objetivo al azar que no sea estación o basura
+            Spacecraft target = null;
+            List<Spacecraft> temp = new ArrayList<>(trackedObjects);
+            java.util.Collections.shuffle(temp);
+            for (Spacecraft s : temp) {
+                if (!(s instanceof SpaceStation) && !(s instanceof model.spacecraft.SpaceDebris)) {
+                    target = s;
+                    break;
+                }
+            }
+            if (target != null) {
+                // Aparecer a ~150km de distancia en una dirección aleatoria
+                double angle = Math.random() * 2 * Math.PI;
+                double distDeg = 1.5; // aprox 150km
+                double spawnLat = target.getPosition().getLatitude() + Math.cos(angle) * distDeg;
+                double spawnLng = target.getPosition().getLongitude() + Math.sin(angle) * distDeg;
+                
+                model.spacecraft.RogueDebris rogue = new model.spacecraft.RogueDebris(
+                        "RD-" + (int)(Math.random()*1000), 
+                        "ANOMALIA CINETICA", 
+                        new GeoPosition(spawnLat, spawnLng, target.getPosition().getAltitude()), 
+                        9.5, 
+                        target);
+                
+                trackedObjects.add(rogue);
+                TelemetryLogger.printMessage("¡ALERTA DEL SISTEMA! Anomalía detectada entrando al sector del radar.");
+                return true;
+            }
+        }
+        return false;
     }
     
     public void removeShip(Spacecraft ship) {

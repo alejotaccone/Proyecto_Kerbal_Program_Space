@@ -19,7 +19,7 @@ public class Main {
             apiKeyInput = api.N2YOApiClient.DEFAULT_KEY;
         }
 
-        SimulationEngine engine = new SimulationEngine(apiKeyInput);
+        SimulationEngine engine = new SimulationEngine(apiKeyInput, 1000.0);
 
         // Lanzar la segunda consola de monitoreo de nave
         TelemetryLogger.launchMonitorConsole();
@@ -133,21 +133,19 @@ public class Main {
         try {
             int option = Integer.parseInt(input);
             if (option >= 1 && option <= 10) {
-                engine.setRadarLocationByCity(cities[option - 1]);
-                return;
-            } else if (option == 11) {
-                System.out.print("Ingresa el nombre de la ciudad: ");
-                String customCity = scanner.nextLine().trim();
-                if (!customCity.isEmpty()) {
-                    engine.setRadarLocationByCity(customCity);
-                    return;
-                }
+                engine.setRadarLocationByCity(cities[option - 1], 1000.0);
+            } else if (option == 6) {
+                System.out.print("Escriba el nombre de la ciudad: ");
+                String customCity = scanner.nextLine();
+                System.out.println("Reubicando radar... Espere por favor.");
+                engine.setRadarLocationByCity(customCity, 1000.0);
             }
         } catch (NumberFormatException e) {
-            if (!input.isEmpty()) {
-                engine.setRadarLocationByCity(input);
-                return;
-            }
+            System.out.print("Escriba el nombre de la ciudad: ");
+            String input2 = scanner.nextLine();
+            System.out.println("Reubicando radar... Espere por favor.");
+            engine.setRadarLocationByCity(input2, 1000.0);
+            return;
         }
         System.out.println("Seleccion cancelada.");
     }
