@@ -102,17 +102,20 @@ public class SimulationEngine {
         TelemetryLogger.printHeader(currentTick, radar.getObserverCity());
 
         // Lógica de Evento Crítico: 8% de probabilidad de generar un RogueDebris apuntando a una nave
-        if (trackedObjects.size() > 0 && Math.random() < 0.08) {
-            triggerCrisisEvent();
-        }
+        // (Desactivado temporalmente por pedido del usuario para evitar generación automática)
+        // if (trackedObjects.size() > 0 && Math.random() < 0.08) {
+        //     triggerCrisisEvent();
+        // }
 
         // Mover cada nave en órbita según sus reglas de polimorfismo
         for (Spacecraft craft : trackedObjects) {
             craft.move();
         }
 
-        // Sincronizar actualización de posiciones N2YO
-        syncWithN2YO();
+        // Sincronizar actualización de posiciones N2YO solo cada 10 segundos para evitar Rate Limit
+        if (currentTick == 1 || currentTick % 10 == 0) {
+            syncWithN2YO();
+        }
 
         // Mostrar estado actual y telemetría por consola
         TelemetryLogger.printSpacecraftStatus(trackedObjects);

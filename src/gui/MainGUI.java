@@ -256,7 +256,7 @@ public class MainGUI extends JFrame {
 
         // Campo: Radio
         panel.add(crearEtiquetaCampo("Radio del Radar (km):"));
-        txtRadio = crearCampoTexto("100");
+        txtRadio = crearCampoTexto("2500");
         panel.add(txtRadio);
         panel.add(Box.createVerticalStrut(6));
 
@@ -523,7 +523,7 @@ public class MainGUI extends JFrame {
             return;
         }
         
-        int idx = cmbNaves.getSelectedIndex();
+        int idx = cmbNaves.getSelectedIndex() - 1;
         if (idx < 0 || idx >= engine.getTrackedObjects().size()) {
             cargarImagenNave(null);
             txtMonitorNave.setText("\nNo hay nave seleccionada");
@@ -717,11 +717,18 @@ public class MainGUI extends JFrame {
                 return;
             }
             
-            double radioParsed = 100.0;
+            double radioParsed = 2500.0; // Default optimal
             try {
                 radioParsed = Double.parseDouble(radioStr);
             } catch (NumberFormatException ex) {
-                logConsola("[Advertencia]: Radio inválido. Usando 100 km por defecto.");
+                logConsola("[Advertencia]: Radio inválido. Usando 2500 km por defecto.");
+            }
+            if (radioParsed < 2000.0) {
+                radioParsed = 2000.0;
+                logConsola("[Advertencia]: Radio mínimo es 2000 km. Ajustando a 2000 km.");
+            } else if (radioParsed > 3000.0) {
+                radioParsed = 3000.0;
+                logConsola("[Advertencia]: Radio máximo es 3000 km. Ajustando a 3000 km.");
             }
             final double radioF = radioParsed;
 
@@ -791,11 +798,18 @@ public class MainGUI extends JFrame {
             if (ciudad.isEmpty() || engine == null) return;
             
             String radioStr = txtRadio.getText().trim();
-            double radioParsed = 100.0;
+            double radioParsed = 2500.0;
             try {
                 radioParsed = Double.parseDouble(radioStr);
             } catch (NumberFormatException ex) {
                 // ignorar
+            }
+            if (radioParsed < 2000.0) {
+                radioParsed = 2000.0;
+                logConsola("[Advertencia]: Radio mínimo es 2000 km. Ajustando a 2000 km.");
+            } else if (radioParsed > 3000.0) {
+                radioParsed = 3000.0;
+                logConsola("[Advertencia]: Radio máximo es 3000 km. Ajustando a 3000 km.");
             }
             final double radioF = radioParsed;
 
@@ -821,7 +835,7 @@ public class MainGUI extends JFrame {
 
         // ---- BOTÓN: Maniobra de Evasión ----
         btnEvadeShip.addActionListener(e -> {
-            int idx = cmbNaves.getSelectedIndex();
+            int idx = cmbNaves.getSelectedIndex() - 1;
             if (idx >= 0 && engine != null) {
                 engine.evadeShip(idx);
                 logAccionNave(idx, "Maniobra de evasión ejecutada");
@@ -831,7 +845,7 @@ public class MainGUI extends JFrame {
 
         // ---- BOTÓN: Habilidad Especial ----
         btnSpecialAbility.addActionListener(e -> {
-            int idx = cmbNaves.getSelectedIndex();
+            int idx = cmbNaves.getSelectedIndex() - 1;
             if (idx >= 0 && engine != null) {
                 engine.useSpecialAbility(idx);
                 logAccionNave(idx, "Habilidad especial activada");
@@ -841,7 +855,7 @@ public class MainGUI extends JFrame {
 
         // ---- BOTÓN: Recargar Combustible ----
         btnRefuel.addActionListener(e -> {
-            int idx = cmbNaves.getSelectedIndex();
+            int idx = cmbNaves.getSelectedIndex() - 1;
             if (idx >= 0 && engine != null) {
                 engine.refuelShipAtStation(idx);
                 logAccionNave(idx, "Intento de acople y recarga");
@@ -851,7 +865,7 @@ public class MainGUI extends JFrame {
 
         // ---- BOTÓN: Toggle Escudo ----
         btnToggleShield.addActionListener(e -> {
-            int idx = cmbNaves.getSelectedIndex();
+            int idx = cmbNaves.getSelectedIndex() - 1;
             if (idx >= 0 && engine != null) {
                 engine.toggleShield(idx);
                 Spacecraft craft = engine.getTrackedObjects().get(idx);
@@ -961,6 +975,7 @@ public class MainGUI extends JFrame {
 
                     // Actualizar el combo de naves
                     actualizarComboNaves();
+                    actualizarMonitorNave(); // Actualización en tiempo real
 
                     // Repintar el radar
                     radarPanel.repaint();
@@ -1114,6 +1129,7 @@ public class MainGUI extends JFrame {
         
         int selectedIdx = cmbNaves.getSelectedIndex();
         cmbNaves.removeAllItems();
+        cmbNaves.addItem("< Seleccione una nave >");
         List<Spacecraft> naves = engine.getTrackedObjects();
         for (int i = 0; i < naves.size(); i++) {
             Spacecraft s = naves.get(i);
@@ -1121,6 +1137,8 @@ public class MainGUI extends JFrame {
         }
         if (selectedIdx >= 0 && selectedIdx < cmbNaves.getItemCount()) {
             cmbNaves.setSelectedIndex(selectedIdx);
+        } else {
+            cmbNaves.setSelectedIndex(0);
         }
         
         // Restaurar la posición del divider para que no se mueva
