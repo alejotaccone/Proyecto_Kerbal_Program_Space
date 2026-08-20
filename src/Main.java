@@ -19,7 +19,7 @@ public class Main {
             apiKeyInput = api.N2YOApiClient.DEFAULT_KEY;
         }
 
-        SimulationEngine engine = new SimulationEngine(apiKeyInput, 1000.0);
+        SimulationEngine engine = new SimulationEngine(apiKeyInput, 25544); // ISS by default
 
         // Lanzar la segunda consola de monitoreo de nave
         TelemetryLogger.launchMonitorConsole();
@@ -116,38 +116,30 @@ public class Main {
     }
 
     private static void selectCityPrompt(Scanner scanner, SimulationEngine engine) {
-        String[] cities = {
-            "Buenos Aires", "Nueva York", "Tokio", "Londres", 
-            "Madrid", "Paris", "Sidney", "El Cairo", 
-            "Rio de Janeiro", "Ciudad de Mexico"
+        String[] stations = {
+            "Estación Espacial Internacional (ISS) [NORAD: 25544]",
+            "Estación Espacial Tiangong (CSS) [NORAD: 48274]"
         };
 
-        System.out.println("\n--- SELECCION DE ESTACION TERRENA / RADAR POR GEOLOCALIZACION ---");
-        for (int i = 0; i < cities.length; i++) {
-            System.out.printf("  [%d] %s\n", (i + 1), cities[i]);
+        System.out.println("\n--- SELECCION DE ESTACION OBJETIVO ---");
+        for (int i = 0; i < stations.length; i++) {
+            System.out.printf("  [%d] %s\n", (i + 1), stations[i]);
         }
-        System.out.println("  [11] Escribir otra ciudad libremente por teclado...");
-        System.out.print("Selecciona una ciudad (1-11): ");
+        System.out.print("Selecciona una estacion (1-2): ");
 
         String input = scanner.nextLine().trim();
         try {
             int option = Integer.parseInt(input);
-            if (option >= 1 && option <= 10) {
-                engine.setRadarLocationByCity(cities[option - 1], 1000.0);
-            } else if (option == 6) {
-                System.out.print("Escriba el nombre de la ciudad: ");
-                String customCity = scanner.nextLine();
-                System.out.println("Reubicando radar... Espere por favor.");
-                engine.setRadarLocationByCity(customCity, 1000.0);
+            if (option == 1) {
+                engine.setTargetStation(25544);
+            } else if (option == 2) {
+                engine.setTargetStation(48274);
+            } else {
+                System.out.println("Seleccion invalida.");
             }
         } catch (NumberFormatException e) {
-            System.out.print("Escriba el nombre de la ciudad: ");
-            String input2 = scanner.nextLine();
-            System.out.println("Reubicando radar... Espere por favor.");
-            engine.setRadarLocationByCity(input2, 1000.0);
-            return;
+            System.out.println("Opcion invalida.");
         }
-        System.out.println("Seleccion cancelada.");
     }
 
     private static int selectShipPrompt(Scanner scanner, List<Spacecraft> ships, String actionName) {

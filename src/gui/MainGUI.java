@@ -62,12 +62,11 @@ public class MainGUI extends JFrame {
     // =========================================================================
     
     // Panel de configuración (WEST)
-    private JComboBox<String> cmbCiudad;
-    private JTextField txtRadio;
+    private JComboBox<String> cmbEstacion;
     private JTextField txtApiKey;
     private JButton btnIniciar;
     private JButton btnDetener;
-    private JButton btnCambiarCiudad;
+    private JButton btnCambiarEstacion;
     private JLabel lblEstado;
     private JLabel lblTickCount;
     private JLabel lblNavesDetectadas;
@@ -226,38 +225,24 @@ public class MainGUI extends JFrame {
         panel.setBackground(COLOR_PANEL_BG);
 
         // ---- SECCIÓN: CONFIGURACIÓN DEL RADAR ----
-        panel.add(crearEtiquetaSeccion(">> CONFIGURACIÓN DEL RADAR"));
+        panel.add(crearEtiquetaSeccion(">> OBJETIVO DEL CENTRO DE COMANDO"));
         panel.add(Box.createVerticalStrut(8));
 
-        // Campo: Ciudad (ComboBox editable con ciudades predefinidas)
-        panel.add(crearEtiquetaCampo("Ciudad de la Estación Terrena:"));
-        String[] ciudadesPredefinidas = {
-            "Buenos Aires", "Nueva York", "Tokio", "Londres",
-            "Madrid", "París", "Sídney", "El Cairo",
-            "Río de Janeiro", "Ciudad de México", "Berlín",
-            "Moscú", "Pekín", "Seúl", "Toronto"
+        // Campo: Estacion Espacial
+        panel.add(crearEtiquetaCampo("Estación Espacial Objetivo:"));
+        String[] estacionesPredefinidas = {
+            "Estación Espacial Internacional (ISS)",
+            "Estación Espacial Tiangong (CSS)"
         };
-        cmbCiudad = new JComboBox<>(ciudadesPredefinidas);
-        cmbCiudad.setEditable(true);  // Permite escribir una ciudad personalizada
-        cmbCiudad.setSelectedIndex(0);
-        cmbCiudad.setBackground(new Color(20, 30, 20));
-        cmbCiudad.setForeground(COLOR_TEXT_PRIMARY);
-        cmbCiudad.setFont(new Font("Consolas", Font.PLAIN, 13));
-        cmbCiudad.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
-        cmbCiudad.setAlignmentX(Component.LEFT_ALIGNMENT);
-        // Estilizar el editor del combo (la parte donde se escribe)
-        JTextField editorCiudad = (JTextField) cmbCiudad.getEditor().getEditorComponent();
-        editorCiudad.setBackground(new Color(20, 28, 20));
-        editorCiudad.setForeground(COLOR_TEXT_PRIMARY);
-        editorCiudad.setCaretColor(COLOR_TEXT_PRIMARY);
-        editorCiudad.setFont(new Font("Consolas", Font.PLAIN, 13));
-        panel.add(cmbCiudad);
-        panel.add(Box.createVerticalStrut(6));
-
-        // Campo: Radio
-        panel.add(crearEtiquetaCampo("Radio del Radar (km):"));
-        txtRadio = crearCampoTexto("2500");
-        panel.add(txtRadio);
+        cmbEstacion = new JComboBox<>(estacionesPredefinidas);
+        cmbEstacion.setEditable(false);
+        cmbEstacion.setSelectedIndex(0);
+        cmbEstacion.setBackground(new Color(20, 30, 20));
+        cmbEstacion.setForeground(COLOR_TEXT_PRIMARY);
+        cmbEstacion.setFont(new Font("Consolas", Font.PLAIN, 12));
+        cmbEstacion.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        cmbEstacion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(cmbEstacion);
         panel.add(Box.createVerticalStrut(6));
 
         // Campo: API Key
@@ -277,9 +262,9 @@ public class MainGUI extends JFrame {
         panel.add(btnDetener);
         panel.add(Box.createVerticalStrut(6));
 
-        btnCambiarCiudad = crearBoton("[R] CAMBIAR CIUDAD", COLOR_ACCENT_CYAN);
-        btnCambiarCiudad.setEnabled(false);
-        panel.add(btnCambiarCiudad);
+        btnCambiarEstacion = crearBoton("[R] CAMBIAR ESTACIÓN", COLOR_ACCENT_CYAN);
+        btnCambiarEstacion.setEnabled(false);
+        panel.add(btnCambiarEstacion);
         panel.add(Box.createVerticalStrut(15));
 
         // ---- SECCIÓN: ESTADO ----
@@ -370,6 +355,19 @@ public class MainGUI extends JFrame {
         wrapper.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         radarPanel = new RadarPanel();
+        
+        // Agregar interactividad de clics sobre el radar
+        radarPanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int clickedIndex = radarPanel.getShipIndexAt(e.getX(), e.getY());
+                if (clickedIndex >= 0) {
+                    // +1 porque el índice 0 del combobox es "< Seleccione una nave >"
+                    cmbNaves.setSelectedIndex(clickedIndex + 1);
+                }
+            }
+        });
+        
         wrapper.add(radarPanel, BorderLayout.CENTER);
 
         return wrapper;
@@ -555,6 +553,15 @@ public class MainGUI extends JFrame {
             sb.append("Combust:   N/A (Sin motor)\n");
         }
 
+        if (ship instanceof SpaceStation) {
+            SpaceStation station = (SpaceStation) ship;
+            sb.append("\n--- SISTEMAS VITALES ---\n");
+            sb.append(String.format("Oxígeno:   %.1f%%\n", station.getOxygenLevel()));
+            sb.append(String.format("Batería:   %.1f%%\n", station.getBatteryLevel()));
+            sb.append(String.format("Temp:      %.1f °C\n", station.getTemperature()));
+            sb.append("Paneles:   ").append(station.areSolarPanelsDeployed() ? "DESPLEGADOS (Cargando)\n" : "RETRAÍDOS (Consumo)\n");
+        }
+
         if (ship instanceof CrewShuttle) {
             sb.append("\n--- TRIPULACIÓN ---\n");
             CrewShuttle shuttle = (CrewShuttle) ship;
@@ -708,47 +715,21 @@ public class MainGUI extends JFrame {
         
         // ---- BOTÓN: Iniciar Simulación ----
         btnIniciar.addActionListener(e -> {
-            String ciudad = obtenerCiudadSeleccionada();
-            String radioStr = txtRadio.getText().trim();
+            int noradId = obtenerEstacionNoradId();
             String apiKey = txtApiKey.getText().trim();
-
-            if (ciudad.isEmpty()) {
-                logConsola("[ERROR]: Debes ingresar una ciudad para el radar.");
-                return;
-            }
-            
-            double radioParsed = 2500.0; // Default optimal
-            try {
-                radioParsed = Double.parseDouble(radioStr);
-            } catch (NumberFormatException ex) {
-                logConsola("[Advertencia]: Radio inválido. Usando 2500 km por defecto.");
-            }
-            if (radioParsed < 2000.0) {
-                radioParsed = 2000.0;
-                logConsola("[Advertencia]: Radio mínimo es 2000 km. Ajustando a 2000 km.");
-            } else if (radioParsed > 3000.0) {
-                radioParsed = 3000.0;
-                logConsola("[Advertencia]: Radio máximo es 3000 km. Ajustando a 3000 km.");
-            }
-            final double radioF = radioParsed;
 
             // Deshabilitar el botón inmediatamente para evitar doble-clic
             btnIniciar.setEnabled(false);
             
-            logConsola("[Sistema]: Conectando con API N2YO y geolocalizando \"" + ciudad + "\"...");
+            logConsola("[Sistema]: Conectando con API N2YO y contactando estación...");
             logConsola("[Sistema]: Por favor espera, esto puede tomar unos segundos...");
             
             // Ejecutar la conexión al backend en un hilo separado para no congelar la UI
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
                 @Override
                 protected Void doInBackground() {
-                    // Crear el SimulationEngine con la API key y el radio
-                    engine = new SimulationEngine(apiKey, radioF);
-                    
-                    // Si el usuario eligió una ciudad diferente a Buenos Aires, reubicar
-                    if (!ciudad.equalsIgnoreCase("Buenos Aires")) {
-                        engine.setRadarLocationByCity(ciudad, radioF);
-                    }
+                    // Crear el SimulationEngine con la API key y el noradId
+                    engine = new SimulationEngine(apiKey, noradId);
                     return null;
                 }
 
@@ -768,15 +749,11 @@ public class MainGUI extends JFrame {
                         lblEstado.setText("● En Línea");
                         lblEstado.setForeground(COLOR_TEXT_PRIMARY);
                         btnDetener.setEnabled(true);
-                        btnCambiarCiudad.setEnabled(true);
+                        btnCambiarEstacion.setEnabled(true);
                         habilitarAcciones(true);
                         actualizarComboNaves();
 
-                        int navesCount = (engine.getTrackedObjects() != null) ? engine.getTrackedObjects().size() : 0;
-                        lblNavesDetectadas.setText("Naves rastreadas: " + navesCount);
-
-                        logConsola("[Sistema]: ¡Simulación iniciada! Radar posicionado en " + ciudad.toUpperCase() + " con radio " + radioF + " km.");
-                        logConsola("[Sistema]: Rastreando " + navesCount + " objetos orbitales en tiempo real.");
+                        logConsola("[Sistema]: ¡Conexión establecida con la estación!");
                         logConsola("──────────────────────────────────────────────────────────────");
                     } catch (Exception ex) {
                         logConsola("[ERROR]: No se pudo conectar con la API: " + ex.getMessage());
@@ -792,33 +769,17 @@ public class MainGUI extends JFrame {
             detenerSimulacion();
         });
 
-        // ---- BOTÓN: Cambiar Ciudad ----
-        btnCambiarCiudad.addActionListener(e -> {
-            String ciudad = obtenerCiudadSeleccionada();
-            if (ciudad.isEmpty() || engine == null) return;
+        // ---- BOTÓN: Cambiar Estación ----
+        btnCambiarEstacion.addActionListener(e -> {
+            int noradId = obtenerEstacionNoradId();
+            if (engine == null) return;
             
-            String radioStr = txtRadio.getText().trim();
-            double radioParsed = 2500.0;
-            try {
-                radioParsed = Double.parseDouble(radioStr);
-            } catch (NumberFormatException ex) {
-                // ignorar
-            }
-            if (radioParsed < 2000.0) {
-                radioParsed = 2000.0;
-                logConsola("[Advertencia]: Radio mínimo es 2000 km. Ajustando a 2000 km.");
-            } else if (radioParsed > 3000.0) {
-                radioParsed = 3000.0;
-                logConsola("[Advertencia]: Radio máximo es 3000 km. Ajustando a 3000 km.");
-            }
-            final double radioF = radioParsed;
-
-            logConsola("[Sistema]: Reubicando radar a \"" + ciudad + "\" con radio " + radioF + " km...");
+            logConsola("[Sistema]: Reubicando foco a nueva estación...");
             
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
                 @Override
                 protected Void doInBackground() {
-                    engine.setRadarLocationByCity(ciudad, radioF);
+                    engine.setTargetStation(noradId);
                     return null;
                 }
                 @Override
@@ -826,8 +787,8 @@ public class MainGUI extends JFrame {
                     sincronizarDatosRadar();  // Actualizar el radar con la nueva ubicación
                     actualizarComboNaves();
                     int navesCount = (engine.getTrackedObjects() != null) ? engine.getTrackedObjects().size() : 0;
-                    lblNavesDetectadas.setText("Naves rastreadas: " + navesCount);
-                    logConsola("[Sistema]: Radar reubicado. Detectadas " + navesCount + " naves sobre " + ciudad.toUpperCase() + ".");
+                    lblNavesDetectadas.setText("Objetos en sector: " + navesCount);
+                    logConsola("[Sistema]: Radar reubicado a la nueva estación.");
                 }
             };
             worker.execute();
@@ -837,9 +798,7 @@ public class MainGUI extends JFrame {
         btnEvadeShip.addActionListener(e -> {
             int idx = cmbNaves.getSelectedIndex() - 1;
             if (idx >= 0 && engine != null) {
-                engine.evadeShip(idx);
-                logAccionNave(idx, "Maniobra de evasión ejecutada");
-                actualizarMonitorNave();
+                logConsola("[INFO]: Función 'Maniobra de evasión' en desarrollo. Próximamente.");
             }
         });
 
@@ -847,9 +806,7 @@ public class MainGUI extends JFrame {
         btnSpecialAbility.addActionListener(e -> {
             int idx = cmbNaves.getSelectedIndex() - 1;
             if (idx >= 0 && engine != null) {
-                engine.useSpecialAbility(idx);
-                logAccionNave(idx, "Habilidad especial activada");
-                actualizarMonitorNave();
+                logConsola("[INFO]: Función 'Habilidad especial' en desarrollo. Próximamente.");
             }
         });
 
@@ -857,9 +814,7 @@ public class MainGUI extends JFrame {
         btnRefuel.addActionListener(e -> {
             int idx = cmbNaves.getSelectedIndex() - 1;
             if (idx >= 0 && engine != null) {
-                engine.refuelShipAtStation(idx);
-                logAccionNave(idx, "Intento de acople y recarga");
-                actualizarMonitorNave();
+                logConsola("[INFO]: Función 'Acople y recarga' en desarrollo. Próximamente.");
             }
         });
 
@@ -867,11 +822,7 @@ public class MainGUI extends JFrame {
         btnToggleShield.addActionListener(e -> {
             int idx = cmbNaves.getSelectedIndex() - 1;
             if (idx >= 0 && engine != null) {
-                engine.toggleShield(idx);
-                Spacecraft craft = engine.getTrackedObjects().get(idx);
-                String estado = craft.isShieldActive() ? "ACTIVADO" : "DESACTIVADO";
-                logConsola("[Acción]: Escudo de [" + craft.getName() + "] → " + estado);
-                actualizarMonitorNave();
+                logConsola("[INFO]: Función 'Control de escudo' en desarrollo. Próximamente.");
             }
         });
 
@@ -893,6 +844,8 @@ public class MainGUI extends JFrame {
         cmbNaves.addActionListener(e -> {
             if (!isUpdatingCombo) {
                 actualizarMonitorNave();
+                radarPanel.setSelectedIndex(cmbNaves.getSelectedIndex() - 1);
+                radarPanel.repaint();
             }
         });
     }
@@ -1155,10 +1108,11 @@ public class MainGUI extends JFrame {
         btnGenerarCrisis.setEnabled(enabled);
     }
 
-    /** Obtiene la ciudad seleccionada o escrita en el combo de ciudades */
-    private String obtenerCiudadSeleccionada() {
-        Object selected = cmbCiudad.getSelectedItem();
-        return (selected != null) ? selected.toString().trim() : "";
+    private int obtenerEstacionNoradId() {
+        int index = cmbEstacion.getSelectedIndex();
+        if (index == 0) return 25544; // ISS
+        if (index == 1) return 48274; // Tiangong
+        return 25544;
     }
 
     /** Devuelve la hora actual formateada */
@@ -1195,6 +1149,13 @@ public class MainGUI extends JFrame {
         
         // Historial de posiciones para el efecto de estela
         private List<Point2D.Double> trail = new ArrayList<>();
+        
+        // Índice de la nave seleccionada (-1 si ninguna)
+        private int selectedIndex = -1;
+        
+        public void setSelectedIndex(int index) {
+            this.selectedIndex = index;
+        }
         
         RadarPanel() {
             setBackground(COLOR_RADAR_BG);
@@ -1426,6 +1387,20 @@ public class MainGUI extends JFrame {
                     }
                 }
 
+                // Resaltado de nave seleccionada (borde blanco)
+                if (naves.indexOf(craft) == selectedIndex) {
+                    g2.setColor(Color.WHITE);
+                    g2.setStroke(new BasicStroke(1.5f));
+                    int selSize = tamano + 2;
+                    if (esTriangulo) {
+                        int[] xPointsSel = {px, px - selSize, px + selSize};
+                        int[] yPointsSel = {py - selSize, py + selSize, py + selSize};
+                        g2.drawPolygon(xPointsSel, yPointsSel, 3);
+                    } else {
+                        g2.drawOval(px - selSize, py - selSize, selSize * 2, selSize * 2);
+                    }
+                }
+
                 // Indicador de escudo activo
                 if (craft.isShieldActive()) {
                     g2.setColor(new Color(100, 200, 255, 100));
@@ -1444,6 +1419,53 @@ public class MainGUI extends JFrame {
                 }
                 g2.drawString(labelNombre, px + tamano + 3, py + 3);
             }
+        }
+
+        /**
+         * Calcula si las coordenadas del ratón coinciden con alguna de las naves dibujadas.
+         * Retorna el índice de la nave, o -1 si no se clickeó ninguna.
+         */
+        public int getShipIndexAt(int mouseX, int mouseY) {
+            if (naves == null || naves.isEmpty()) return -1;
+            
+            int w = getWidth();
+            int h = getHeight();
+            int cx = w / 2;
+            int cy = h / 2;
+            int radio = Math.min(cx, cy) - 30;
+            
+            for (int i = naves.size() - 1; i >= 0; i--) {
+                Spacecraft craft = naves.get(i);
+                GeoPosition pos = craft.getPosition();
+                if (pos == null) continue;
+
+                double deltaLat = pos.getLatitude() - centroLat;
+                double deltaLng = pos.getLongitude() - centroLng;
+                
+                double kmPerDegLat = 111.0;
+                double kmPerDegLng = 111.0 * Math.cos(Math.toRadians(centroLat));
+                
+                double distXKm = deltaLng * kmPerDegLng;
+                double distYKm = -deltaLat * kmPerDegLat;
+                
+                double escala = (double) radio / radioKm;
+                int px = cx + (int)(distXKm * escala);
+                int py = cy + (int)(distYKm * escala);
+
+                double distPixel = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
+                if (distPixel > radio) {
+                    double factor = radio / distPixel;
+                    px = cx + (int)((px - cx) * factor);
+                    py = cy + (int)((py - cy) * factor);
+                }
+
+                // Check distance to mouse click (radius of 10 pixels for ease of clicking)
+                double distToMouse = Math.sqrt((px - mouseX) * (px - mouseX) + (py - mouseY) * (py - mouseY));
+                if (distToMouse <= 10.0) {
+                    return i;
+                }
+            }
+            return -1;
         }
     }
 
@@ -1482,6 +1504,7 @@ public class MainGUI extends JFrame {
         if (engine == null) return;
         
         radarPanel.setNaves(engine.getTrackedObjects());
+        radarPanel.setSelectedIndex(cmbNaves.getSelectedIndex() - 1);
         
         Radar radar = engine.getRadar();
         if (radar != null && radar.getObserverPosition() != null) {

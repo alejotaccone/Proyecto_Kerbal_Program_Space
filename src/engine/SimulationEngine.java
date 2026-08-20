@@ -20,20 +20,20 @@ public class SimulationEngine {
     private List<Spacecraft> trackedObjects;
     private Radar radar;
     private N2YOApiClient apiClient;
-    private GeoCodingApiClient geoCodingClient;
     private int monitoredShipIndex;
     private String lastMonitorAction;
+    private int targetStationNoradId;
 
-    public SimulationEngine(String apiKey, double radiusKm) {
+    public SimulationEngine(String apiKey, int targetNoradId) {
         this.currentTick = 0;
         this.trackedObjects = new ArrayList<>();
-        this.geoCodingClient = new GeoCodingApiClient();
-        this.radar = new Radar("Buenos Aires", -34.60, -58.38, 25.0, radiusKm);
         this.apiClient = new N2YOApiClient(apiKey);
         this.monitoredShipIndex = -1;
         this.lastMonitorAction = "";
+        // Inicializar el radar con coordenadas 0,0 por defecto
+        this.radar = new Radar("Estación", 0.0, 0.0, 400.0, 100.0);
 
-        setRadarLocationByCity("Buenos Aires", radiusKm);
+        setTargetStation(targetNoradId);
     }
 
     // ==================== MONITOR DE NAVE ====================
@@ -62,19 +62,26 @@ public class SimulationEngine {
     // ==================== RADAR Y N2YO ====================
 
     /**
-     * Cambia la ubicación de la estación terrena / radar consultando la API de Geolocalización,
-     * y obtiene de la API N2YO los satélites que están sobrevolando esa ciudad.
+     * Establece la Estación Espacial objetivo y la obtiene de la API.
      */
-    public void setRadarLocationByCity(String cityName, double radiusKm) {
-        GeoPosition cityCoords = geoCodingClient.fetchCityCoordinates(cityName);
-        this.radar = new Radar(cityName, cityCoords.getLatitude(), cityCoords.getLongitude(), cityCoords.getAltitude(), radiusKm);
+    public void setTargetStation(int noradId) {
+        this.targetStationNoradId = noradId;
         
-        List<Spacecraft> satellitesAboveCity = apiClient.fetchSatellitesAbove(cityCoords, radiusKm);
-        if (satellitesAboveCity != null && !satellitesAboveCity.isEmpty()) {
-            this.trackedObjects = satellitesAboveCity;
-            this.monitoredShipIndex = -1; // Resetear selección al cambiar de ciudad
-            TelemetryLogger.printMessage("Radar reubicado exitosamente en " + cityName.toUpperCase() 
-                    + " (" + cityCoords.toString() + "). Se detectaron " + trackedObjects.size() + " satélites reales sobrevolando el área.");
+        Spacecraft station = apiClient.fetchRealSatellite(noradId);
+        
+        if (station != null) {
+            this.trackedObjects.clear();
+            this.trackedObjects.add(station);
+            
+            // Actualizar el "radar" local para que se centre en la estación
+            GeoPosition pos = station.getPosition();
+            this.radar = new Radar(station.getName(), pos.getLatitude(), pos.getLongitude(), pos.getAltitude(), 100.0);
+            
+            this.monitoredShipIndex = 0; // Seleccionar automáticamente la estación
+            TelemetryLogger.printMessage("Centro de Comando conectado exitosamente con: " + station.getName() 
+                    + " (" + pos.toString() + ").");
+        } else {
+            TelemetryLogger.printMessage("ERROR: No se pudo conectar con la estación NORAD ID: " + noradId);
         }
     }
 
@@ -91,6 +98,13 @@ public class SimulationEngine {
                 craft.getPosition().setLatitude(updatedPos.getLatitude());
                 craft.getPosition().setLongitude(updatedPos.getLongitude());
                 craft.getPosition().setAltitude(updatedPos.getAltitude());
+                
+                // Si esta es la estación central, actualizar el centro del radar local
+                if (craft.getNoradId() == targetStationNoradId && radar != null) {
+                    radar.getObserverPosition().setLatitude(updatedPos.getLatitude());
+                    radar.getObserverPosition().setLongitude(updatedPos.getLongitude());
+                    radar.getObserverPosition().setAltitude(updatedPos.getAltitude());
+                }
             }
         }
     }
@@ -110,10 +124,17 @@ public class SimulationEngine {
         // Mover cada nave en órbita según sus reglas de polimorfismo
         for (Spacecraft craft : trackedObjects) {
             craft.move();
+            
+            // Actualizar el centro del radar para que siga a la estación objetivo CADA TICK de forma fluida
+            if (craft.getNoradId() == targetStationNoradId && radar != null) {
+                radar.getObserverPosition().setLatitude(craft.getPosition().getLatitude());
+                radar.getObserverPosition().setLongitude(craft.getPosition().getLongitude());
+                radar.getObserverPosition().setAltitude(craft.getPosition().getAltitude());
+            }
         }
 
-        // Sincronizar actualización de posiciones N2YO solo cada 10 segundos para evitar Rate Limit
-        if (currentTick == 1 || currentTick % 10 == 0) {
+        // Sincronizar actualización de posiciones N2YO cada 5 segundos para balancear precisión y Rate Limit
+        if (currentTick == 1 || currentTick % 5 == 0) {
             syncWithN2YO();
         }
 
