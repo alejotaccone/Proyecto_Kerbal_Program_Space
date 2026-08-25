@@ -37,7 +37,6 @@ public class Main {
             System.out.println("3. Ejecutar Maniobra de Evasion Orbital en una Nave");
             System.out.println("4. Activar Habilidad Especial de la Nave");
             System.out.println("5. Intentar Acople y Recarga de Combustible en la Estacion (ISS)");
-            System.out.println("6. Activar / Desactivar Escudo de Proteccion");
             System.out.println("7. Configurar / Cambiar API Key de N2YO");
             System.out.println("8. Seleccionar Nave para Monitor (Segunda Consola)");
             System.out.println("0. Salir del Simulador");
@@ -72,13 +71,6 @@ public class Main {
                     int shipRefuelIndex = selectShipPrompt(scanner, engine.getTrackedObjects(), "repostar en la Estacion");
                     if (shipRefuelIndex != -1) {
                         engine.refuelShipAtStation(shipRefuelIndex);
-                    }
-                    break;
-
-                case "6":
-                    int shipShieldIndex = selectShipPrompt(scanner, engine.getTrackedObjects(), "conmutar escudo de proteccion");
-                    if (shipShieldIndex != -1) {
-                        engine.toggleShield(shipShieldIndex);
                     }
                     break;
 

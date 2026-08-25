@@ -14,9 +14,8 @@ public class ExplorationProbe extends Spacecraft {
 
     @Override
     public void move() {
-        if (fuelTank != null && fuelTank.consume()) {
-            // Avance orbital más rápido por ser ligera
-            position.setLongitude(position.getLongitude() + 0.12);
+        if (fuelTank != null) {
+            fuelTank.consume();
         }
     }
 

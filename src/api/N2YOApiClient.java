@@ -142,7 +142,7 @@ public class N2YOApiClient {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .GET()
-                    .timeout(Duration.ofSeconds(4))
+                    .timeout(Duration.ofSeconds(2))
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

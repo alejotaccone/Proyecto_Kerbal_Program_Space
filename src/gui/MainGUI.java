@@ -76,7 +76,6 @@ public class MainGUI extends JFrame {
     private JButton btnEvadeShip;
     private JButton btnSpecialAbility;
     private JButton btnRefuel;
-    private JButton btnToggleShield;
     private JButton btnGenerarCrisis;
 
     // Panel central del radar (CENTER)
@@ -312,12 +311,7 @@ public class MainGUI extends JFrame {
         btnRefuel = crearBoton("[+] Acoplar y Recargar", COLOR_ACCENT_ORANGE);
         btnRefuel.setEnabled(false);
         panel.add(btnRefuel);
-        panel.add(Box.createVerticalStrut(4));
-
-        btnToggleShield = crearBoton("[O] Activar/Desact. Escudo", COLOR_TEXT_SECONDARY);
-        btnToggleShield.setEnabled(false);
-        panel.add(btnToggleShield);
-        panel.add(Box.createVerticalStrut(8));
+        panel.add(Box.createVerticalStrut(6));
         
         btnGenerarCrisis = crearBoton("[!] Generar Anomalía", COLOR_ACCENT_RED);
         btnGenerarCrisis.setEnabled(false);
@@ -544,7 +538,6 @@ public class MainGUI extends JFrame {
         
         sb.append("--- ESTADO ---\n");
         sb.append("Velocidad: ").append(String.format("%.1f km/h\n", ship.getVelocityKmH()));
-        sb.append("Escudo:    ").append(ship.isShieldActive() ? "ACTIVADO\n" : "DESACTIVADO\n");
         
         if (ship.getFuelTank() != null) {
             sb.append(String.format("Combust:   %.1f%%\n", ship.getFuelTank().getPercentage()));
@@ -693,8 +686,8 @@ public class MainGUI extends JFrame {
      * 2. radarSweepTimer: Anima el barrido del radar cada 30ms (~33 FPS)
      */
     private void configurarTimers() {
-        // Timer principal de simulación: cada tick llama al engine
-        simulationTimer = new javax.swing.Timer(1000, e -> ejecutarTickSimulacion());
+        // Timer principal de simulación: cada tick llama al engine cada 10000ms (10 segundos)
+        simulationTimer = new javax.swing.Timer(10000, e -> ejecutarTickSimulacion());
 
         // Timer de animación del radar: rotación suave del barrido
         radarSweepTimer = new javax.swing.Timer(30, e -> {
@@ -818,14 +811,6 @@ public class MainGUI extends JFrame {
             }
         });
 
-        // ---- BOTÓN: Toggle Escudo ----
-        btnToggleShield.addActionListener(e -> {
-            int idx = cmbNaves.getSelectedIndex() - 1;
-            if (idx >= 0 && engine != null) {
-                logConsola("[INFO]: Función 'Control de escudo' en desarrollo. Próximamente.");
-            }
-        });
-
         // ---- BOTÓN: Generar Anomalía (Crisis) ----
         btnGenerarCrisis.addActionListener(e -> {
             if (engine != null && engine.getTrackedObjects() != null && !engine.getTrackedObjects().isEmpty()) {
@@ -871,8 +856,8 @@ public class MainGUI extends JFrame {
         tickCount++;
         final int tickActual = tickCount;
 
-        // Indicar visualmente que el tick está en proceso
-        lblTickCount.setText("TICK: " + tickActual + " | SINCRONIZANDO... | " + obtenerHora());
+        // Indicar el tick actual y mantener el estado EN LÍNEA fluido
+        lblTickCount.setText("TICK: " + tickActual + " | ESTADO: EN LÍNEA | " + obtenerHora());
 
         // Ejecutar engine.tick() en un hilo de fondo para no bloquear el EDT
         SwingWorker<Void, Void> tickWorker = new SwingWorker<>() {
@@ -978,7 +963,6 @@ public class MainGUI extends JFrame {
                 
                 Object[] opciones = {
                     "Forzar Evasión (-15L Combustible)",
-                    "Resistir con Escudos (Requiere Escudo Activo)",
                     "Ignorar (Aceptar Impacto Crítico)"
                 };
                 
@@ -999,14 +983,6 @@ public class MainGUI extends JFrame {
                         logConsola("[CRISIS]: ¡Evasión exitosa! [" + target.getName() + "] maniobró a tiempo.");
                     } else {
                         logConsola("[CRISIS FATAL]: [" + target.getName() + "] no tuvo combustible para evadir. NAVE DESTRUIDA.");
-                        engine.removeShip(target);
-                    }
-                } else if (seleccion == 1) { // Escudos
-                    if (target.isShieldActive()) {
-                        logConsola("[CRISIS]: [" + target.getName() + "] resistió el impacto. El escudo ha sido sobrecargado y destruido.");
-                        target.deactivateShield();
-                    } else {
-                        logConsola("[CRISIS FATAL]: [" + target.getName() + "] intentó resistir sin escudos activados. NAVE DESTRUIDA.");
                         engine.removeShip(target);
                     }
                 } else { // Ignorar
@@ -1088,8 +1064,10 @@ public class MainGUI extends JFrame {
             Spacecraft s = naves.get(i);
             cmbNaves.addItem((i + 1) + ". " + s.getName() + " (" + s.getType() + ")");
         }
-        if (selectedIdx >= 0 && selectedIdx < cmbNaves.getItemCount()) {
+        if (selectedIdx > 0 && selectedIdx < cmbNaves.getItemCount()) {
             cmbNaves.setSelectedIndex(selectedIdx);
+        } else if (cmbNaves.getItemCount() > 1) {
+            cmbNaves.setSelectedIndex(1); // Seleccionar la 1ra nave por defecto
         } else {
             cmbNaves.setSelectedIndex(0);
         }
@@ -1097,6 +1075,9 @@ public class MainGUI extends JFrame {
         // Restaurar la posición del divider para que no se mueva
         splitPane.setDividerLocation(dividerPos);
         isUpdatingCombo = false;
+
+        // Actualizar la información y la imagen en el panel lateral derecho automáticamente
+        actualizarMonitorNave();
     }
 
     /** Habilita o deshabilita los botones de acciones sobre naves */
@@ -1104,7 +1085,6 @@ public class MainGUI extends JFrame {
         btnEvadeShip.setEnabled(enabled);
         btnSpecialAbility.setEnabled(enabled);
         btnRefuel.setEnabled(enabled);
-        btnToggleShield.setEnabled(enabled);
         btnGenerarCrisis.setEnabled(enabled);
     }
 
@@ -1305,9 +1285,9 @@ public class MainGUI extends JFrame {
                 if (pos == null) continue;
 
                 // Mapear coordenadas geográficas (lat/lng) a píxeles del radar
-                // Usar una proyección simple centrada en el observador
-                double deltaLat = pos.getLatitude() - centroLat;
-                double deltaLng = pos.getLongitude() - centroLng;
+                // Si la nave es la Estación Espacial objetivo, se ubica en el centro exacto del radar (cx, cy)
+                double deltaLat = (craft instanceof SpaceStation) ? 0.0 : (pos.getLatitude() - centroLat);
+                double deltaLng = (craft instanceof SpaceStation) ? 0.0 : (pos.getLongitude() - centroLng);
 
                 // Convertir diferencias de grados a proporción del radio
                 // ~111 km por grado de latitud, ~85 km por grado de longitud a lat ~35°
@@ -1399,13 +1379,6 @@ public class MainGUI extends JFrame {
                     } else {
                         g2.drawOval(px - selSize, py - selSize, selSize * 2, selSize * 2);
                     }
-                }
-
-                // Indicador de escudo activo
-                if (craft.isShieldActive()) {
-                    g2.setColor(new Color(100, 200, 255, 100));
-                    g2.setStroke(new BasicStroke(1.5f));
-                    g2.drawOval(px - tamano - 3, py - tamano - 3, (tamano + 3) * 2, (tamano + 3) * 2);
                 }
 
                 // Etiqueta del nombre de la nave

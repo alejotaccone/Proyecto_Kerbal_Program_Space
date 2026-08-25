@@ -9,7 +9,6 @@ public abstract class Spacecraft {
     protected int noradId;
     protected GeoPosition position;
     protected FuelTank fuelTank;
-    protected boolean shieldActive;
     protected double velocityKmH;
     protected String img;
 
@@ -19,7 +18,6 @@ public abstract class Spacecraft {
         this.noradId = noradId;
         this.position = position;
         this.fuelTank = fuelTank;
-        this.shieldActive = false;
         this.velocityKmH = velocityKmH;
         this.img = "Spacecraft.jpg";
     }
@@ -38,14 +36,6 @@ public abstract class Spacecraft {
             }
         }
         return false;
-    }
-
-    public void activateShield() {
-        this.shieldActive = true;
-    }
-
-    public void deactivateShield() {
-        this.shieldActive = false;
     }
 
     public String getId() {
@@ -68,10 +58,6 @@ public abstract class Spacecraft {
         return fuelTank;
     }
 
-    public boolean isShieldActive() {
-        return shieldActive;
-    }
-
     public double getVelocityKmH() {
         return velocityKmH;
     }
@@ -91,8 +77,7 @@ public abstract class Spacecraft {
     @Override
     public String toString() {
         String fuelStr = (fuelTank != null) ? fuelTank.toString() : "N/A (Sin motor)";
-        String shieldStr = shieldActive ? " [ESCUDO ACTIVO]" : "";
-        return String.format("%s (%s) | NORAD: %d | Pos: %s | Combustible: %s%s", 
-                name, getType(), noradId, position.toString(), fuelStr, shieldStr);
+        return String.format("%s (%s) | NORAD: %d | Pos: %s | Combustible: %s", 
+                name, getType(), noradId, position.toString(), fuelStr);
     }
 }

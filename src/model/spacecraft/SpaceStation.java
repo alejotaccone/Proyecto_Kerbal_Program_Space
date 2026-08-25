@@ -31,9 +31,7 @@ public class SpaceStation extends Spacecraft {
 
     @Override
     public void move() {
-        // Órbita estable constante (movimiento físico)
-        position.setLongitude(position.getLongitude() + 0.07);
-        
+        // La posición en órbita se sincroniza en tiempo real desde la API N2YO.
         // Simulación de sistemas internos (se ejecuta 1 vez por segundo/tick)
         
         // 1. Oxígeno: Se consume lentamente por la tripulación

@@ -144,7 +144,6 @@ public class TelemetryLogger {
             sb.append("\n------------------------------------------------------------------\n");
             sb.append("  ESTADO GENERAL\n");
             sb.append("------------------------------------------------------------------\n");
-            sb.append("  Escudo:    ").append(ship.isShieldActive() ? ">> ACTIVADO <<" : "DESACTIVADO").append("\n");
             sb.append(String.format("  Velocidad: %.1f km/h\n", ship.getVelocityKmH()));
 
             // Información específica según el tipo de nave (polimorfismo)

@@ -85,6 +85,21 @@ public class SimulationEngine {
         }
     }
 
+    private volatile boolean isSyncingN2YO = false;
+
+    public void syncWithN2YOAsync() {
+        if (isSyncingN2YO || trackedObjects == null || trackedObjects.isEmpty()) return;
+        isSyncingN2YO = true;
+        
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                syncWithN2YO();
+            } finally {
+                isSyncingN2YO = false;
+            }
+        });
+    }
+
     public void syncWithN2YO() {
         if (trackedObjects == null || trackedObjects.isEmpty()) return;
         for (Spacecraft craft : trackedObjects) {
@@ -115,12 +130,6 @@ public class SimulationEngine {
         currentTick++;
         TelemetryLogger.printHeader(currentTick, radar.getObserverCity());
 
-        // Lógica de Evento Crítico: 8% de probabilidad de generar un RogueDebris apuntando a una nave
-        // (Desactivado temporalmente por pedido del usuario para evitar generación automática)
-        // if (trackedObjects.size() > 0 && Math.random() < 0.08) {
-        //     triggerCrisisEvent();
-        // }
-
         // Mover cada nave en órbita según sus reglas de polimorfismo
         for (Spacecraft craft : trackedObjects) {
             craft.move();
@@ -133,9 +142,18 @@ public class SimulationEngine {
             }
         }
 
-        // Sincronizar actualización de posiciones N2YO cada 5 segundos para balancear precisión y Rate Limit
-        if (currentTick == 1 || currentTick % 5 == 0) {
-            syncWithN2YO();
+        // Lógica de generación probabilística de objetos por tick (duración tick: 10 segundos)
+        double rand = Math.random();
+        if (rand < 0.15) {
+            spawnSpaceDebris();   // 15% probabilidad por tick (~1 basura pasiva cada minuto)
+        } else if (rand < 0.20) {
+            triggerCrisisEvent(); // 5% probabilidad por tick (~1 amenaza hostil cada 3-4 minutos)
+        }
+
+        // Sincronizar actualización de posiciones N2YO en segundo plano (asíncrono)
+        // Esto evita que la simulación y la UI se traven esperando peticiones HTTP.
+        if (currentTick == 1 || currentTick % 10 == 0) {
+            syncWithN2YOAsync();
         }
 
         // Mostrar estado actual y telemetría por consola
@@ -146,8 +164,47 @@ public class SimulationEngine {
         TelemetryLogger.printAlerts(alerts);
     }
     
-    // ==================== EVENTOS DE CRISIS ====================
+    // ==================== EVENTOS DE CRISIS Y BASURA ESPACIAL ====================
     
+    public boolean spawnSpaceDebris() {
+        if (trackedObjects == null || trackedObjects.isEmpty()) return false;
+        
+        long countDebris = trackedObjects.stream()
+                .filter(s -> (s instanceof model.spacecraft.SpaceDebris && !(s instanceof model.spacecraft.RogueDebris)))
+                .count();
+                
+        if (countDebris >= 3) return false; // Límite máximo de 3 basuras pasivas en pantalla
+        
+        Spacecraft station = null;
+        for (Spacecraft s : trackedObjects) {
+            if (s instanceof SpaceStation) {
+                station = s; break;
+            }
+        }
+        if (station == null && !trackedObjects.isEmpty()) station = trackedObjects.get(0);
+        
+        if (station != null) {
+            double angle = Math.random() * 2 * Math.PI;
+            double distDeg = 0.25 + Math.random() * 0.55; // Entre 25 km y 80 km
+            double spawnLat = station.getPosition().getLatitude() + Math.cos(angle) * distDeg;
+            double spawnLng = station.getPosition().getLongitude() + Math.sin(angle) * distDeg;
+            
+            int idNum = (int)(Math.random() * 9000 + 1000);
+            model.spacecraft.SpaceDebris debris = new model.spacecraft.SpaceDebris(
+                    "DEB-" + idNum,
+                    "Restos NORAD-" + idNum,
+                    90000 + idNum,
+                    new GeoPosition(spawnLat, spawnLng, station.getPosition().getAltitude()),
+                    6.5 + Math.random() * 3.0
+            );
+            
+            trackedObjects.add(debris);
+            TelemetryLogger.printMessage("Radar detectó nuevo fragmento de Basura Espacial [" + debris.getName() + "].");
+            return true;
+        }
+        return false;
+    }
+
     public boolean triggerCrisisEvent() {
         if (trackedObjects == null || trackedObjects.isEmpty()) return false;
         
@@ -159,32 +216,30 @@ public class SimulationEngine {
         }
         
         if (!hasRogue) {
-            // Elegir un objetivo al azar que no sea estación o basura
             Spacecraft target = null;
-            List<Spacecraft> temp = new ArrayList<>(trackedObjects);
-            java.util.Collections.shuffle(temp);
-            for (Spacecraft s : temp) {
-                if (!(s instanceof SpaceStation) && !(s instanceof model.spacecraft.SpaceDebris)) {
-                    target = s;
-                    break;
+            for (Spacecraft s : trackedObjects) {
+                if (s instanceof SpaceStation) {
+                    target = s; break;
                 }
             }
+            if (target == null && !trackedObjects.isEmpty()) target = trackedObjects.get(0);
+            
             if (target != null) {
-                // Aparecer a ~150km de distancia en una dirección aleatoria
                 double angle = Math.random() * 2 * Math.PI;
-                double distDeg = 1.5; // aprox 150km
+                double distDeg = 0.9; // ~90km de distancia en el sector
                 double spawnLat = target.getPosition().getLatitude() + Math.cos(angle) * distDeg;
                 double spawnLng = target.getPosition().getLongitude() + Math.sin(angle) * distDeg;
                 
+                int idNum = (int)(Math.random() * 900 + 100);
                 model.spacecraft.RogueDebris rogue = new model.spacecraft.RogueDebris(
-                        "RD-" + (int)(Math.random()*1000), 
-                        "ANOMALIA CINETICA", 
+                        "RD-" + idNum, 
+                        "ANOMALÍA CINÉTICA RD-" + idNum, 
                         new GeoPosition(spawnLat, spawnLng, target.getPosition().getAltitude()), 
                         9.5, 
                         target);
                 
                 trackedObjects.add(rogue);
-                TelemetryLogger.printMessage("¡ALERTA DEL SISTEMA! Anomalía detectada entrando al sector del radar.");
+                TelemetryLogger.printMessage("¡ALERTA CRÍTICA DEL RADAR! Anomalía Cinética (Rogue Debris) ingresó al sector en rumbo de impacto.");
                 return true;
             }
         }
@@ -256,24 +311,6 @@ public class SimulationEngine {
             TelemetryLogger.printMessage(result);
             this.monitoredShipIndex = shipIndex;
             this.lastMonitorAction = result;
-            updateMonitor();
-        }
-    }
-
-    public void toggleShield(int shipIndex) {
-        if (shipIndex >= 0 && shipIndex < trackedObjects.size()) {
-            Spacecraft craft = trackedObjects.get(shipIndex);
-            String msg;
-            if (craft.isShieldActive()) {
-                craft.deactivateShield();
-                msg = "Escudo de la nave [" + craft.getName() + "] DESACTIVADO.";
-            } else {
-                craft.activateShield();
-                msg = "Escudo de la nave [" + craft.getName() + "] ACTIVADO.";
-            }
-            TelemetryLogger.printMessage(msg);
-            this.monitoredShipIndex = shipIndex;
-            this.lastMonitorAction = msg;
             updateMonitor();
         }
     }

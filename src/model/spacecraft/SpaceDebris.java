@@ -14,9 +14,7 @@ public class SpaceDebris extends Spacecraft {
 
     @Override
     public void move() {
-        // Basura espacial a la deriva incontrolada
-        position.setLatitude(position.getLatitude() + (Math.random() * 0.04 - 0.02));
-        position.setLongitude(position.getLongitude() + 0.1);
+        // La posición se sincroniza en tiempo real desde la API N2YO.
     }
 
     @Override

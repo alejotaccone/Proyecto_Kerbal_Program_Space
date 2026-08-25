@@ -23,8 +23,8 @@ public class CrewShuttle extends Spacecraft {
 
     @Override
     public void move() {
-        if (fuelTank != null && fuelTank.consume()) {
-            position.setLongitude(position.getLongitude() + 0.08);
+        if (fuelTank != null) {
+            fuelTank.consume();
         }
     }
 

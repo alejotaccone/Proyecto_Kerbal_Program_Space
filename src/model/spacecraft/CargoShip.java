@@ -16,9 +16,8 @@ public class CargoShip extends Spacecraft {
 
     @Override
     public void move() {
-        if (fuelTank != null && fuelTank.consume()) {
-            // Avanza 0.05 grados de longitud por tick (simulación orbital lineal)
-            position.setLongitude(position.getLongitude() + 0.05);
+        if (fuelTank != null) {
+            fuelTank.consume();
         }
     }
 
