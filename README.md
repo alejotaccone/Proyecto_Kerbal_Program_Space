@@ -115,4 +115,4 @@ java -cp bin Main
 * Datos orbitales en vivo provistos por [N2YO.com](https://www.n2yo.com/).
 * © 2026 Alejo Taccone - Santiago Sapia. Todos los derechos reservados.
 
-* <span style="color:red">**ADVERTENCIA:**</span>: Queda estrictamente prohibida la reproducción, distribución, modificación o comunicación pública, total o parcial, de este contenido sin la autorización previa y por escrito del titular de los derechos de autor. Cualquier uso no autorizado constituirá una violación de los derechos de propiedad intelectual y podrá dar lugar a acciones legales civiles y penales.
+* <span style="color:red">**ADVERTENCIA**</span>: Queda estrictamente prohibida la reproducción, distribución, modificación o comunicación pública, total o parcial, de este contenido sin la autorización previa y por escrito del titular de los derechos de autor. Cualquier uso no autorizado constituirá una violación de los derechos de propiedad intelectual y podrá dar lugar a acciones legales civiles y penales.
