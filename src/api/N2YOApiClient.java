@@ -27,13 +27,19 @@ public class N2YOApiClient {
     private HttpClient httpClient;
     private boolean onlineMode;
 
+    public static final int NORAD_ISS = 25544;       // Estación Espacial Internacional (ISS)
+    public static final int NORAD_HUBBLE = 20580;    // Telescopio Espacial Hubble (HST)
+    public static final int NORAD_TIANGONG = 48274;  // Estación Espacial China Tiangong (CSS)
+    public static final int NORAD_NOAA19 = 33591;    // Satélite de observación NOAA 19
+    public static final int NORAD_ONEWEB = 48212;    // Satélite / Restos en órbita polar ONEWEB-0179
+
     // Lista de NORAD IDs reales de respaldo si la ciudad elegida no tiene satélites inmediatos sobrevolando
     private static final int[] REAL_NORAD_IDS = {
-        25544, // Estación Espacial Internacional (ISS)
-        20580, // Telescopio Espacial Hubble (HST)
-        48274, // Estación Espacial China Tiangong (CSS)
-        33591, // Satélite de observación NOAA 19
-        48212  // Satélite / Restos en órbita polar ONEWEB-0179
+        NORAD_ISS,
+        NORAD_HUBBLE,
+        NORAD_TIANGONG,
+        NORAD_NOAA19,
+        NORAD_ONEWEB
     };
 
     public N2YOApiClient(String apiKey) {
@@ -45,36 +51,44 @@ public class N2YOApiClient {
     }
 
     /**
+     * Realiza una petición HTTP GET de forma reutilizable y segura.
+     */
+    private String sendGet(String url, Duration timeout) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .timeout(timeout)
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                return response.body();
+            }
+        } catch (Exception e) {
+            // Manejo de errores de conexión o timeout
+        }
+        return null;
+    }
+
+    /**
      * Consulta el servicio N2YO /above para obtener los satélites reales sobrevolando las coordenadas dadas.
      */
     public List<Spacecraft> fetchSatellitesAbove(GeoPosition observerPos, double searchRadiusKm) {
         List<Spacecraft> detectedAbove = new ArrayList<>();
         if (observerPos == null) return fetchLiveSpaceObjects();
 
-        try {
-            // N2YO requiere el radio de búsqueda en GRADOS. 1 grado latitud ≈ 111 km.
-            double radiusDeg = searchRadiusKm / 111.0;
-            if (radiusDeg > 90.0) radiusDeg = 90.0; // Límite máximo de la API
-            if (radiusDeg < 1.0) radiusDeg = 1.0;   // Límite mínimo para no fallar
-            
-            // N2YO /above/{lat}/{lng}/{alt}/{radius_deg}/{category_id}/&apiKey={key}
-            // Se fuerza Locale.US para que la latitud y longitud usen el punto '.' como separador decimal en la URL HTTP.
-            String url = String.format(Locale.US, "%sabove/%.4f/%.4f/%.1f/%.1f/0/&apiKey=%s", 
-                    BASE_URL, observerPos.getLatitude(), observerPos.getLongitude(), observerPos.getAltitude(), radiusDeg, apiKey);
+        // N2YO requiere el radio de búsqueda en GRADOS. 1 grado latitud ≈ 111 km.
+        double radiusDeg = searchRadiusKm / 111.0;
+        if (radiusDeg > 90.0) radiusDeg = 90.0; // Límite máximo de la API
+        if (radiusDeg < 1.0) radiusDeg = 1.0;   // Límite mínimo para no fallar
+        
+        String url = String.format(Locale.US, "%sabove/%.4f/%.4f/%.1f/%.1f/0/&apiKey=%s", 
+                BASE_URL, observerPos.getLatitude(), observerPos.getLongitude(), observerPos.getAltitude(), radiusDeg, apiKey);
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .timeout(Duration.ofSeconds(5))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() == 200 && response.body().contains("\"above\":")) {
-                parseSatellitesAboveFromJson(response.body(), detectedAbove);
-            }
-        } catch (Exception e) {
-            // Fallback en caso de error
+        String responseBody = sendGet(url, Duration.ofSeconds(5));
+        if (responseBody != null && responseBody.contains("\"above\":")) {
+            parseSatellitesAboveFromJson(responseBody, detectedAbove);
         }
 
         // Si la consulta /above no trajo objetos por límite de la API, se recurre a los satélites globales reales
@@ -136,24 +150,15 @@ public class N2YOApiClient {
      * Petición HTTP a N2YO para actualizar la posición en tiempo real de un satélite individual.
      */
     public GeoPosition fetchRealSatellitePosition(int noradId, double fallbackLat, double fallbackLng, double fallbackAlt) {
-        try {
-            String url = String.format(Locale.US, "%spositions/%d/%.4f/%.4f/%.1f/1/&apiKey=%s", 
-                    BASE_URL, noradId, fallbackLat, fallbackLng, fallbackAlt, apiKey);
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .timeout(Duration.ofSeconds(2))
-                    .build();
+        String url = String.format(Locale.US, "%spositions/%d/%.4f/%.4f/%.1f/1/&apiKey=%s", 
+                BASE_URL, noradId, fallbackLat, fallbackLng, fallbackAlt, apiKey);
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() == 200 && response.body().contains("\"positions\":")) {
-                GeoPosition pos = parsePositionFromJson(response.body());
-                if (pos != null) return pos;
-            }
-        } catch (Exception e) {
-            // Ignorar errores
+        String responseBody = sendGet(url, Duration.ofSeconds(2));
+        if (responseBody != null && responseBody.contains("\"positions\":")) {
+            GeoPosition pos = parsePositionFromJson(responseBody);
+            if (pos != null) return pos;
         }
+
         return new GeoPosition(fallbackLat, fallbackLng, fallbackAlt);
     }
 
@@ -161,30 +166,19 @@ public class N2YOApiClient {
      * Petición HTTP a N2YO para un satélite individual.
      */
     public Spacecraft fetchRealSatellite(int noradId) {
-        try {
-            String url = String.format(Locale.US, "%spositions/%d/-34.60/-58.38/25/1/&apiKey=%s", BASE_URL, noradId, apiKey);
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .timeout(Duration.ofSeconds(4))
-                    .build();
+        String url = String.format(Locale.US, "%spositions/%d/-34.60/-58.38/25/1/&apiKey=%s", BASE_URL, noradId, apiKey);
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() == 200 && response.body().contains("\"positions\":")) {
-                String json = response.body();
-                String satName = extractJsonString(json, "\"satname\":");
-                if (satName == null || satName.trim().isEmpty()) {
-                    satName = "NORAD-" + noradId;
-                }
-
-                GeoPosition pos = parsePositionFromJson(json);
-                if (pos != null) {
-                    return instantiateFromN2YOData(noradId, satName.trim(), pos);
-                }
+        String responseBody = sendGet(url, Duration.ofSeconds(4));
+        if (responseBody != null && responseBody.contains("\"positions\":")) {
+            String satName = extractJsonString(responseBody, "\"satname\":");
+            if (satName == null || satName.trim().isEmpty()) {
+                satName = "NORAD-" + noradId;
             }
-        } catch (Exception e) {
-            // Manejo de errores de conexión de red
+
+            GeoPosition pos = parsePositionFromJson(responseBody);
+            if (pos != null) {
+                return instantiateFromN2YOData(noradId, satName.trim(), pos);
+            }
         }
 
         return null;
@@ -197,9 +191,9 @@ public class N2YOApiClient {
         String upper = satName.toUpperCase();
         String craftId = "SAT-" + noradId;
 
-        if (upper.contains("TIANHE") || upper.contains("TIANGONG") || upper.contains("CSS") || upper.contains("CHINA")) {
+        if (upper.contains("TIANHE") || upper.contains("TIANGONG") || upper.contains("CSS") || upper.contains("CHINA") || noradId == NORAD_TIANGONG) {
             return new ChinaSpaceStation(craftId, satName + " (N2YO API)", noradId, pos);
-        } else if (upper.contains("STATION") || upper.contains("ISS") || noradId == 25544) {
+        } else if (upper.contains("STATION") || upper.contains("ISS") || noradId == NORAD_ISS) {
             return new InternationalSpaceStation(craftId, satName + " (N2YO API)", noradId, pos);
         } else if (upper.contains("ONEWEB") || upper.contains("DEBRIS") || upper.contains("COSMOS") || upper.contains("DEB") || upper.contains("SL-")) {
             return new SpaceDebris(craftId, satName + " (N2YO API)", noradId, pos, 8.2);

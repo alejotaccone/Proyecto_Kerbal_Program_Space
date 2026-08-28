@@ -22,7 +22,12 @@ public abstract class Spacecraft {
         this.img = "Spacecraft.jpg";
     }
 
-    public abstract void move();
+    public void move() {
+        if (fuelTank != null) {
+            fuelTank.consume();
+        }
+    }
+
     public abstract String getType();
     public abstract String performSpecialAbility();
 

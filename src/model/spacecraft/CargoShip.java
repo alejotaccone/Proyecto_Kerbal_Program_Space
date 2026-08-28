@@ -15,13 +15,6 @@ public class CargoShip extends Spacecraft {
     }
 
     @Override
-    public void move() {
-        if (fuelTank != null) {
-            fuelTank.consume();
-        }
-    }
-
-    @Override
     public String getType() {
         return "Nave de Carga Pesada";
     }

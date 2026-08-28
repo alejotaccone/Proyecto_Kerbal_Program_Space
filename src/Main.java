@@ -19,7 +19,7 @@ public class Main {
             apiKeyInput = api.N2YOApiClient.DEFAULT_KEY;
         }
 
-        SimulationEngine engine = new SimulationEngine(apiKeyInput, 25544); // ISS by default
+        SimulationEngine engine = new SimulationEngine(apiKeyInput, api.N2YOApiClient.NORAD_ISS); // ISS by default
 
         // Lanzar la segunda consola de monitoreo de nave
         TelemetryLogger.launchMonitorConsole();
@@ -109,8 +109,8 @@ public class Main {
 
     private static void selectCityPrompt(Scanner scanner, SimulationEngine engine) {
         String[] stations = {
-            "Estación Espacial Internacional (ISS) [NORAD: 25544]",
-            "Estación Espacial Tiangong (CSS) [NORAD: 48274]"
+            "Estación Espacial Internacional (ISS) [NORAD: " + api.N2YOApiClient.NORAD_ISS + "]",
+            "Estación Espacial Tiangong (CSS) [NORAD: " + api.N2YOApiClient.NORAD_TIANGONG + "]"
         };
 
         System.out.println("\n--- SELECCION DE ESTACION OBJETIVO ---");
@@ -123,9 +123,9 @@ public class Main {
         try {
             int option = Integer.parseInt(input);
             if (option == 1) {
-                engine.setTargetStation(25544);
+                engine.setTargetStation(api.N2YOApiClient.NORAD_ISS);
             } else if (option == 2) {
-                engine.setTargetStation(48274);
+                engine.setTargetStation(api.N2YOApiClient.NORAD_TIANGONG);
             } else {
                 System.out.println("Seleccion invalida.");
             }

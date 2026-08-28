@@ -42,9 +42,6 @@ public class RogueDebris extends SpaceDebris {
                     position.setLongitude(currentLng + (deltaLng / dist) * step);
                 }
             }
-        } else {
-            // Si no hay target, se mueve como basura normal
-            super.move();
         }
     }
 

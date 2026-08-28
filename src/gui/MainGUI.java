@@ -1,6 +1,7 @@
 package gui;
 
 import engine.SimulationEngine;
+import engine.TelemetryLogger;
 import model.spacecraft.Spacecraft;
 import model.spacecraft.SpaceDebris;
 import model.spacecraft.SpaceStation;
@@ -524,63 +525,7 @@ public class MainGUI extends JFrame {
 
         Spacecraft ship = engine.getTrackedObjects().get(idx);
         cargarImagenNave(ship.getImg());
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== DATOS DE LA NAVE ===\n\n");
-        sb.append("Nombre: ").append(ship.getName()).append("\n");
-        sb.append("Tipo:   ").append(ship.getType()).append("\n");
-        sb.append("NORAD:  ").append(ship.getNoradId()).append("\n\n");
-        
-        sb.append("--- ÚLTIMA POSICIÓN REGISTRADA ---\n");
-        sb.append(String.format("Latitud:  %.4f°\n", ship.getPosition().getLatitude()));
-        sb.append(String.format("Longitud: %.4f°\n", ship.getPosition().getLongitude()));
-        sb.append(String.format("Altitud:  %.1f km\n\n", ship.getPosition().getAltitude()));
-        
-        sb.append("--- ESTADO ---\n");
-        sb.append("Velocidad: ").append(String.format("%.1f km/h\n", ship.getVelocityKmH()));
-        
-        if (ship.getFuelTank() != null) {
-            sb.append(String.format("Combust:   %.1f%%\n", ship.getFuelTank().getPercentage()));
-            sb.append(String.format("Nivel:     %.1f / %.1f L\n", ship.getFuelTank().getCurrentLevel(), ship.getFuelTank().getCapacity()));
-        } else {
-            sb.append("Combust:   N/A (Sin motor)\n");
-        }
-
-        if (ship instanceof SpaceStation) {
-            SpaceStation station = (SpaceStation) ship;
-            sb.append("\n--- SISTEMAS VITALES ---\n");
-            sb.append(String.format("Oxígeno:   %.1f%%\n", station.getOxygenLevel()));
-            sb.append(String.format("Batería:   %.1f%%\n", station.getBatteryLevel()));
-            sb.append(String.format("Temp:      %.1f °C\n", station.getTemperature()));
-            sb.append("Paneles:   ").append(station.areSolarPanelsDeployed() ? "DESPLEGADOS (Cargando)\n" : "RETRAÍDOS (Consumo)\n");
-        }
-
-        if (ship instanceof CrewShuttle) {
-            sb.append("\n--- TRIPULACIÓN ---\n");
-            CrewShuttle shuttle = (CrewShuttle) ship;
-            if (shuttle.getCrew().isEmpty()) {
-                sb.append("Sin tripulación a bordo\n");
-            } else {
-                for (model.components.Kerbal k : shuttle.getCrew()) {
-                    sb.append("- ").append(k.getName()).append(" (").append(k.getRole()).append(")\n");
-                }
-            }
-        } else if (ship instanceof model.spacecraft.CargoShip) {
-            model.spacecraft.CargoShip cargo = (model.spacecraft.CargoShip) ship;
-            sb.append("\n--- CARGA ---\n");
-            sb.append(String.format("Capacidad: %.1f ton\n", cargo.getCargoCapacityTons()));
-            sb.append(String.format("Actual:    %.1f ton\n", cargo.getCurrentCargoTons()));
-        } else if (ship instanceof model.spacecraft.ExplorationProbe) {
-            model.spacecraft.ExplorationProbe probe = (model.spacecraft.ExplorationProbe) ship;
-            sb.append("\n--- SISTEMAS ---\n");
-            sb.append(String.format("Eficiencia Solar: %.0f%%\n", probe.getSolarEfficiency() * 100));
-        } else if (ship instanceof SpaceDebris) {
-            SpaceDebris debris = (SpaceDebris) ship;
-            sb.append("\n--- RIESGO ---\n");
-            sb.append(String.format("Peligrosidad: %.1f/10\n", debris.getHazardLevel()));
-        }
-        
-        txtMonitorNave.setText(sb.toString());
+        txtMonitorNave.setText(TelemetryLogger.generarResumenNave(ship));
         txtMonitorNave.setCaretPosition(0);
     }
 
@@ -1090,9 +1035,9 @@ public class MainGUI extends JFrame {
 
     private int obtenerEstacionNoradId() {
         int index = cmbEstacion.getSelectedIndex();
-        if (index == 0) return 25544; // ISS
-        if (index == 1) return 48274; // Tiangong
-        return 25544;
+        if (index == 0) return api.N2YOApiClient.NORAD_ISS;
+        if (index == 1) return api.N2YOApiClient.NORAD_TIANGONG;
+        return api.N2YOApiClient.NORAD_ISS;
     }
 
     /** Devuelve la hora actual formateada */
@@ -1274,6 +1219,37 @@ public class MainGUI extends JFrame {
         }
 
         /**
+         * Calcula las coordenadas en pantalla (px, py) de una nave en el radar,
+         * aplicando la proyección geográfica y limitando al radio visible.
+         */
+        private Point calcularPosicionPantalla(Spacecraft craft, int cx, int cy, int radio) {
+            if (craft == null || craft.getPosition() == null) return new Point(cx, cy);
+
+            GeoPosition pos = craft.getPosition();
+            double deltaLat = (craft instanceof SpaceStation) ? 0.0 : (pos.getLatitude() - centroLat);
+            double deltaLng = (craft instanceof SpaceStation) ? 0.0 : (pos.getLongitude() - centroLng);
+
+            double kmPerDegLat = 111.0;
+            double kmPerDegLng = 111.0 * Math.cos(Math.toRadians(centroLat));
+            
+            double distXKm = deltaLng * kmPerDegLng;
+            double distYKm = -deltaLat * kmPerDegLat;  // Invertir Y (pantalla crece hacia abajo)
+
+            double escala = (double) radio / radioKm;
+            int px = cx + (int)(distXKm * escala);
+            int py = cy + (int)(distYKm * escala);
+
+            double distPixel = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
+            if (distPixel > radio) {
+                double factor = radio / distPixel;
+                px = cx + (int)((px - cx) * factor);
+                py = cy + (int)((py - cy) * factor);
+            }
+
+            return new Point(px, py);
+        }
+
+        /**
          * Dibuja los blips (puntos) de cada nave en sus coordenadas mapeadas.
          * El color y la forma dependen del tipo de nave (polimorfismo visual).
          */
@@ -1281,36 +1257,11 @@ public class MainGUI extends JFrame {
             if (naves == null || naves.isEmpty()) return;
 
             for (Spacecraft craft : naves) {
-                GeoPosition pos = craft.getPosition();
-                if (pos == null) continue;
+                if (craft.getPosition() == null) continue;
 
-                // Mapear coordenadas geográficas (lat/lng) a píxeles del radar
-                // Si la nave es la Estación Espacial objetivo, se ubica en el centro exacto del radar (cx, cy)
-                double deltaLat = (craft instanceof SpaceStation) ? 0.0 : (pos.getLatitude() - centroLat);
-                double deltaLng = (craft instanceof SpaceStation) ? 0.0 : (pos.getLongitude() - centroLng);
-
-                // Convertir diferencias de grados a proporción del radio
-                // ~111 km por grado de latitud, ~85 km por grado de longitud a lat ~35°
-                double kmPerDegLat = 111.0;
-                double kmPerDegLng = 111.0 * Math.cos(Math.toRadians(centroLat));
-                
-                double distXKm = deltaLng * kmPerDegLng;
-                double distYKm = -deltaLat * kmPerDegLat;  // Invertir Y (pantalla crece hacia abajo)
-                
-                double distTotalKm = Math.sqrt(distXKm * distXKm + distYKm * distYKm);
-
-                // Escalar: si está fuera del radio del radar, colocar en el borde
-                double escala = (double) radio / radioKm;
-                int px = cx + (int)(distXKm * escala);
-                int py = cy + (int)(distYKm * escala);
-
-                // Limitar dentro del círculo del radar
-                double distPixel = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
-                if (distPixel > radio) {
-                    double factor = radio / distPixel;
-                    px = cx + (int)((px - cx) * factor);
-                    py = cy + (int)((py - cy) * factor);
-                }
+                Point screenPos = calcularPosicionPantalla(craft, cx, cy, radio);
+                int px = screenPos.x;
+                int py = screenPos.y;
 
                 // Determinar color y forma según el tipo de nave
                 Color colorBlip;
@@ -1409,31 +1360,12 @@ public class MainGUI extends JFrame {
             
             for (int i = naves.size() - 1; i >= 0; i--) {
                 Spacecraft craft = naves.get(i);
-                GeoPosition pos = craft.getPosition();
-                if (pos == null) continue;
+                if (craft.getPosition() == null) continue;
 
-                double deltaLat = pos.getLatitude() - centroLat;
-                double deltaLng = pos.getLongitude() - centroLng;
-                
-                double kmPerDegLat = 111.0;
-                double kmPerDegLng = 111.0 * Math.cos(Math.toRadians(centroLat));
-                
-                double distXKm = deltaLng * kmPerDegLng;
-                double distYKm = -deltaLat * kmPerDegLat;
-                
-                double escala = (double) radio / radioKm;
-                int px = cx + (int)(distXKm * escala);
-                int py = cy + (int)(distYKm * escala);
-
-                double distPixel = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
-                if (distPixel > radio) {
-                    double factor = radio / distPixel;
-                    px = cx + (int)((px - cx) * factor);
-                    py = cy + (int)((py - cy) * factor);
-                }
+                Point screenPos = calcularPosicionPantalla(craft, cx, cy, radio);
 
                 // Check distance to mouse click (radius of 10 pixels for ease of clicking)
-                double distToMouse = Math.sqrt((px - mouseX) * (px - mouseX) + (py - mouseY) * (py - mouseY));
+                double distToMouse = Math.sqrt((screenPos.x - mouseX) * (screenPos.x - mouseX) + (screenPos.y - mouseY) * (screenPos.y - mouseY));
                 if (distToMouse <= 10.0) {
                     return i;
                 }

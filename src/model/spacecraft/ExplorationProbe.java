@@ -13,13 +13,6 @@ public class ExplorationProbe extends Spacecraft {
     }
 
     @Override
-    public void move() {
-        if (fuelTank != null) {
-            fuelTank.consume();
-        }
-    }
-
-    @Override
     public String getType() {
         return "Sonda Exploradora Solar";
     }

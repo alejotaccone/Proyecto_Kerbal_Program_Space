@@ -100,6 +100,72 @@ public class TelemetryLogger {
     }
 
     /**
+     * Genera el texto completo de telemetría y estado de una nave.
+     * Utilizado tanto por la GUI como por la consola secundaria de monitoreo.
+     */
+    public static String generarResumenNave(Spacecraft ship) {
+        if (ship == null) return "No hay nave seleccionada";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== DATOS DE LA NAVE ===\n\n");
+        sb.append("Nombre: ").append(ship.getName()).append("\n");
+        sb.append("Tipo:   ").append(ship.getType()).append("\n");
+        sb.append("NORAD:  ").append(ship.getNoradId()).append("\n");
+        sb.append("ID:     ").append(ship.getId()).append("\n\n");
+
+        sb.append("--- POSICIÓN REGISTRADA ---\n");
+        sb.append(String.format("Latitud:  %.4f°\n", ship.getPosition().getLatitude()));
+        sb.append(String.format("Longitud: %.4f°\n", ship.getPosition().getLongitude()));
+        sb.append(String.format("Altitud:  %.1f km\n\n", ship.getPosition().getAltitude()));
+
+        sb.append("--- ESTADO ---\n");
+        sb.append(String.format("Velocidad: %.1f km/h\n", ship.getVelocityKmH()));
+
+        if (ship.getFuelTank() != null) {
+            sb.append(String.format("Combust:   %.1f%%\n", ship.getFuelTank().getPercentage()));
+            sb.append(String.format("Nivel:     %.1f / %.1f L\n", ship.getFuelTank().getCurrentLevel(), ship.getFuelTank().getCapacity()));
+        } else {
+            sb.append("Combust:   N/A (Sin motor)\n");
+        }
+
+        if (ship instanceof model.spacecraft.SpaceStation) {
+            model.spacecraft.SpaceStation station = (model.spacecraft.SpaceStation) ship;
+            sb.append("\n--- SISTEMAS VITALES ---\n");
+            sb.append(String.format("Oxígeno:   %.1f%%\n", station.getOxygenLevel()));
+            sb.append(String.format("Batería:   %.1f%%\n", station.getBatteryLevel()));
+            sb.append(String.format("Temp:      %.1f °C\n", station.getTemperature()));
+            sb.append("Paneles:   ").append(station.areSolarPanelsDeployed() ? "DESPLEGADOS (Cargando)\n" : "RETRAÍDOS (Consumo)\n");
+        }
+
+        if (ship instanceof CrewShuttle) {
+            sb.append("\n--- TRIPULACIÓN ---\n");
+            CrewShuttle shuttle = (CrewShuttle) ship;
+            if (shuttle.getCrew().isEmpty()) {
+                sb.append("Sin tripulación a bordo\n");
+            } else {
+                for (Kerbal k : shuttle.getCrew()) {
+                    sb.append("- ").append(k.getName()).append(" (").append(k.getRole()).append(")\n");
+                }
+            }
+        } else if (ship instanceof CargoShip) {
+            CargoShip cargo = (CargoShip) ship;
+            sb.append("\n--- CARGA ---\n");
+            sb.append(String.format("Capacidad: %.1f ton\n", cargo.getCargoCapacityTons()));
+            sb.append(String.format("Actual:    %.1f ton\n", cargo.getCurrentCargoTons()));
+        } else if (ship instanceof ExplorationProbe) {
+            ExplorationProbe probe = (ExplorationProbe) ship;
+            sb.append("\n--- SISTEMAS ---\n");
+            sb.append(String.format("Eficiencia Solar: %.0f%%\n", probe.getSolarEfficiency() * 100));
+        } else if (ship instanceof SpaceDebris) {
+            SpaceDebris debris = (SpaceDebris) ship;
+            sb.append("\n--- RIESGO ---\n");
+            sb.append(String.format("Peligrosidad: %.1f/10\n", debris.getHazardLevel()));
+        }
+
+        return sb.toString();
+    }
+
+    /**
      * Escribe la información detallada de la nave seleccionada en el archivo nave_monitor.txt.
      * La segunda consola lee este archivo y lo muestra automáticamente.
      */
@@ -111,74 +177,8 @@ public class TelemetryLogger {
             sb.append("==================================================================\n");
             sb.append("       MONITOR DE NAVE - KERBAL PROGRAM SPACE\n");
             sb.append("==================================================================\n\n");
-            sb.append("  Nave:     ").append(ship.getName()).append("\n");
-            sb.append("  Tipo:     ").append(ship.getType()).append("\n");
-            sb.append("  NORAD ID: ").append(ship.getNoradId()).append("\n");
-            sb.append("  ID:       ").append(ship.getId()).append("\n");
-
-            sb.append("\n------------------------------------------------------------------\n");
-            sb.append("  POSICION ACTUAL\n");
-            sb.append("------------------------------------------------------------------\n");
-            sb.append(String.format("  Latitud:  %.4f\n", ship.getPosition().getLatitude()));
-            sb.append(String.format("  Longitud: %.4f\n", ship.getPosition().getLongitude()));
-            sb.append(String.format("  Altitud:  %.1f km\n", ship.getPosition().getAltitude()));
-
-            sb.append("\n------------------------------------------------------------------\n");
-            sb.append("  COMBUSTIBLE\n");
-            sb.append("------------------------------------------------------------------\n");
-            if (ship.getFuelTank() != null) {
-                double pct = ship.getFuelTank().getPercentage();
-                int filled = (int) (pct / 5);
-                int empty = 20 - filled;
-                sb.append("  [");
-                for (int i = 0; i < filled; i++) sb.append("#");
-                for (int i = 0; i < empty; i++) sb.append("-");
-                sb.append(String.format("] %.1f%%\n", pct));
-                sb.append(String.format("  Nivel: %.1f / %.1f L\n", 
-                        ship.getFuelTank().getCurrentLevel(), ship.getFuelTank().getCapacity()));
-                sb.append(String.format("  Consumo por movimiento: %.1f L\n", ship.getFuelTank().getConsumptionRate()));
-            } else {
-                sb.append("  N/A (Sin motor - Objeto a la deriva)\n");
-            }
-
-            sb.append("\n------------------------------------------------------------------\n");
-            sb.append("  ESTADO GENERAL\n");
-            sb.append("------------------------------------------------------------------\n");
-            sb.append(String.format("  Velocidad: %.1f km/h\n", ship.getVelocityKmH()));
-
-            // Información específica según el tipo de nave (polimorfismo)
-            if (ship instanceof CrewShuttle) {
-                CrewShuttle shuttle = (CrewShuttle) ship;
-                sb.append("\n------------------------------------------------------------------\n");
-                sb.append("  TRIPULACION A BORDO\n");
-                sb.append("------------------------------------------------------------------\n");
-                if (shuttle.getCrew().isEmpty()) {
-                    sb.append("  (Sin tripulacion a bordo)\n");
-                } else {
-                    for (Kerbal k : shuttle.getCrew()) {
-                        sb.append("  - ").append(k.toString()).append("\n");
-                    }
-                }
-            } else if (ship instanceof CargoShip) {
-                CargoShip cargo = (CargoShip) ship;
-                sb.append("\n------------------------------------------------------------------\n");
-                sb.append("  CARGA\n");
-                sb.append("------------------------------------------------------------------\n");
-                sb.append(String.format("  Capacidad: %.1f toneladas\n", cargo.getCargoCapacityTons()));
-                sb.append(String.format("  Carga actual: %.1f toneladas\n", cargo.getCurrentCargoTons()));
-            } else if (ship instanceof ExplorationProbe) {
-                ExplorationProbe probe = (ExplorationProbe) ship;
-                sb.append("\n------------------------------------------------------------------\n");
-                sb.append("  PANELES SOLARES\n");
-                sb.append("------------------------------------------------------------------\n");
-                sb.append(String.format("  Eficiencia solar: %.0f%%\n", probe.getSolarEfficiency() * 100));
-            } else if (ship instanceof SpaceDebris) {
-                SpaceDebris debris = (SpaceDebris) ship;
-                sb.append("\n------------------------------------------------------------------\n");
-                sb.append("  PELIGROSIDAD\n");
-                sb.append("------------------------------------------------------------------\n");
-                sb.append(String.format("  Nivel de riesgo: %.1f / 10\n", debris.getHazardLevel()));
-            }
+            
+            sb.append(generarResumenNave(ship));
 
             sb.append("\n==================================================================\n");
             sb.append("  ULTIMA ACCION REGISTRADA\n");

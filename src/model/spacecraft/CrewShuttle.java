@@ -22,13 +22,6 @@ public class CrewShuttle extends Spacecraft {
     }
 
     @Override
-    public void move() {
-        if (fuelTank != null) {
-            fuelTank.consume();
-        }
-    }
-
-    @Override
     public String getType() {
         return "Transbordador Tripulado";
     }

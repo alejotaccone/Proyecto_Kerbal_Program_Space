@@ -114,13 +114,19 @@ public class SimulationEngine {
                 craft.getPosition().setLongitude(updatedPos.getLongitude());
                 craft.getPosition().setAltitude(updatedPos.getAltitude());
                 
-                // Si esta es la estación central, actualizar el centro del radar local
-                if (craft.getNoradId() == targetStationNoradId && radar != null) {
-                    radar.getObserverPosition().setLatitude(updatedPos.getLatitude());
-                    radar.getObserverPosition().setLongitude(updatedPos.getLongitude());
-                    radar.getObserverPosition().setAltitude(updatedPos.getAltitude());
-                }
+                actualizarPosicionRadar(craft);
             }
+        }
+    }
+
+    /**
+     * Actualiza el centro del radar local para que siga la posición de la estación objetivo.
+     */
+    private void actualizarPosicionRadar(Spacecraft craft) {
+        if (craft != null && craft.getNoradId() == targetStationNoradId && radar != null && craft.getPosition() != null) {
+            radar.getObserverPosition().setLatitude(craft.getPosition().getLatitude());
+            radar.getObserverPosition().setLongitude(craft.getPosition().getLongitude());
+            radar.getObserverPosition().setAltitude(craft.getPosition().getAltitude());
         }
     }
 
@@ -133,13 +139,7 @@ public class SimulationEngine {
         // Mover cada nave en órbita según sus reglas de polimorfismo
         for (Spacecraft craft : trackedObjects) {
             craft.move();
-            
-            // Actualizar el centro del radar para que siga a la estación objetivo CADA TICK de forma fluida
-            if (craft.getNoradId() == targetStationNoradId && radar != null) {
-                radar.getObserverPosition().setLatitude(craft.getPosition().getLatitude());
-                radar.getObserverPosition().setLongitude(craft.getPosition().getLongitude());
-                radar.getObserverPosition().setAltitude(craft.getPosition().getAltitude());
-            }
+            actualizarPosicionRadar(craft);
         }
 
         // Lógica de generación probabilística de objetos por tick (duración tick: 10 segundos)
@@ -166,6 +166,31 @@ public class SimulationEngine {
     
     // ==================== EVENTOS DE CRISIS Y BASURA ESPACIAL ====================
     
+    /**
+     * Busca la estación espacial principal o devuelve la primera nave rastreada como fallback.
+     */
+    private Spacecraft buscarEstacionObjetivo() {
+        if (trackedObjects == null || trackedObjects.isEmpty()) return null;
+        for (Spacecraft s : trackedObjects) {
+            if (s instanceof SpaceStation) {
+                return s;
+            }
+        }
+        return trackedObjects.get(0);
+    }
+
+    /**
+     * Genera una posición geográfica polar aleatoria alrededor de una coordenada central.
+     */
+    private GeoPosition generarPosicionCercana(GeoPosition centro, double minDistDeg, double maxDistDeg) {
+        if (centro == null) return null;
+        double angle = Math.random() * 2 * Math.PI;
+        double distDeg = minDistDeg + Math.random() * (maxDistDeg - minDistDeg);
+        double spawnLat = centro.getLatitude() + Math.cos(angle) * distDeg;
+        double spawnLng = centro.getLongitude() + Math.sin(angle) * distDeg;
+        return new GeoPosition(spawnLat, spawnLng, centro.getAltitude());
+    }
+
     public boolean spawnSpaceDebris() {
         if (trackedObjects == null || trackedObjects.isEmpty()) return false;
         
@@ -175,26 +200,16 @@ public class SimulationEngine {
                 
         if (countDebris >= 3) return false; // Límite máximo de 3 basuras pasivas en pantalla
         
-        Spacecraft station = null;
-        for (Spacecraft s : trackedObjects) {
-            if (s instanceof SpaceStation) {
-                station = s; break;
-            }
-        }
-        if (station == null && !trackedObjects.isEmpty()) station = trackedObjects.get(0);
-        
-        if (station != null) {
-            double angle = Math.random() * 2 * Math.PI;
-            double distDeg = 0.25 + Math.random() * 0.55; // Entre 25 km y 80 km
-            double spawnLat = station.getPosition().getLatitude() + Math.cos(angle) * distDeg;
-            double spawnLng = station.getPosition().getLongitude() + Math.sin(angle) * distDeg;
+        Spacecraft station = buscarEstacionObjetivo();
+        if (station != null && station.getPosition() != null) {
+            GeoPosition spawnPos = generarPosicionCercana(station.getPosition(), 0.25, 0.80);
             
             int idNum = (int)(Math.random() * 9000 + 1000);
             model.spacecraft.SpaceDebris debris = new model.spacecraft.SpaceDebris(
                     "DEB-" + idNum,
                     "Restos NORAD-" + idNum,
                     90000 + idNum,
-                    new GeoPosition(spawnLat, spawnLng, station.getPosition().getAltitude()),
+                    spawnPos,
                     6.5 + Math.random() * 3.0
             );
             
@@ -208,33 +223,17 @@ public class SimulationEngine {
     public boolean triggerCrisisEvent() {
         if (trackedObjects == null || trackedObjects.isEmpty()) return false;
         
-        boolean hasRogue = false;
-        for (Spacecraft s : trackedObjects) {
-            if (s instanceof model.spacecraft.RogueDebris) {
-                hasRogue = true; break;
-            }
-        }
-        
+        boolean hasRogue = trackedObjects.stream().anyMatch(s -> s instanceof model.spacecraft.RogueDebris);
         if (!hasRogue) {
-            Spacecraft target = null;
-            for (Spacecraft s : trackedObjects) {
-                if (s instanceof SpaceStation) {
-                    target = s; break;
-                }
-            }
-            if (target == null && !trackedObjects.isEmpty()) target = trackedObjects.get(0);
-            
-            if (target != null) {
-                double angle = Math.random() * 2 * Math.PI;
-                double distDeg = 0.9; // ~90km de distancia en el sector
-                double spawnLat = target.getPosition().getLatitude() + Math.cos(angle) * distDeg;
-                double spawnLng = target.getPosition().getLongitude() + Math.sin(angle) * distDeg;
+            Spacecraft target = buscarEstacionObjetivo();
+            if (target != null && target.getPosition() != null) {
+                GeoPosition spawnPos = generarPosicionCercana(target.getPosition(), 0.9, 0.9);
                 
                 int idNum = (int)(Math.random() * 900 + 100);
                 model.spacecraft.RogueDebris rogue = new model.spacecraft.RogueDebris(
                         "RD-" + idNum, 
                         "ANOMALÍA CINÉTICA RD-" + idNum, 
-                        new GeoPosition(spawnLat, spawnLng, target.getPosition().getAltitude()), 
+                        spawnPos, 
                         9.5, 
                         target);
                 
