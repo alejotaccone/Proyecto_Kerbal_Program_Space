@@ -11,7 +11,7 @@ public class CargoShip extends Spacecraft {
         super(id, name, noradId, position, fuelTank, 24000.0); // Velocidad estándar ~24,000 km/h
         this.cargoCapacityTons = cargoCapacityTons;
         this.currentCargoTons = cargoCapacityTons * 0.8; // 80% llena por defecto
-        this.img = "Cargoship.jpg";
+        this.nombreImagen = "Cargoship.jpg";
     }
 
     @Override

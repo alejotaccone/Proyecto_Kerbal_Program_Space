@@ -9,7 +9,7 @@ public class ExplorationProbe extends Spacecraft {
     public ExplorationProbe(String id, String name, int noradId, GeoPosition position, FuelTank fuelTank, double solarEfficiency) {
         super(id, name, noradId, position, fuelTank, 27500.0);
         this.solarEfficiency = solarEfficiency;
-        this.img = "Spacecraft.jpg";
+        this.nombreImagen = "Spacecraft.jpg";
     }
 
     @Override

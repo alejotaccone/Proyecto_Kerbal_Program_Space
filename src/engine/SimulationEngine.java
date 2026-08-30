@@ -171,9 +171,9 @@ public class SimulationEngine {
      */
     private Spacecraft buscarEstacionObjetivo() {
         if (trackedObjects == null || trackedObjects.isEmpty()) return null;
-        for (Spacecraft s : trackedObjects) {
-            if (s instanceof SpaceStation) {
-                return s;
+        for (Spacecraft nave : trackedObjects) {
+            if (nave instanceof SpaceStation) {
+                return nave;
             }
         }
         return trackedObjects.get(0);
@@ -195,7 +195,7 @@ public class SimulationEngine {
         if (trackedObjects == null || trackedObjects.isEmpty()) return false;
         
         long countDebris = trackedObjects.stream()
-                .filter(s -> (s instanceof model.spacecraft.SpaceDebris && !(s instanceof model.spacecraft.RogueDebris)))
+                .filter(nave -> (nave instanceof model.spacecraft.SpaceDebris && !(nave instanceof model.spacecraft.RogueDebris)))
                 .count();
                 
         if (countDebris >= 3) return false; // Límite máximo de 3 basuras pasivas en pantalla
@@ -223,7 +223,7 @@ public class SimulationEngine {
     public boolean triggerCrisisEvent() {
         if (trackedObjects == null || trackedObjects.isEmpty()) return false;
         
-        boolean hasRogue = trackedObjects.stream().anyMatch(s -> s instanceof model.spacecraft.RogueDebris);
+        boolean hasRogue = trackedObjects.stream().anyMatch(nave -> nave instanceof model.spacecraft.RogueDebris);
         if (!hasRogue) {
             Spacecraft target = buscarEstacionObjetivo();
             if (target != null && target.getPosition() != null) {

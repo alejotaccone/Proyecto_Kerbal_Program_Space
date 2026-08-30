@@ -134,22 +134,22 @@ public class Main {
         }
     }
 
-    private static int selectShipPrompt(Scanner scanner, List<Spacecraft> ships, String actionName) {
-        if (ships == null || ships.isEmpty()) {
+    private static int selectShipPrompt(Scanner scanner, List<Spacecraft> naves, String actionName) {
+        if (naves == null || naves.isEmpty()) {
             System.out.println("No hay naves disponibles.");
             return -1;
         }
 
         System.out.println("\nSelecciona la nave sobre la cual deseas " + actionName + ":");
-        for (int i = 0; i < ships.size(); i++) {
-            Spacecraft s = ships.get(i);
-            System.out.printf("  [%d] %s (%s) - Pos: %s\n", (i + 1), s.getName(), s.getType(), s.getPosition().toString());
+        for (int i = 0; i < naves.size(); i++) {
+            Spacecraft nave = naves.get(i);
+            System.out.printf("  [%d] %s (%s) - Pos: %s\n", (i + 1), nave.getName(), nave.getType(), nave.getPosition().toString());
         }
-        System.out.print("Numero de nave (1-" + ships.size() + ") o 0 para cancelar: ");
+        System.out.print("Numero de nave (1-" + naves.size() + ") o 0 para cancelar: ");
 
         try {
             int selection = Integer.parseInt(scanner.nextLine().trim());
-            if (selection >= 1 && selection <= ships.size()) {
+            if (selection >= 1 && selection <= naves.size()) {
                 return selection - 1;
             }
         } catch (NumberFormatException e) {

@@ -16,11 +16,11 @@ public class SpaceStation extends Spacecraft {
         this(id, name, noradId, position, "SpaceStation_Internacional.jpg");
     }
 
-    public SpaceStation(String id, String name, int noradId, GeoPosition position, String img) {
+    public SpaceStation(String id, String name, int noradId, GeoPosition position, String nombreImagen) {
         // La estación espacial tiene un tanque de reserva ilimitado/grande y orbita suavemente
         super(id, name, noradId, position, new FuelTank(10000.0, 10000.0, 0.0), 27600.0);
         this.dockingAvailable = true;
-        this.img = img;
+        this.nombreImagen = nombreImagen;
         
         // Inicializar sistemas
         this.oxygenLevel = 100.0;

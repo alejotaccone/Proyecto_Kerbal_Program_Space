@@ -524,7 +524,7 @@ public class MainGUI extends JFrame {
         }
 
         Spacecraft ship = engine.getTrackedObjects().get(idx);
-        cargarImagenNave(ship.getImg());
+        cargarImagenNave(ship.getNombreImagen());
         txtMonitorNave.setText(TelemetryLogger.generarResumenNave(ship));
         txtMonitorNave.setCaretPosition(0);
     }
@@ -884,9 +884,9 @@ public class MainGUI extends JFrame {
         if (engine == null || engine.getTrackedObjects() == null) return;
         
         model.spacecraft.RogueDebris threat = null;
-        for (Spacecraft s : engine.getTrackedObjects()) {
-            if (s instanceof model.spacecraft.RogueDebris) {
-                threat = (model.spacecraft.RogueDebris) s;
+        for (Spacecraft nave : engine.getTrackedObjects()) {
+            if (nave instanceof model.spacecraft.RogueDebris) {
+                threat = (model.spacecraft.RogueDebris) nave;
                 break;
             }
         }
@@ -1006,8 +1006,8 @@ public class MainGUI extends JFrame {
         cmbNaves.addItem("< Seleccione una nave >");
         List<Spacecraft> naves = engine.getTrackedObjects();
         for (int i = 0; i < naves.size(); i++) {
-            Spacecraft s = naves.get(i);
-            cmbNaves.addItem((i + 1) + ". " + s.getName() + " (" + s.getType() + ")");
+            Spacecraft nave = naves.get(i);
+            cmbNaves.addItem((i + 1) + ". " + nave.getName() + " (" + nave.getType() + ")");
         }
         if (selectedIdx > 0 && selectedIdx < cmbNaves.getItemCount()) {
             cmbNaves.setSelectedIndex(selectedIdx);
@@ -1116,15 +1116,15 @@ public class MainGUI extends JFrame {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-            int w = getWidth();
-            int h = getHeight();
-            int cx = w / 2;     // Centro X del radar
-            int cy = h / 2;     // Centro Y del radar
-            int radio = Math.min(cx, cy) - 30;  // Radio máximo del radar en píxeles
+            int ancho = getWidth();
+            int alto = getHeight();
+            int centroX = ancho / 2;     // Centro X del radar
+            int centroY = alto / 2;     // Centro Y del radar
+            int radio = Math.min(centroX, centroY) - 30;  // Radio máximo del radar en píxeles
 
             // ---- 1. FONDO CON GRADIENTE RADIAL ----
             RadialGradientPaint bgGrad = new RadialGradientPaint(
-                cx, cy, radio + 50,
+                centroX, centroY, radio + 50,
                 new float[]{0.0f, 0.7f, 1.0f},
                 new Color[]{
                     new Color(5, 18, 5),
@@ -1133,7 +1133,7 @@ public class MainGUI extends JFrame {
                 }
             );
             g2.setPaint(bgGrad);
-            g2.fillRect(0, 0, w, h);
+            g2.fillRect(0, 0, ancho, alto);
 
             // ---- 2. CÍRCULOS CONCÉNTRICOS (Anillos de alcance) ----
             g2.setStroke(new BasicStroke(1.0f));
@@ -1144,52 +1144,52 @@ public class MainGUI extends JFrame {
                 // Gradiente de opacidad: más brillante en el exterior
                 int alpha = 40 + (i * 15);
                 g2.setColor(new Color(0, 80, 0, Math.min(alpha, 255)));
-                g2.drawOval(cx - r, cy - r, r * 2, r * 2);
+                g2.drawOval(centroX - r, centroY - r, r * 2, r * 2);
 
                 // Etiqueta de distancia en km
                 int distKm = (int) ((radioKm * i) / numCirculos);
                 g2.setFont(new Font("Consolas", Font.PLAIN, 10));
                 g2.setColor(new Color(0, 100, 0, 150));
-                g2.drawString(distKm + " km", cx + r + 4, cy - 3);
+                g2.drawString(distKm + " km", centroX + r + 4, centroY - 3);
             }
 
             // ---- 3. LÍNEAS CARDINALES (Cruz del radar) ----
             g2.setColor(new Color(0, 50, 0, 100));
             g2.setStroke(new BasicStroke(0.8f));
-            g2.drawLine(cx, cy - radio, cx, cy + radio);  // Línea vertical
-            g2.drawLine(cx - radio, cy, cx + radio, cy);    // Línea horizontal
+            g2.drawLine(centroX, centroY - radio, centroX, centroY + radio);  // Línea vertical
+            g2.drawLine(centroX - radio, centroY, centroX + radio, centroY);    // Línea horizontal
 
             // Etiquetas N, S, E, O
             g2.setFont(new Font("Consolas", Font.BOLD, 12));
             g2.setColor(COLOR_TEXT_DIM);
-            g2.drawString("N", cx - 4, cy - radio - 5);
-            g2.drawString("S", cx - 4, cy + radio + 15);
-            g2.drawString("E", cx + radio + 8, cy + 4);
-            g2.drawString("O", cx - radio - 18, cy + 4);
+            g2.drawString("N", centroX - 4, centroY - radio - 5);
+            g2.drawString("S", centroX - 4, centroY + radio + 15);
+            g2.drawString("E", centroX + radio + 8, centroY + 4);
+            g2.drawString("O", centroX - radio - 18, centroY + 4);
 
             // ---- 4. LÍNEA DE BARRIDO (efecto sweep) ----
-            dibujarBarrido(g2, cx, cy, radio);
+            dibujarBarrido(g2, centroX, centroY, radio);
 
             // ---- 5. CENTRO DEL RADAR (ubicación del observador) ----
             // Punto central brillante
             g2.setColor(new Color(0, 255, 100, 200));
-            g2.fillOval(cx - 5, cy - 5, 10, 10);
+            g2.fillOval(centroX - 5, centroY - 5, 10, 10);
             // Anillo pulsante alrededor del centro
             int pulso = (int)(4 * Math.sin(sweepAngle * 2)) + 10;
             g2.setColor(new Color(0, 200, 100, 60));
             g2.setStroke(new BasicStroke(1.5f));
-            g2.drawOval(cx - pulso, cy - pulso, pulso * 2, pulso * 2);
+            g2.drawOval(centroX - pulso, centroY - pulso, pulso * 2, pulso * 2);
 
             // ---- 6. BLIPS DE NAVES ----
-            dibujarNaves(g2, cx, cy, radio);
+            dibujarNaves(g2, centroX, centroY, radio);
 
             // ---- 7. INFORMACIÓN SUPERPUESTA ----
             g2.setFont(new Font("Consolas", Font.PLAIN, 10));
             g2.setColor(COLOR_TEXT_DIM);
             g2.drawString("RADAR v2.0 | Lat: " + String.format("%.2f", centroLat) 
-                + "° | Lng: " + String.format("%.2f", centroLng) + "°", 10, h - 10);
+                + "° | Lng: " + String.format("%.2f", centroLng) + "°", 10, alto - 10);
             g2.drawString("Radio: " + (int)radioKm + " km | Ángulo: " 
-                + String.format("%.0f", Math.toDegrees(sweepAngle)) + "°", 10, h - 25);
+                + String.format("%.0f", Math.toDegrees(sweepAngle)) + "°", 10, alto - 25);
 
             g2.dispose();
         }
@@ -1197,7 +1197,7 @@ public class MainGUI extends JFrame {
         /**
          * Dibuja la línea de barrido del radar con efecto de resplandor cónico.
          */
-        private void dibujarBarrido(Graphics2D g2, int cx, int cy, int radio) {
+        private void dibujarBarrido(Graphics2D g2, int centroX, int centroY, int radio) {
             // Cono de resplandor (trail del sweep)
             int trailDegrees = 40;  // Amplitud del cono de resplandor
             for (int i = 0; i < trailDegrees; i++) {
@@ -1205,25 +1205,25 @@ public class MainGUI extends JFrame {
                 int alpha = (int)(25.0 * (1.0 - (double)i / trailDegrees));
                 g2.setColor(new Color(0, 255, 80, Math.max(alpha, 0)));
                 g2.setStroke(new BasicStroke(1.0f));
-                int endX = cx + (int)(radio * Math.cos(angle));
-                int endY = cy + (int)(radio * Math.sin(angle));
-                g2.drawLine(cx, cy, endX, endY);
+                int endX = centroX + (int)(radio * Math.cos(angle));
+                int endY = centroY + (int)(radio * Math.sin(angle));
+                g2.drawLine(centroX, centroY, endX, endY);
             }
 
             // Línea principal del barrido (más brillante)
             g2.setColor(COLOR_RADAR_LINE);
             g2.setStroke(new BasicStroke(2.0f));
-            int endX = cx + (int)(radio * Math.cos(sweepAngle));
-            int endY = cy + (int)(radio * Math.sin(sweepAngle));
-            g2.drawLine(cx, cy, endX, endY);
+            int endX = centroX + (int)(radio * Math.cos(sweepAngle));
+            int endY = centroY + (int)(radio * Math.sin(sweepAngle));
+            g2.drawLine(centroX, centroY, endX, endY);
         }
 
         /**
-         * Calcula las coordenadas en pantalla (px, py) de una nave en el radar,
+         * Calcula las coordenadas en pantalla (pixelX, pixelY) de una nave en el radar,
          * aplicando la proyección geográfica y limitando al radio visible.
          */
-        private Point calcularPosicionPantalla(Spacecraft craft, int cx, int cy, int radio) {
-            if (craft == null || craft.getPosition() == null) return new Point(cx, cy);
+        private Point calcularPosicionPantalla(Spacecraft craft, int centroX, int centroY, int radio) {
+            if (craft == null || craft.getPosition() == null) return new Point(centroX, centroY);
 
             GeoPosition pos = craft.getPosition();
             double deltaLat = (craft instanceof SpaceStation) ? 0.0 : (pos.getLatitude() - centroLat);
@@ -1236,32 +1236,32 @@ public class MainGUI extends JFrame {
             double distYKm = -deltaLat * kmPerDegLat;  // Invertir Y (pantalla crece hacia abajo)
 
             double escala = (double) radio / radioKm;
-            int px = cx + (int)(distXKm * escala);
-            int py = cy + (int)(distYKm * escala);
+            int pixelX = centroX + (int)(distXKm * escala);
+            int pixelY = centroY + (int)(distYKm * escala);
 
-            double distPixel = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
+            double distPixel = Math.sqrt((pixelX - centroX) * (pixelX - centroX) + (pixelY - centroY) * (pixelY - centroY));
             if (distPixel > radio) {
                 double factor = radio / distPixel;
-                px = cx + (int)((px - cx) * factor);
-                py = cy + (int)((py - cy) * factor);
+                pixelX = centroX + (int)((pixelX - centroX) * factor);
+                pixelY = centroY + (int)((pixelY - centroY) * factor);
             }
 
-            return new Point(px, py);
+            return new Point(pixelX, pixelY);
         }
 
         /**
          * Dibuja los blips (puntos) de cada nave en sus coordenadas mapeadas.
          * El color y la forma dependen del tipo de nave (polimorfismo visual).
          */
-        private void dibujarNaves(Graphics2D g2, int cx, int cy, int radio) {
+        private void dibujarNaves(Graphics2D g2, int centroX, int centroY, int radio) {
             if (naves == null || naves.isEmpty()) return;
 
             for (Spacecraft craft : naves) {
                 if (craft.getPosition() == null) continue;
 
-                Point screenPos = calcularPosicionPantalla(craft, cx, cy, radio);
-                int px = screenPos.x;
-                int py = screenPos.y;
+                Point screenPos = calcularPosicionPantalla(craft, centroX, centroY, radio);
+                int pixelX = screenPos.x;
+                int pixelY = screenPos.y;
 
                 // Determinar color y forma según el tipo de nave
                 Color colorBlip;
@@ -1287,7 +1287,7 @@ public class MainGUI extends JFrame {
                 }
 
                 // Efecto de brillo cuando el barrido pasa sobre la nave
-                double anguloNave = Math.atan2(py - cy, px - cx);
+                double anguloNave = Math.atan2(pixelY - centroY, pixelX - centroX);
                 double diffAngulo = Math.abs(sweepAngle - anguloNave);
                 if (diffAngulo > Math.PI) diffAngulo = 2 * Math.PI - diffAngulo;
                 
@@ -1296,25 +1296,25 @@ public class MainGUI extends JFrame {
                 if (iluminado) {
                     // Halo de resplandor cuando el sweep pasa
                     g2.setColor(new Color(colorBlip.getRed(), colorBlip.getGreen(), colorBlip.getBlue(), 60));
-                    g2.fillOval(px - tamano * 2, py - tamano * 2, tamano * 4, tamano * 4);
+                    g2.fillOval(pixelX - tamano * 2, pixelY - tamano * 2, tamano * 4, tamano * 4);
                 }
 
                 // Dibujar el blip
                 if (esTriangulo) {
                     // Triángulo para basura espacial
-                    int[] xPoints = {px, px - tamano, px + tamano};
-                    int[] yPoints = {py - tamano, py + tamano, py + tamano};
+                    int[] xPoints = {pixelX, pixelX - tamano, pixelX + tamano};
+                    int[] yPoints = {pixelY - tamano, pixelY + tamano, pixelY + tamano};
                     g2.setColor(colorBlip);
                     g2.fillPolygon(xPoints, yPoints, 3);
                 } else {
                     // Círculo para las demás naves
                     g2.setColor(colorBlip);
-                    g2.fillOval(px - tamano / 2, py - tamano / 2, tamano, tamano);
+                    g2.fillOval(pixelX - tamano / 2, pixelY - tamano / 2, tamano, tamano);
                     
                     // Anillo exterior para estaciones
                     if (craft instanceof SpaceStation) {
                         g2.setStroke(new BasicStroke(1.5f));
-                        g2.drawOval(px - tamano, py - tamano, tamano * 2, tamano * 2);
+                        g2.drawOval(pixelX - tamano, pixelY - tamano, tamano * 2, tamano * 2);
                     }
                 }
 
@@ -1324,11 +1324,11 @@ public class MainGUI extends JFrame {
                     g2.setStroke(new BasicStroke(1.5f));
                     int selSize = tamano + 2;
                     if (esTriangulo) {
-                        int[] xPointsSel = {px, px - selSize, px + selSize};
-                        int[] yPointsSel = {py - selSize, py + selSize, py + selSize};
+                        int[] xPointsSel = {pixelX, pixelX - selSize, pixelX + selSize};
+                        int[] yPointsSel = {pixelY - selSize, pixelY + selSize, pixelY + selSize};
                         g2.drawPolygon(xPointsSel, yPointsSel, 3);
                     } else {
-                        g2.drawOval(px - selSize, py - selSize, selSize * 2, selSize * 2);
+                        g2.drawOval(pixelX - selSize, pixelY - selSize, selSize * 2, selSize * 2);
                     }
                 }
 
@@ -1341,7 +1341,7 @@ public class MainGUI extends JFrame {
                 if (labelNombre.length() > 20) {
                     labelNombre = labelNombre.substring(0, 18) + "…";
                 }
-                g2.drawString(labelNombre, px + tamano + 3, py + 3);
+                g2.drawString(labelNombre, pixelX + tamano + 3, pixelY + 3);
             }
         }
 
@@ -1352,17 +1352,17 @@ public class MainGUI extends JFrame {
         public int getShipIndexAt(int mouseX, int mouseY) {
             if (naves == null || naves.isEmpty()) return -1;
             
-            int w = getWidth();
-            int h = getHeight();
-            int cx = w / 2;
-            int cy = h / 2;
-            int radio = Math.min(cx, cy) - 30;
+            int ancho = getWidth();
+            int alto = getHeight();
+            int centroX = ancho / 2;
+            int centroY = alto / 2;
+            int radio = Math.min(centroX, centroY) - 30;
             
             for (int i = naves.size() - 1; i >= 0; i--) {
                 Spacecraft craft = naves.get(i);
                 if (craft.getPosition() == null) continue;
 
-                Point screenPos = calcularPosicionPantalla(craft, cx, cy, radio);
+                Point screenPos = calcularPosicionPantalla(craft, centroX, centroY, radio);
 
                 // Check distance to mouse click (radius of 10 pixels for ease of clicking)
                 double distToMouse = Math.sqrt((screenPos.x - mouseX) * (screenPos.x - mouseX) + (screenPos.y - mouseY) * (screenPos.y - mouseY));

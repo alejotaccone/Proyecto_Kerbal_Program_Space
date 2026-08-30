@@ -36,8 +36,8 @@ public class TelemetryLogger {
                 CrewShuttle shuttle = (CrewShuttle) craft;
                 if (!shuttle.getCrew().isEmpty()) {
                     System.out.print("    Tripulación a bordo: ");
-                    for (Kerbal k : shuttle.getCrew()) {
-                        System.out.print("[" + k.getName() + " - " + k.getRole() + "] ");
+                    for (Kerbal tripulante : shuttle.getCrew()) {
+                        System.out.print("[" + tripulante.getName() + " - " + tripulante.getRole() + "] ");
                     }
                     System.out.println();
                 }
@@ -143,8 +143,8 @@ public class TelemetryLogger {
             if (shuttle.getCrew().isEmpty()) {
                 sb.append("Sin tripulación a bordo\n");
             } else {
-                for (Kerbal k : shuttle.getCrew()) {
-                    sb.append("- ").append(k.getName()).append(" (").append(k.getRole()).append(")\n");
+                for (Kerbal tripulante : shuttle.getCrew()) {
+                    sb.append("- ").append(tripulante.getName()).append(" (").append(tripulante.getRole()).append(")\n");
                 }
             }
         } else if (ship instanceof CargoShip) {

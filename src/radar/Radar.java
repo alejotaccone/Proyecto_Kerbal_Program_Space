@@ -42,14 +42,14 @@ public class Radar {
 
         for (int i = 0; i < allObjects.size(); i++) {
             for (int j = i + 1; j < allObjects.size(); j++) {
-                Spacecraft a = allObjects.get(i);
-                Spacecraft b = allObjects.get(j);
+                Spacecraft naveA = allObjects.get(i);
+                Spacecraft naveB = allObjects.get(j);
 
-                double distance = a.getPosition().distanceTo(b.getPosition());
+                double distance = naveA.getPosition().distanceTo(naveB.getPosition());
                 if (distance < 200.0) { // Menos de 200 km en órbita es alerta de colisión
                     String alert = String.format("¡ALERTA DE COLISIÓN! [%s] y [%s] a sólo %.1f km de distancia.", 
-                            a.getName(), b.getName(), distance);
-                    if (a instanceof SpaceDebris || b instanceof SpaceDebris) {
+                            naveA.getName(), naveB.getName(), distance);
+                    if (naveA instanceof SpaceDebris || naveB instanceof SpaceDebris) {
                         alert += " (Involucra Basura Espacial en trayectoria cinetica)";
                     }
                     alerts.add(alert);

@@ -9,7 +9,7 @@ public class SpaceDebris extends Spacecraft {
         // La basura espacial no tiene motor/tanque de combustible
         super(id, name, noradId, position, null, 28000.0);
         this.hazardLevel = hazardLevel;
-        this.img = "SpaceDebris.jpg";
+        this.nombreImagen = "SpaceDebris.jpg";
     }
 
     @Override
