@@ -2,7 +2,7 @@ import engine.SimulationEngine;
 import engine.TelemetryLogger;
 import java.util.List;
 import java.util.Scanner;
-import model.spacecraft.Spacecraft;
+import model.spacecraft.OrbitalObject;
 
 public class Main {
     public static void main(String[] args) {
@@ -134,7 +134,7 @@ public class Main {
         }
     }
 
-    private static int selectShipPrompt(Scanner scanner, List<Spacecraft> naves, String actionName) {
+    private static int selectShipPrompt(Scanner scanner, List<OrbitalObject> naves, String actionName) {
         if (naves == null || naves.isEmpty()) {
             System.out.println("No hay naves disponibles.");
             return -1;
@@ -142,7 +142,7 @@ public class Main {
 
         System.out.println("\nSelecciona la nave sobre la cual deseas " + actionName + ":");
         for (int i = 0; i < naves.size(); i++) {
-            Spacecraft nave = naves.get(i);
+            OrbitalObject nave = naves.get(i);
             System.out.printf("  [%d] %s (%s) - Pos: %s\n", (i + 1), nave.getName(), nave.getType(), nave.getPosition().toString());
         }
         System.out.print("Numero de nave (1-" + naves.size() + ") o 0 para cancelar: ");

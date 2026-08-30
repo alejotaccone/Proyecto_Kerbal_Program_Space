@@ -2,12 +2,12 @@ package model.spacecraft;
 
 import model.geometry.GeoPosition;
 
-public class SpaceDebris extends Spacecraft {
+public class SpaceDebris extends OrbitalObject {
     private double hazardLevel;
 
     public SpaceDebris(String id, String name, int noradId, GeoPosition position, double hazardLevel) {
-        // La basura espacial no tiene motor/tanque de combustible
-        super(id, name, noradId, position, null, 28000.0);
+        // La basura espacial no tiene motor/propulsión: extiende OrbitalObject directamente
+        super(id, name, noradId, position, 28000.0);
         this.hazardLevel = hazardLevel;
         this.nombreImagen = "SpaceDebris.jpg";
     }

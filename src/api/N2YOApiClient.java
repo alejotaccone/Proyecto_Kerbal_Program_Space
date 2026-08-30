@@ -14,6 +14,7 @@ import model.geometry.GeoPosition;
 import model.spacecraft.CargoShip;
 import model.spacecraft.CrewShuttle;
 import model.spacecraft.ExplorationProbe;
+import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceDebris;
 import model.spacecraft.SpaceStation;
 import model.spacecraft.Spacecraft;
@@ -72,8 +73,8 @@ public class N2YOApiClient {
     /**
      * Consulta el servicio N2YO /above para obtener los satélites reales sobrevolando las coordenadas dadas.
      */
-    public List<Spacecraft> fetchSatellitesAbove(GeoPosition observerPos, double searchRadiusKm) {
-        List<Spacecraft> detectedAbove = new ArrayList<>();
+    public List<OrbitalObject> fetchSatellitesAbove(GeoPosition observerPos, double searchRadiusKm) {
+        List<OrbitalObject> detectedAbove = new ArrayList<>();
         if (observerPos == null) return fetchLiveSpaceObjects();
 
         // N2YO requiere el radio de búsqueda en GRADOS. 1 grado latitud ≈ 111 km.
@@ -97,7 +98,7 @@ public class N2YOApiClient {
         return detectedAbove;
     }
 
-    private void parseSatellitesAboveFromJson(String json, List<Spacecraft> resultList) {
+    private void parseSatellitesAboveFromJson(String json, List<OrbitalObject> resultList) {
         try {
             int abovePos = json.indexOf("\"above\":");
             if (abovePos == -1) return;
@@ -118,7 +119,7 @@ public class N2YOApiClient {
 
                 if (satName != null && !satName.trim().isEmpty()) {
                     GeoPosition posObj = new GeoPosition(satLat, satLng, satAlt);
-                    Spacecraft craft = instantiateFromN2YOData(satId, satName.trim(), posObj);
+                    OrbitalObject craft = instantiateFromN2YOData(satId, satName.trim(), posObj);
                     resultList.add(craft);
                     count++;
                 }
@@ -131,11 +132,11 @@ public class N2YOApiClient {
     /**
      * Consulta la API N2YO en vivo para la lista global de satélites.
      */
-    public List<Spacecraft> fetchLiveSpaceObjects() {
-        List<Spacecraft> liveObjects = new ArrayList<>();
+    public List<OrbitalObject> fetchLiveSpaceObjects() {
+        List<OrbitalObject> liveObjects = new ArrayList<>();
 
         for (int noradId : REAL_NORAD_IDS) {
-            Spacecraft craft = fetchRealSatellite(noradId);
+            OrbitalObject craft = fetchRealSatellite(noradId);
             if (craft != null) {
                 liveObjects.add(craft);
             }
@@ -163,7 +164,7 @@ public class N2YOApiClient {
     /**
      * Petición HTTP a N2YO para un satélite individual.
      */
-    public Spacecraft fetchRealSatellite(int noradId) {
+    public OrbitalObject fetchRealSatellite(int noradId) {
         String url = String.format(Locale.US, "%spositions/%d/-34.60/-58.38/25/1/&apiKey=%s", BASE_URL, noradId, apiKey);
 
         String responseBody = sendGet(url, Duration.ofSeconds(4));
@@ -185,7 +186,7 @@ public class N2YOApiClient {
     /**
      * Mapeo dinámico polimórfico basado estrictamente en el nombre y NORAD ID real de la API N2YO.
      */
-    private Spacecraft instantiateFromN2YOData(int noradId, String satName, GeoPosition pos) {
+    private OrbitalObject instantiateFromN2YOData(int noradId, String satName, GeoPosition pos) {
         String upper = satName.toUpperCase();
         String craftId = "SAT-" + noradId;
 

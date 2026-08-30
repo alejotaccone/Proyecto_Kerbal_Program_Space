@@ -3,7 +3,7 @@ package model.spacecraft;
 import model.components.FuelTank;
 import model.geometry.GeoPosition;
 
-public class SpaceStation extends Spacecraft {
+public class SpaceStation extends OrbitalObject {
     private boolean dockingAvailable;
     private String stationType;
     
@@ -22,8 +22,8 @@ public class SpaceStation extends Spacecraft {
     }
 
     public SpaceStation(String id, String name, int noradId, GeoPosition position, String nombreImagen, String stationType) {
-        // La estación espacial tiene un tanque de reserva ilimitado/grande y orbita suavemente
-        super(id, name, noradId, position, new FuelTank(10000.0, 10000.0, 0.0), 27600.0);
+        // La estación espacial es un objeto orbital con velocidad orbital estándar (~27600 km/h)
+        super(id, name, noradId, position, 27600.0);
         this.dockingAvailable = true;
         this.nombreImagen = nombreImagen;
         this.stationType = stationType;

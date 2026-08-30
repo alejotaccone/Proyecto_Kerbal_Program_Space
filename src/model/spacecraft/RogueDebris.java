@@ -9,9 +9,9 @@ import model.geometry.GeoPosition;
  */
 public class RogueDebris extends SpaceDebris {
     
-    private Spacecraft target;
+    private OrbitalObject target;
 
-    public RogueDebris(String id, String name, GeoPosition position, double hazardLevel, Spacecraft target) {
+    public RogueDebris(String id, String name, GeoPosition position, double hazardLevel, OrbitalObject target) {
         super(id, name, 99999, position, hazardLevel); // 99999 es un NORAD ID falso para que N2YO lo ignore
         this.target = target;
     }
@@ -45,7 +45,7 @@ public class RogueDebris extends SpaceDebris {
         }
     }
 
-    public Spacecraft getTarget() {
+    public OrbitalObject getTarget() {
         return target;
     }
 }

@@ -11,13 +11,14 @@ import model.geometry.GeoPosition;
 import model.spacecraft.CargoShip;
 import model.spacecraft.CrewShuttle;
 import model.spacecraft.ExplorationProbe;
+import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceStation;
 import model.spacecraft.Spacecraft;
 import radar.Radar;
 
 public class SimulationEngine {
     private int currentTick;
-    private List<Spacecraft> trackedObjects;
+    private List<OrbitalObject> trackedObjects;
     private Radar radar;
     private N2YOApiClient apiClient;
     private int monitoredShipIndex;
@@ -54,7 +55,7 @@ public class SimulationEngine {
      */
     private void updateMonitor() {
         if (monitoredShipIndex >= 0 && monitoredShipIndex < trackedObjects.size()) {
-            Spacecraft ship = trackedObjects.get(monitoredShipIndex);
+            OrbitalObject ship = trackedObjects.get(monitoredShipIndex);
             TelemetryLogger.writeShipMonitorFile(ship, lastMonitorAction);
         }
     }
@@ -67,7 +68,7 @@ public class SimulationEngine {
     public void setTargetStation(int noradId) {
         this.targetStationNoradId = noradId;
         
-        Spacecraft station = apiClient.fetchRealSatellite(noradId);
+        OrbitalObject station = apiClient.fetchRealSatellite(noradId);
         
         if (station != null) {
             this.trackedObjects.clear();
@@ -102,7 +103,7 @@ public class SimulationEngine {
 
     public void syncWithN2YO() {
         if (trackedObjects == null || trackedObjects.isEmpty()) return;
-        for (Spacecraft craft : trackedObjects) {
+        for (OrbitalObject craft : trackedObjects) {
             GeoPosition updatedPos = apiClient.fetchRealSatellitePosition(
                     craft.getNoradId(), 
                     craft.getPosition().getLatitude(), 
@@ -122,7 +123,7 @@ public class SimulationEngine {
     /**
      * Actualiza el centro del radar local para que siga la posición de la estación objetivo.
      */
-    private void actualizarPosicionRadar(Spacecraft craft) {
+    private void actualizarPosicionRadar(OrbitalObject craft) {
         if (craft != null && craft.getNoradId() == targetStationNoradId && radar != null && craft.getPosition() != null) {
             radar.getObserverPosition().setLatitude(craft.getPosition().getLatitude());
             radar.getObserverPosition().setLongitude(craft.getPosition().getLongitude());
@@ -136,8 +137,8 @@ public class SimulationEngine {
         currentTick++;
         TelemetryLogger.printHeader(currentTick, radar.getObserverCity());
 
-        // Mover cada nave en órbita según sus reglas de polimorfismo
-        for (Spacecraft craft : trackedObjects) {
+        // Mover cada objeto en órbita según sus reglas de polimorfismo
+        for (OrbitalObject craft : trackedObjects) {
             craft.move();
             actualizarPosicionRadar(craft);
         }
@@ -167,11 +168,11 @@ public class SimulationEngine {
     // ==================== EVENTOS DE CRISIS Y BASURA ESPACIAL ====================
     
     /**
-     * Busca la estación espacial principal o devuelve la primera nave rastreada como fallback.
+     * Busca la estación espacial principal o devuelve el primer objeto rastreado como fallback.
      */
-    private Spacecraft buscarEstacionObjetivo() {
+    private OrbitalObject buscarEstacionObjetivo() {
         if (trackedObjects == null || trackedObjects.isEmpty()) return null;
-        for (Spacecraft nave : trackedObjects) {
+        for (OrbitalObject nave : trackedObjects) {
             if (nave instanceof SpaceStation) {
                 return nave;
             }
@@ -200,7 +201,7 @@ public class SimulationEngine {
                 
         if (countDebris >= 3) return false; // Límite máximo de 3 basuras pasivas en pantalla
         
-        Spacecraft station = buscarEstacionObjetivo();
+        OrbitalObject station = buscarEstacionObjetivo();
         if (station != null && station.getPosition() != null) {
             GeoPosition spawnPos = generarPosicionCercana(station.getPosition(), 0.25, 0.80);
             
@@ -225,7 +226,7 @@ public class SimulationEngine {
         
         boolean hasRogue = trackedObjects.stream().anyMatch(nave -> nave instanceof model.spacecraft.RogueDebris);
         if (!hasRogue) {
-            Spacecraft target = buscarEstacionObjetivo();
+            OrbitalObject target = buscarEstacionObjetivo();
             if (target != null && target.getPosition() != null) {
                 GeoPosition spawnPos = generarPosicionCercana(target.getPosition(), 0.9, 0.9);
                 
@@ -245,7 +246,7 @@ public class SimulationEngine {
         return false;
     }
     
-    public void removeShip(Spacecraft ship) {
+    public void removeShip(OrbitalObject ship) {
         if (ship != null && trackedObjects.contains(ship)) {
             trackedObjects.remove(ship);
             if (monitoredShipIndex >= trackedObjects.size()) {
@@ -258,17 +259,26 @@ public class SimulationEngine {
 
     public boolean evadeShip(int index) {
         if (index >= 0 && index < trackedObjects.size()) {
-            Spacecraft craft = trackedObjects.get(index);
-            boolean success = craft.evade(0.5, 0.5);
-            if (success) {
-                String msg = "MANIOBRA EXITOSA! La nave [" + craft.getName() + "] cambio su orbita para evitar impacto.";
-                TelemetryLogger.printMessage(msg);
-                this.monitoredShipIndex = index;
-                this.lastMonitorAction = msg;
-                updateMonitor();
-                return true;
+            OrbitalObject craft = trackedObjects.get(index);
+            if (craft instanceof Spacecraft) {
+                Spacecraft ship = (Spacecraft) craft;
+                boolean success = ship.evade(0.5, 0.5);
+                if (success) {
+                    String msg = "MANIOBRA EXITOSA! La nave [" + ship.getName() + "] cambio su orbita para evitar impacto.";
+                    TelemetryLogger.printMessage(msg);
+                    this.monitoredShipIndex = index;
+                    this.lastMonitorAction = msg;
+                    updateMonitor();
+                    return true;
+                } else {
+                    String msg = "MANIOBRA FALLIDA! La nave [" + ship.getName() + "] no tiene suficiente combustible.";
+                    TelemetryLogger.printMessage(msg);
+                    this.monitoredShipIndex = index;
+                    this.lastMonitorAction = msg;
+                    updateMonitor();
+                }
             } else {
-                String msg = "MANIOBRA FALLIDA! La nave [" + craft.getName() + "] no tiene suficiente combustible.";
+                String msg = "MANIOBRA IMPOSIBLE! El objeto [" + craft.getName() + "] no es una nave con propulsión propia.";
                 TelemetryLogger.printMessage(msg);
                 this.monitoredShipIndex = index;
                 this.lastMonitorAction = msg;
@@ -280,32 +290,41 @@ public class SimulationEngine {
 
     public boolean refuelShipAtStation(int shipIndex) {
         if (shipIndex >= 0 && shipIndex < trackedObjects.size()) {
-            Spacecraft ship = trackedObjects.get(shipIndex);
-            for (Spacecraft craft : trackedObjects) {
-                if (craft instanceof SpaceStation) {
-                    SpaceStation station = (SpaceStation) craft;
-                    if (station.refuelShip(ship)) {
-                        String msg = "Acople exitoso: La nave [" + ship.getName() + "] reposto en la estacion [" + station.getName() + "].";
-                        TelemetryLogger.printMessage(msg);
-                        this.monitoredShipIndex = shipIndex;
-                        this.lastMonitorAction = msg;
-                        updateMonitor();
-                        return true;
+            OrbitalObject targetObj = trackedObjects.get(shipIndex);
+            if (targetObj instanceof Spacecraft) {
+                Spacecraft ship = (Spacecraft) targetObj;
+                for (OrbitalObject craft : trackedObjects) {
+                    if (craft instanceof SpaceStation) {
+                        SpaceStation station = (SpaceStation) craft;
+                        if (station.refuelShip(ship)) {
+                            String msg = "Acople exitoso: La nave [" + ship.getName() + "] reposto en la estacion [" + station.getName() + "].";
+                            TelemetryLogger.printMessage(msg);
+                            this.monitoredShipIndex = shipIndex;
+                            this.lastMonitorAction = msg;
+                            updateMonitor();
+                            return true;
+                        }
                     }
                 }
+                String msg = "No hay ninguna Estacion Espacial dentro del radio de acople (500 km) para la nave [" + ship.getName() + "].";
+                TelemetryLogger.printMessage(msg);
+                this.monitoredShipIndex = shipIndex;
+                this.lastMonitorAction = msg;
+                updateMonitor();
+            } else {
+                String msg = "El objeto orbital [" + targetObj.getName() + "] no posee tanque de combustible para repostar.";
+                TelemetryLogger.printMessage(msg);
+                this.monitoredShipIndex = shipIndex;
+                this.lastMonitorAction = msg;
+                updateMonitor();
             }
-            String msg = "No hay ninguna Estacion Espacial dentro del radio de acople (500 km) para la nave [" + ship.getName() + "].";
-            TelemetryLogger.printMessage(msg);
-            this.monitoredShipIndex = shipIndex;
-            this.lastMonitorAction = msg;
-            updateMonitor();
         }
         return false;
     }
 
     public void useSpecialAbility(int shipIndex) {
         if (shipIndex >= 0 && shipIndex < trackedObjects.size()) {
-            Spacecraft craft = trackedObjects.get(shipIndex);
+            OrbitalObject craft = trackedObjects.get(shipIndex);
             String result = craft.performSpecialAbility();
             TelemetryLogger.printMessage(result);
             this.monitoredShipIndex = shipIndex;
@@ -316,7 +335,7 @@ public class SimulationEngine {
 
     // ==================== GETTERS ====================
 
-    public List<Spacecraft> getTrackedObjects() {
+    public List<OrbitalObject> getTrackedObjects() {
         return trackedObjects;
     }
 

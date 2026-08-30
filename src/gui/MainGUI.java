@@ -2,6 +2,7 @@ package gui;
 
 import engine.SimulationEngine;
 import engine.TelemetryLogger;
+import model.spacecraft.OrbitalObject;
 import model.spacecraft.Spacecraft;
 import model.spacecraft.SpaceDebris;
 import model.spacecraft.SpaceStation;
@@ -523,7 +524,7 @@ public class MainGUI extends JFrame {
             return;
         }
 
-        Spacecraft ship = engine.getTrackedObjects().get(idx);
+        OrbitalObject ship = engine.getTrackedObjects().get(idx);
         cargarImagenNave(ship.getNombreImagen());
         txtMonitorNave.setText(TelemetryLogger.generarResumenNave(ship));
         txtMonitorNave.setCaretPosition(0);
@@ -821,7 +822,7 @@ public class MainGUI extends JFrame {
                     // Todo lo de abajo se ejecuta en el EDT, seguro para Swing
                     sincronizarDatosRadar();
 
-                    List<Spacecraft> naves = engine.getTrackedObjects();
+                    List<OrbitalObject> naves = engine.getTrackedObjects();
                     String ciudad = engine.getRadar().getObserverCity();
 
                     // Redirigir la telemetría a la consola gráfica
@@ -884,7 +885,7 @@ public class MainGUI extends JFrame {
         if (engine == null || engine.getTrackedObjects() == null) return;
         
         model.spacecraft.RogueDebris threat = null;
-        for (Spacecraft nave : engine.getTrackedObjects()) {
+        for (OrbitalObject nave : engine.getTrackedObjects()) {
             if (nave instanceof model.spacecraft.RogueDebris) {
                 threat = (model.spacecraft.RogueDebris) nave;
                 break;
@@ -892,7 +893,7 @@ public class MainGUI extends JFrame {
         }
         
         if (threat != null && threat.getTarget() != null) {
-            Spacecraft target = threat.getTarget();
+            OrbitalObject target = threat.getTarget();
             double dist = threat.getPosition().distanceTo(target.getPosition());
             
             // Si está a menos de 100km, se activa la crisis interactiva
@@ -923,15 +924,18 @@ public class MainGUI extends JFrame {
                 
                 // Procesar la decisión del jugador
                 if (seleccion == 0) { // Evasión
-                    boolean success = target.evade(0.5, 0.5);
+                    boolean success = false;
+                    if (target instanceof Spacecraft) {
+                        success = ((Spacecraft) target).evade(0.5, 0.5);
+                    }
                     if (success) {
                         logConsola("[CRISIS]: ¡Evasión exitosa! [" + target.getName() + "] maniobró a tiempo.");
                     } else {
-                        logConsola("[CRISIS FATAL]: [" + target.getName() + "] no tuvo combustible para evadir. NAVE DESTRUIDA.");
+                        logConsola("[CRISIS FATAL]: [" + target.getName() + "] no pudo evadir el impacto (sin propulsión/combustible). OBJETO DESTRUIDO.");
                         engine.removeShip(target);
                     }
                 } else { // Ignorar
-                    logConsola("[CRISIS FATAL]: [" + target.getName() + "] ha recibido un impacto directo. NAVE DESTRUIDA.");
+                    logConsola("[CRISIS FATAL]: [" + target.getName() + "] ha recibido un impacto directo. OBJETO DESTRUIDO.");
                     engine.removeShip(target);
                 }
                 
@@ -987,7 +991,7 @@ public class MainGUI extends JFrame {
     /** Log de acción sobre una nave específica */
     private void logAccionNave(int idx, String accion) {
         if (engine != null && engine.getTrackedObjects() != null && idx < engine.getTrackedObjects().size()) {
-            Spacecraft craft = engine.getTrackedObjects().get(idx);
+            OrbitalObject craft = engine.getTrackedObjects().get(idx);
             logConsola("[Acción]: " + accion + " sobre [" + craft.getName() + "]");
         }
     }
@@ -1004,9 +1008,9 @@ public class MainGUI extends JFrame {
         int selectedIdx = cmbNaves.getSelectedIndex();
         cmbNaves.removeAllItems();
         cmbNaves.addItem("< Seleccione una nave >");
-        List<Spacecraft> naves = engine.getTrackedObjects();
+        List<OrbitalObject> naves = engine.getTrackedObjects();
         for (int i = 0; i < naves.size(); i++) {
-            Spacecraft nave = naves.get(i);
+            OrbitalObject nave = naves.get(i);
             cmbNaves.addItem((i + 1) + ". " + nave.getName() + " (" + nave.getType() + ")");
         }
         if (selectedIdx > 0 && selectedIdx < cmbNaves.getItemCount()) {
@@ -1065,7 +1069,7 @@ public class MainGUI extends JFrame {
         private double sweepAngle = 0.0;
         
         // Referencia a las naves (se establece desde el exterior)
-        private List<Spacecraft> naves;
+        private List<OrbitalObject> naves;
         
         // Centro del radar en coordenadas geográficas (para mapear lat/lng a píxeles)
         private double centroLat = -34.60;
@@ -1096,7 +1100,7 @@ public class MainGUI extends JFrame {
         }
 
         /** Establece la lista de naves a dibujar */
-        void setNaves(List<Spacecraft> naves) {
+        void setNaves(List<OrbitalObject> naves) {
             this.naves = naves;
         }
 
@@ -1222,7 +1226,7 @@ public class MainGUI extends JFrame {
          * Calcula las coordenadas en pantalla (pixelX, pixelY) de una nave en el radar,
          * aplicando la proyección geográfica y limitando al radio visible.
          */
-        private Point calcularPosicionPantalla(Spacecraft craft, int centroX, int centroY, int radio) {
+        private Point calcularPosicionPantalla(OrbitalObject craft, int centroX, int centroY, int radio) {
             if (craft == null || craft.getPosition() == null) return new Point(centroX, centroY);
 
             GeoPosition pos = craft.getPosition();
@@ -1256,7 +1260,7 @@ public class MainGUI extends JFrame {
         private void dibujarNaves(Graphics2D g2, int centroX, int centroY, int radio) {
             if (naves == null || naves.isEmpty()) return;
 
-            for (Spacecraft craft : naves) {
+            for (OrbitalObject craft : naves) {
                 if (craft.getPosition() == null) continue;
 
                 Point screenPos = calcularPosicionPantalla(craft, centroX, centroY, radio);
@@ -1359,7 +1363,7 @@ public class MainGUI extends JFrame {
             int radio = Math.min(centroX, centroY) - 30;
             
             for (int i = naves.size() - 1; i >= 0; i--) {
-                Spacecraft craft = naves.get(i);
+                OrbitalObject craft = naves.get(i);
                 if (craft.getPosition() == null) continue;
 
                 Point screenPos = calcularPosicionPantalla(craft, centroX, centroY, radio);

@@ -3,7 +3,7 @@ package radar;
 import java.util.ArrayList;
 import java.util.List;
 import model.geometry.GeoPosition;
-import model.spacecraft.Spacecraft;
+import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceDebris;
 
 public class Radar {
@@ -20,10 +20,10 @@ public class Radar {
     /**
      * Escanea la lista de objetos espaciales y retorna aquellos dentro del rango del radar.
      */
-    public List<Spacecraft> scanCoverageArea(List<Spacecraft> allObjects) {
-        List<Spacecraft> detected = new ArrayList<>();
+    public List<OrbitalObject> scanCoverageArea(List<OrbitalObject> allObjects) {
+        List<OrbitalObject> detected = new ArrayList<>();
         if (allObjects != null) {
-            for (Spacecraft craft : allObjects) {
+            for (OrbitalObject craft : allObjects) {
                 double distance = observerPosition.distanceTo(craft.getPosition());
                 if (distance <= coverageRadiusKm) {
                     detected.add(craft);
@@ -36,14 +36,14 @@ public class Radar {
     /**
      * Evalúa potenciales riesgos de colisión o alertas entre objetos espaciales.
      */
-    public List<String> detectCollisionRisks(List<Spacecraft> allObjects) {
+    public List<String> detectCollisionRisks(List<OrbitalObject> allObjects) {
         List<String> alerts = new ArrayList<>();
         if (allObjects == null || allObjects.size() < 2) return alerts;
 
         for (int i = 0; i < allObjects.size(); i++) {
             for (int j = i + 1; j < allObjects.size(); j++) {
-                Spacecraft naveA = allObjects.get(i);
-                Spacecraft naveB = allObjects.get(j);
+                OrbitalObject naveA = allObjects.get(i);
+                OrbitalObject naveB = allObjects.get(j);
 
                 double distance = naveA.getPosition().distanceTo(naveB.getPosition());
                 if (distance < 200.0) { // Menos de 200 km en órbita es alerta de colisión

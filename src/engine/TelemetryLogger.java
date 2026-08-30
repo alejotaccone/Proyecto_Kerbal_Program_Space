@@ -8,7 +8,9 @@ import model.components.Kerbal;
 import model.spacecraft.CargoShip;
 import model.spacecraft.CrewShuttle;
 import model.spacecraft.ExplorationProbe;
+import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceDebris;
+import model.spacecraft.SpaceStation;
 import model.spacecraft.Spacecraft;
 
 public class TelemetryLogger {
@@ -21,14 +23,14 @@ public class TelemetryLogger {
         System.out.println("==================================================================");
     }
 
-    public static void printSpacecraftStatus(List<Spacecraft> ships) {
+    public static void printSpacecraftStatus(List<OrbitalObject> ships) {
         System.out.println("\n--- FLOTA Y OBJETOS ORBITALES RASTREADOS ---");
         if (ships == null || ships.isEmpty()) {
             System.out.println("No hay objetos rastreados en órbita.");
             return;
         }
         for (int i = 0; i < ships.size(); i++) {
-            Spacecraft craft = ships.get(i);
+            OrbitalObject craft = ships.get(i);
             System.out.printf("[%d] %s\n", (i + 1), craft.toString());
             
             // Si es un transbordador tripulado, mostrar miembros
@@ -103,7 +105,7 @@ public class TelemetryLogger {
      * Genera el texto completo de telemetría y estado de una nave.
      * Utilizado tanto por la GUI como por la consola secundaria de monitoreo.
      */
-    public static String generarResumenNave(Spacecraft ship) {
+    public static String generarResumenNave(OrbitalObject ship) {
         if (ship == null) return "No hay nave seleccionada";
 
         StringBuilder sb = new StringBuilder();
@@ -121,15 +123,20 @@ public class TelemetryLogger {
         sb.append("--- ESTADO ---\n");
         sb.append(String.format("Velocidad: %.1f km/h\n", ship.getVelocityKmH()));
 
-        if (ship.getFuelTank() != null) {
-            sb.append(String.format("Combust:   %.1f%%\n", ship.getFuelTank().getPercentage()));
-            sb.append(String.format("Nivel:     %.1f / %.1f L\n", ship.getFuelTank().getCurrentLevel(), ship.getFuelTank().getCapacity()));
+        if (ship instanceof Spacecraft) {
+            Spacecraft craft = (Spacecraft) ship;
+            if (craft.getFuelTank() != null) {
+                sb.append(String.format("Combust:   %.1f%%\n", craft.getFuelTank().getPercentage()));
+                sb.append(String.format("Nivel:     %.1f / %.1f L\n", craft.getFuelTank().getCurrentLevel(), craft.getFuelTank().getCapacity()));
+            } else {
+                sb.append("Combust:   N/A (Sin motor)\n");
+            }
         } else {
-            sb.append("Combust:   N/A (Sin motor)\n");
+            sb.append("Combust:   N/A (Sin motor / En órbita)\n");
         }
 
-        if (ship instanceof model.spacecraft.SpaceStation) {
-            model.spacecraft.SpaceStation station = (model.spacecraft.SpaceStation) ship;
+        if (ship instanceof SpaceStation) {
+            SpaceStation station = (SpaceStation) ship;
             sb.append("\n--- SISTEMAS VITALES ---\n");
             sb.append(String.format("Oxígeno:   %.1f%%\n", station.getOxygenLevel()));
             sb.append(String.format("Batería:   %.1f%%\n", station.getBatteryLevel()));
@@ -169,7 +176,7 @@ public class TelemetryLogger {
      * Escribe la información detallada de la nave seleccionada en el archivo nave_monitor.txt.
      * La segunda consola lee este archivo y lo muestra automáticamente.
      */
-    public static void writeShipMonitorFile(Spacecraft ship, String lastAction) {
+    public static void writeShipMonitorFile(OrbitalObject ship, String lastAction) {
         if (ship == null) return;
 
         try {
