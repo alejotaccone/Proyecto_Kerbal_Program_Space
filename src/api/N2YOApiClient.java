@@ -12,10 +12,8 @@ import model.components.FuelTank;
 import model.components.Kerbal;
 import model.geometry.GeoPosition;
 import model.spacecraft.CargoShip;
-import model.spacecraft.ChinaSpaceStation;
 import model.spacecraft.CrewShuttle;
 import model.spacecraft.ExplorationProbe;
-import model.spacecraft.InternationalSpaceStation;
 import model.spacecraft.SpaceDebris;
 import model.spacecraft.SpaceStation;
 import model.spacecraft.Spacecraft;
@@ -192,9 +190,9 @@ public class N2YOApiClient {
         String craftId = "SAT-" + noradId;
 
         if (upper.contains("TIANHE") || upper.contains("TIANGONG") || upper.contains("CSS") || upper.contains("CHINA") || noradId == NORAD_TIANGONG) {
-            return new ChinaSpaceStation(craftId, satName + " (N2YO API)", noradId, pos);
+            return new SpaceStation(craftId, satName + " (N2YO API)", noradId, pos, "SpaceSation_China.jfif", "Estación Espacial China (Tiangong)");
         } else if (upper.contains("STATION") || upper.contains("ISS") || noradId == NORAD_ISS) {
-            return new InternationalSpaceStation(craftId, satName + " (N2YO API)", noradId, pos);
+            return new SpaceStation(craftId, satName + " (N2YO API)", noradId, pos, "SpaceStation_Internacional.jpg", "Estación Espacial Internacional (ISS)");
         } else if (upper.contains("ONEWEB") || upper.contains("DEBRIS") || upper.contains("COSMOS") || upper.contains("DEB") || upper.contains("SL-")) {
             return new SpaceDebris(craftId, satName + " (N2YO API)", noradId, pos, 8.2);
         } else if (upper.contains("NOAA") || upper.contains("CARGO") || upper.contains("DRAGON") || upper.contains("DELTA") || upper.contains("ATLAS")) {

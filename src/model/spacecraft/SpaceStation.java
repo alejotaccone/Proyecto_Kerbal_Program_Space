@@ -5,6 +5,7 @@ import model.geometry.GeoPosition;
 
 public class SpaceStation extends Spacecraft {
     private boolean dockingAvailable;
+    private String stationType;
     
     // Variables de sistemas internos (Telemetría Micro)
     private double oxygenLevel;        // Porcentaje (0.0 a 100.0)
@@ -13,14 +14,19 @@ public class SpaceStation extends Spacecraft {
     private boolean solarPanelsDeployed; // Estado de los paneles
 
     public SpaceStation(String id, String name, int noradId, GeoPosition position) {
-        this(id, name, noradId, position, "SpaceStation_Internacional.jpg");
+        this(id, name, noradId, position, "SpaceStation_Internacional.jpg", "Estación Espacial Internacional (ISS)");
     }
 
     public SpaceStation(String id, String name, int noradId, GeoPosition position, String nombreImagen) {
+        this(id, name, noradId, position, nombreImagen, "Estación Espacial Orbital");
+    }
+
+    public SpaceStation(String id, String name, int noradId, GeoPosition position, String nombreImagen, String stationType) {
         // La estación espacial tiene un tanque de reserva ilimitado/grande y orbita suavemente
         super(id, name, noradId, position, new FuelTank(10000.0, 10000.0, 0.0), 27600.0);
         this.dockingAvailable = true;
         this.nombreImagen = nombreImagen;
+        this.stationType = stationType;
         
         // Inicializar sistemas
         this.oxygenLevel = 100.0;
@@ -60,7 +66,7 @@ public class SpaceStation extends Spacecraft {
 
     @Override
     public String getType() {
-        return "Estación Espacial Orbital";
+        return (stationType != null && !stationType.isEmpty()) ? stationType : "Estación Espacial Orbital";
     }
 
     @Override
