@@ -884,75 +884,88 @@ public class MainGUI extends JFrame {
     private void evaluarEventosCrisis() {
         if (engine == null || engine.getTrackedObjects() == null) return;
         
-        model.spacecraft.RogueDebris threat = null;
+        model.spacecraft.RogueDebris threat = buscarAmenazaRogue();
+        if (threat == null || threat.getTarget() == null) return;
+
+        OrbitalObject target = threat.getTarget();
+        double dist = threat.getPosition().distanceTo(target.getPosition());
+        
+        // Si está a menos de 100km, se activa la crisis interactiva
+        if (dist < 100.0) {
+            pausarSimulacionParaCrisis();
+            int seleccion = mostrarDialogoCrisis(threat, target, dist);
+            procesarDecisionCrisis(seleccion, target);
+            finalizarCrisis(threat);
+        }
+    }
+
+    private model.spacecraft.RogueDebris buscarAmenazaRogue() {
         for (OrbitalObject nave : engine.getTrackedObjects()) {
             if (nave instanceof model.spacecraft.RogueDebris) {
-                threat = (model.spacecraft.RogueDebris) nave;
-                break;
+                return (model.spacecraft.RogueDebris) nave;
             }
         }
+        return null;
+    }
+
+    private void pausarSimulacionParaCrisis() {
+        simulationTimer.stop();
+        radarSweepTimer.stop();
+    }
+
+    private int mostrarDialogoCrisis(model.spacecraft.RogueDebris threat, OrbitalObject target, double dist) {
+        String mensaje = "¡ALERTA DE IMPACTO INMINENTE!\n\n"
+                + "La Basura Espacial Hostil [" + threat.getName() + "]\n"
+                + "se encuentra a " + String.format("%.1f", dist) + " km de la nave [" + target.getName() + "].\n\n"
+                + "¿Qué orden de emergencia desea ejecutar, Comandante?";
         
-        if (threat != null && threat.getTarget() != null) {
-            OrbitalObject target = threat.getTarget();
-            double dist = threat.getPosition().distanceTo(target.getPosition());
-            
-            // Si está a menos de 100km, se activa la crisis interactiva
-            if (dist < 100.0) {
-                // Pausar simulación y radar
-                simulationTimer.stop();
-                radarSweepTimer.stop();
-                
-                String mensaje = "¡ALERTA DE IMPACTO INMINENTE!\n\n"
-                        + "La Basura Espacial Hostil [" + threat.getName() + "]\n"
-                        + "se encuentra a " + String.format("%.1f", dist) + " km de la nave [" + target.getName() + "].\n\n"
-                        + "¿Qué orden de emergencia desea ejecutar, Comandante?";
-                
-                Object[] opciones = {
-                    "Forzar Evasión (-15L Combustible)",
-                    "Ignorar (Aceptar Impacto Crítico)"
-                };
-                
-                int seleccion = JOptionPane.showOptionDialog(
-                        this,
-                        mensaje,
-                        "CRISIS DE COLISIÓN DETECTADA",
-                        JOptionPane.YES_NO_CANCEL_OPTION,
-                        JOptionPane.WARNING_MESSAGE,
-                        null, // Icono custom null
-                        opciones,
-                        opciones[0]);
-                
-                // Procesar la decisión del jugador
-                if (seleccion == 0) { // Evasión
-                    boolean success = false;
-                    if (target instanceof Spacecraft) {
-                        success = ((Spacecraft) target).evade(0.5, 0.5);
-                    }
-                    if (success) {
-                        logConsola("[CRISIS]: ¡Evasión exitosa! [" + target.getName() + "] maniobró a tiempo.");
-                    } else {
-                        logConsola("[CRISIS FATAL]: [" + target.getName() + "] no pudo evadir el impacto (sin propulsión/combustible). OBJETO DESTRUIDO.");
-                        engine.removeShip(target);
-                    }
-                } else { // Ignorar
-                    logConsola("[CRISIS FATAL]: [" + target.getName() + "] ha recibido un impacto directo. OBJETO DESTRUIDO.");
-                    engine.removeShip(target);
-                }
-                
-                // La amenaza pasa de largo o explota, desaparece del radar
-                engine.removeShip(threat);
-                
-                // Actualizar interfaz gráfica inmediatamente
-                actualizarComboNaves();
-                actualizarMonitorNave();
-                radarPanel.repaint();
-                
-                // Reanudar la simulación
-                if (simulationRunning) {
-                    simulationTimer.start();
-                    radarSweepTimer.start();
-                }
+        Object[] opciones = {
+            "Forzar Evasión (-15L Combustible)",
+            "Ignorar (Aceptar Impacto Crítico)"
+        };
+        
+        return JOptionPane.showOptionDialog(
+                this,
+                mensaje,
+                "CRISIS DE COLISIÓN DETECTADA",
+                JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                opciones,
+                opciones[0]);
+    }
+
+    private void procesarDecisionCrisis(int seleccion, OrbitalObject target) {
+        if (seleccion == 0) { // Evasión
+            boolean success = false;
+            if (target instanceof Spacecraft) {
+                success = ((Spacecraft) target).evade(0.5, 0.5);
             }
+            if (success) {
+                logConsola("[CRISIS]: ¡Evasión exitosa! [" + target.getName() + "] maniobró a tiempo.");
+            } else {
+                logConsola("[CRISIS FATAL]: [" + target.getName() + "] no pudo evadir el impacto (sin propulsión/combustible). OBJETO DESTRUIDO.");
+                engine.removeShip(target);
+            }
+        } else { // Ignorar
+            logConsola("[CRISIS FATAL]: [" + target.getName() + "] ha recibido un impacto directo. OBJETO DESTRUIDO.");
+            engine.removeShip(target);
+        }
+    }
+
+    private void finalizarCrisis(model.spacecraft.RogueDebris threat) {
+        // La amenaza pasa de largo o explota, desaparece del radar
+        engine.removeShip(threat);
+        
+        // Actualizar interfaz gráfica inmediatamente
+        actualizarComboNaves();
+        actualizarMonitorNave();
+        radarPanel.repaint();
+        
+        // Reanudar la simulación si estaba activa
+        if (simulationRunning) {
+            simulationTimer.start();
+            radarSweepTimer.start();
         }
     }
 
@@ -1253,6 +1266,32 @@ public class MainGUI extends JFrame {
             return new Point(pixelX, pixelY);
         }
 
+        private static class EstiloVisual {
+            final Color color;
+            final int tamano;
+            final boolean esTriangulo;
+
+            EstiloVisual(Color color, int tamano, boolean esTriangulo) {
+                this.color = color;
+                this.tamano = tamano;
+                this.esTriangulo = esTriangulo;
+            }
+        }
+
+        private EstiloVisual determinarEstiloVisual(OrbitalObject craft) {
+            if (craft instanceof SpaceStation) {
+                return new EstiloVisual(COLOR_ACCENT_CYAN, 9, false);
+            } else if (craft instanceof SpaceDebris) {
+                return new EstiloVisual(COLOR_ACCENT_RED, 5, true);
+            } else if (craft instanceof CrewShuttle) {
+                return new EstiloVisual(COLOR_ACCENT_YELLOW, 7, false);
+            } else if (craft.getType().contains("Carga")) {
+                return new EstiloVisual(COLOR_ACCENT_ORANGE, 7, false);
+            } else {
+                return new EstiloVisual(COLOR_TEXT_PRIMARY, 6, false);
+            }
+        }
+
         /**
          * Dibuja los blips (puntos) de cada nave en sus coordenadas mapeadas.
          * El color y la forma dependen del tipo de nave (polimorfismo visual).
@@ -1264,89 +1303,67 @@ public class MainGUI extends JFrame {
                 if (craft.getPosition() == null) continue;
 
                 Point screenPos = calcularPosicionPantalla(craft, centroX, centroY, radio);
-                int pixelX = screenPos.x;
-                int pixelY = screenPos.y;
+                EstiloVisual estilo = determinarEstiloVisual(craft);
 
-                // Determinar color y forma según el tipo de nave
-                Color colorBlip;
-                int tamano = 6;
-                boolean esTriangulo = false;
+                dibujarIluminacionBarrido(g2, screenPos.x, screenPos.y, centroX, centroY, estilo);
+                dibujarIconoNave(g2, craft, screenPos.x, screenPos.y, estilo);
 
-                if (craft instanceof SpaceStation) {
-                    colorBlip = COLOR_ACCENT_CYAN;
-                    tamano = 9;
-                } else if (craft instanceof SpaceDebris) {
-                    colorBlip = COLOR_ACCENT_RED;
-                    tamano = 5;
-                    esTriangulo = true;
-                } else if (craft instanceof CrewShuttle) {
-                    colorBlip = COLOR_ACCENT_YELLOW;
-                    tamano = 7;
-                } else if (craft.getType().contains("Carga")) {
-                    colorBlip = COLOR_ACCENT_ORANGE;
-                    tamano = 7;
-                } else {
-                    colorBlip = COLOR_TEXT_PRIMARY;
-                    tamano = 6;
-                }
-
-                // Efecto de brillo cuando el barrido pasa sobre la nave
-                double anguloNave = Math.atan2(pixelY - centroY, pixelX - centroX);
-                double diffAngulo = Math.abs(sweepAngle - anguloNave);
-                if (diffAngulo > Math.PI) diffAngulo = 2 * Math.PI - diffAngulo;
-                
-                boolean iluminado = diffAngulo < 0.3; // ~17° de proximidad al barrido
-                
-                if (iluminado) {
-                    // Halo de resplandor cuando el sweep pasa
-                    g2.setColor(new Color(colorBlip.getRed(), colorBlip.getGreen(), colorBlip.getBlue(), 60));
-                    g2.fillOval(pixelX - tamano * 2, pixelY - tamano * 2, tamano * 4, tamano * 4);
-                }
-
-                // Dibujar el blip
-                if (esTriangulo) {
-                    // Triángulo para basura espacial
-                    int[] xPoints = {pixelX, pixelX - tamano, pixelX + tamano};
-                    int[] yPoints = {pixelY - tamano, pixelY + tamano, pixelY + tamano};
-                    g2.setColor(colorBlip);
-                    g2.fillPolygon(xPoints, yPoints, 3);
-                } else {
-                    // Círculo para las demás naves
-                    g2.setColor(colorBlip);
-                    g2.fillOval(pixelX - tamano / 2, pixelY - tamano / 2, tamano, tamano);
-                    
-                    // Anillo exterior para estaciones
-                    if (craft instanceof SpaceStation) {
-                        g2.setStroke(new BasicStroke(1.5f));
-                        g2.drawOval(pixelX - tamano, pixelY - tamano, tamano * 2, tamano * 2);
-                    }
-                }
-
-                // Resaltado de nave seleccionada (borde blanco)
                 if (naves.indexOf(craft) == selectedIndex) {
-                    g2.setColor(Color.WHITE);
-                    g2.setStroke(new BasicStroke(1.5f));
-                    int selSize = tamano + 2;
-                    if (esTriangulo) {
-                        int[] xPointsSel = {pixelX, pixelX - selSize, pixelX + selSize};
-                        int[] yPointsSel = {pixelY - selSize, pixelY + selSize, pixelY + selSize};
-                        g2.drawPolygon(xPointsSel, yPointsSel, 3);
-                    } else {
-                        g2.drawOval(pixelX - selSize, pixelY - selSize, selSize * 2, selSize * 2);
-                    }
+                    dibujarBordeSeleccion(g2, screenPos.x, screenPos.y, estilo);
                 }
 
-                // Etiqueta del nombre de la nave
-                g2.setFont(new Font("Consolas", Font.PLAIN, 9));
-                g2.setColor(new Color(colorBlip.getRed(), colorBlip.getGreen(), colorBlip.getBlue(), 180));
-                
-                // Acortar el nombre si es muy largo
-                String labelNombre = craft.getName();
-                if (labelNombre.length() > 20) {
-                    labelNombre = labelNombre.substring(0, 18) + "…";
-                }
-                g2.drawString(labelNombre, pixelX + tamano + 3, pixelY + 3);
+                dibujarEtiquetaNave(g2, craft, screenPos.x, screenPos.y, estilo);
             }
+        }
+
+        private void dibujarIluminacionBarrido(Graphics2D g2, int pixelX, int pixelY, int centroX, int centroY, EstiloVisual estilo) {
+            double anguloNave = Math.atan2(pixelY - centroY, pixelX - centroX);
+            double diffAngulo = Math.abs(sweepAngle - anguloNave);
+            if (diffAngulo > Math.PI) diffAngulo = 2 * Math.PI - diffAngulo;
+
+            if (diffAngulo < 0.3) { // ~17° de proximidad al barrido
+                g2.setColor(new Color(estilo.color.getRed(), estilo.color.getGreen(), estilo.color.getBlue(), 60));
+                g2.fillOval(pixelX - estilo.tamano * 2, pixelY - estilo.tamano * 2, estilo.tamano * 4, estilo.tamano * 4);
+            }
+        }
+
+        private void dibujarIconoNave(Graphics2D g2, OrbitalObject craft, int pixelX, int pixelY, EstiloVisual estilo) {
+            g2.setColor(estilo.color);
+            if (estilo.esTriangulo) {
+                int[] xPoints = {pixelX, pixelX - estilo.tamano, pixelX + estilo.tamano};
+                int[] yPoints = {pixelY - estilo.tamano, pixelY + estilo.tamano, pixelY + estilo.tamano};
+                g2.fillPolygon(xPoints, yPoints, 3);
+            } else {
+                g2.fillOval(pixelX - estilo.tamano / 2, pixelY - estilo.tamano / 2, estilo.tamano, estilo.tamano);
+                if (craft instanceof SpaceStation) {
+                    g2.setStroke(new BasicStroke(1.5f));
+                    g2.drawOval(pixelX - estilo.tamano, pixelY - estilo.tamano, estilo.tamano * 2, estilo.tamano * 2);
+                }
+            }
+        }
+
+        private void dibujarBordeSeleccion(Graphics2D g2, int pixelX, int pixelY, EstiloVisual estilo) {
+            g2.setColor(Color.WHITE);
+            g2.setStroke(new BasicStroke(1.5f));
+            int selSize = estilo.tamano + 2;
+            if (estilo.esTriangulo) {
+                int[] xPointsSel = {pixelX, pixelX - selSize, pixelX + selSize};
+                int[] yPointsSel = {pixelY - selSize, pixelY + selSize, pixelY + selSize};
+                g2.drawPolygon(xPointsSel, yPointsSel, 3);
+            } else {
+                g2.drawOval(pixelX - selSize, pixelY - selSize, selSize * 2, selSize * 2);
+            }
+        }
+
+        private void dibujarEtiquetaNave(Graphics2D g2, OrbitalObject craft, int pixelX, int pixelY, EstiloVisual estilo) {
+            g2.setFont(new Font("Consolas", Font.PLAIN, 9));
+            g2.setColor(new Color(estilo.color.getRed(), estilo.color.getGreen(), estilo.color.getBlue(), 180));
+
+            String labelNombre = craft.getName();
+            if (labelNombre.length() > 20) {
+                labelNombre = labelNombre.substring(0, 18) + "…";
+            }
+            g2.drawString(labelNombre, pixelX + estilo.tamano + 3, pixelY + 3);
         }
 
         /**

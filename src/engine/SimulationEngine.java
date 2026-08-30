@@ -134,33 +134,42 @@ public class SimulationEngine {
     // ==================== CICLO DE SIMULACIÓN ====================
 
     public void tick() {
+        avanzarReloj();
+        moverObjetos();
+        generarEventosAleatorios();
+        sincronizarRedSiCorresponde();
+        reportarTelemetriaYAlertas();
+    }
+
+    private void avanzarReloj() {
         currentTick++;
         TelemetryLogger.printHeader(currentTick, radar.getObserverCity());
+    }
 
-        // Mover cada objeto en órbita según sus reglas de polimorfismo
+    private void moverObjetos() {
         for (OrbitalObject craft : trackedObjects) {
             craft.move();
             actualizarPosicionRadar(craft);
         }
+    }
 
-        // Lógica de generación probabilística de objetos por tick (duración tick: 10 segundos)
+    private void generarEventosAleatorios() {
         double rand = Math.random();
         if (rand < 0.15) {
             spawnSpaceDebris();   // 15% probabilidad por tick (~1 basura pasiva cada minuto)
         } else if (rand < 0.20) {
             triggerCrisisEvent(); // 5% probabilidad por tick (~1 amenaza hostil cada 3-4 minutos)
         }
+    }
 
-        // Sincronizar actualización de posiciones N2YO en segundo plano (asíncrono)
-        // Esto evita que la simulación y la UI se traven esperando peticiones HTTP.
+    private void sincronizarRedSiCorresponde() {
         if (currentTick == 1 || currentTick % 10 == 0) {
             syncWithN2YOAsync();
         }
+    }
 
-        // Mostrar estado actual y telemetría por consola
+    private void reportarTelemetriaYAlertas() {
         TelemetryLogger.printSpacecraftStatus(trackedObjects);
-
-        // Escanear alertas de colisión
         List<String> alerts = radar.detectCollisionRisks(trackedObjects);
         TelemetryLogger.printAlerts(alerts);
     }
@@ -258,79 +267,64 @@ public class SimulationEngine {
     // ==================== ACCIONES SOBRE NAVES ====================
 
     public boolean evadeShip(int index) {
-        if (index >= 0 && index < trackedObjects.size()) {
-            OrbitalObject craft = trackedObjects.get(index);
-            if (craft instanceof Spacecraft) {
-                Spacecraft ship = (Spacecraft) craft;
-                boolean success = ship.evade(0.5, 0.5);
-                if (success) {
-                    String msg = "MANIOBRA EXITOSA! La nave [" + ship.getName() + "] cambio su orbita para evitar impacto.";
-                    TelemetryLogger.printMessage(msg);
-                    this.monitoredShipIndex = index;
-                    this.lastMonitorAction = msg;
-                    updateMonitor();
-                    return true;
-                } else {
-                    String msg = "MANIOBRA FALLIDA! La nave [" + ship.getName() + "] no tiene suficiente combustible.";
-                    TelemetryLogger.printMessage(msg);
-                    this.monitoredShipIndex = index;
-                    this.lastMonitorAction = msg;
-                    updateMonitor();
-                }
-            } else {
-                String msg = "MANIOBRA IMPOSIBLE! El objeto [" + craft.getName() + "] no es una nave con propulsión propia.";
-                TelemetryLogger.printMessage(msg);
-                this.monitoredShipIndex = index;
-                this.lastMonitorAction = msg;
-                updateMonitor();
-            }
+        if (!isIndiceValido(index)) return false;
+
+        OrbitalObject craft = trackedObjects.get(index);
+        if (!(craft instanceof Spacecraft)) {
+            notificarYActualizarMonitor(index, "MANIOBRA IMPOSIBLE! El objeto [" + craft.getName() + "] no es una nave con propulsión propia.");
+            return false;
         }
-        return false;
+
+        Spacecraft ship = (Spacecraft) craft;
+        boolean success = ship.evade(0.5, 0.5);
+        String msg = success 
+                ? "MANIOBRA EXITOSA! La nave [" + ship.getName() + "] cambio su orbita para evitar impacto."
+                : "MANIOBRA FALLIDA! La nave [" + ship.getName() + "] no tiene suficiente combustible.";
+        notificarYActualizarMonitor(index, msg);
+        return success;
     }
 
     public boolean refuelShipAtStation(int shipIndex) {
-        if (shipIndex >= 0 && shipIndex < trackedObjects.size()) {
-            OrbitalObject targetObj = trackedObjects.get(shipIndex);
-            if (targetObj instanceof Spacecraft) {
-                Spacecraft ship = (Spacecraft) targetObj;
-                for (OrbitalObject craft : trackedObjects) {
-                    if (craft instanceof SpaceStation) {
-                        SpaceStation station = (SpaceStation) craft;
-                        if (station.refuelShip(ship)) {
-                            String msg = "Acople exitoso: La nave [" + ship.getName() + "] reposto en la estacion [" + station.getName() + "].";
-                            TelemetryLogger.printMessage(msg);
-                            this.monitoredShipIndex = shipIndex;
-                            this.lastMonitorAction = msg;
-                            updateMonitor();
-                            return true;
-                        }
-                    }
+        if (!isIndiceValido(shipIndex)) return false;
+
+        OrbitalObject targetObj = trackedObjects.get(shipIndex);
+        if (!(targetObj instanceof Spacecraft)) {
+            notificarYActualizarMonitor(shipIndex, "El objeto orbital [" + targetObj.getName() + "] no posee tanque de combustible para repostar.");
+            return false;
+        }
+
+        Spacecraft ship = (Spacecraft) targetObj;
+        for (OrbitalObject craft : trackedObjects) {
+            if (craft instanceof SpaceStation) {
+                SpaceStation station = (SpaceStation) craft;
+                if (station.refuelShip(ship)) {
+                    notificarYActualizarMonitor(shipIndex, "Acople exitoso: La nave [" + ship.getName() + "] reposto en la estacion [" + station.getName() + "].");
+                    return true;
                 }
-                String msg = "No hay ninguna Estacion Espacial dentro del radio de acople (500 km) para la nave [" + ship.getName() + "].";
-                TelemetryLogger.printMessage(msg);
-                this.monitoredShipIndex = shipIndex;
-                this.lastMonitorAction = msg;
-                updateMonitor();
-            } else {
-                String msg = "El objeto orbital [" + targetObj.getName() + "] no posee tanque de combustible para repostar.";
-                TelemetryLogger.printMessage(msg);
-                this.monitoredShipIndex = shipIndex;
-                this.lastMonitorAction = msg;
-                updateMonitor();
             }
         }
+
+        notificarYActualizarMonitor(shipIndex, "No hay ninguna Estacion Espacial dentro del radio de acople (500 km) para la nave [" + ship.getName() + "].");
         return false;
     }
 
     public void useSpecialAbility(int shipIndex) {
-        if (shipIndex >= 0 && shipIndex < trackedObjects.size()) {
-            OrbitalObject craft = trackedObjects.get(shipIndex);
-            String result = craft.performSpecialAbility();
-            TelemetryLogger.printMessage(result);
-            this.monitoredShipIndex = shipIndex;
-            this.lastMonitorAction = result;
-            updateMonitor();
-        }
+        if (!isIndiceValido(shipIndex)) return;
+
+        OrbitalObject craft = trackedObjects.get(shipIndex);
+        String result = craft.performSpecialAbility();
+        notificarYActualizarMonitor(shipIndex, result);
+    }
+
+    private boolean isIndiceValido(int index) {
+        return index >= 0 && index < trackedObjects.size();
+    }
+
+    private void notificarYActualizarMonitor(int index, String mensaje) {
+        TelemetryLogger.printMessage(mensaje);
+        this.monitoredShipIndex = index;
+        this.lastMonitorAction = mensaje;
+        updateMonitor();
     }
 
     // ==================== GETTERS ====================

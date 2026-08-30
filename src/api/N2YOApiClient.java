@@ -74,28 +74,32 @@ public class N2YOApiClient {
      * Consulta el servicio N2YO /above para obtener los satélites reales sobrevolando las coordenadas dadas.
      */
     public List<OrbitalObject> fetchSatellitesAbove(GeoPosition observerPos, double searchRadiusKm) {
-        List<OrbitalObject> detectedAbove = new ArrayList<>();
         if (observerPos == null) return fetchLiveSpaceObjects();
 
-        // N2YO requiere el radio de búsqueda en GRADOS. 1 grado latitud ≈ 111 km.
-        double radiusDeg = searchRadiusKm / 111.0;
-        if (radiusDeg > 90.0) radiusDeg = 90.0; // Límite máximo de la API
-        if (radiusDeg < 1.0) radiusDeg = 1.0;   // Límite mínimo para no fallar
-        
-        String url = String.format(Locale.US, "%sabove/%.4f/%.4f/%.1f/%.1f/0/&apiKey=%s", 
-                BASE_URL, observerPos.getLatitude(), observerPos.getLongitude(), observerPos.getAltitude(), radiusDeg, apiKey);
+        double radiusDeg = convertirRadioKmAGrados(searchRadiusKm);
+        String url = construirUrlAbove(observerPos, radiusDeg);
 
+        List<OrbitalObject> detectedAbove = new ArrayList<>();
         String responseBody = sendGet(url, Duration.ofSeconds(5));
         if (responseBody != null && responseBody.contains("\"above\":")) {
             parseSatellitesAboveFromJson(responseBody, detectedAbove);
         }
 
-        // Si la consulta /above no trajo objetos por límite de la API, se recurre a los satélites globales reales
-        if (detectedAbove.isEmpty()) {
-            return fetchLiveSpaceObjects();
-        }
+        // Fallback a satélites globales si /above no retornó resultados
+        return detectedAbove.isEmpty() ? fetchLiveSpaceObjects() : detectedAbove;
+    }
 
-        return detectedAbove;
+    private double convertirRadioKmAGrados(double searchRadiusKm) {
+        // N2YO requiere el radio de búsqueda en GRADOS (1 grado ≈ 111 km)
+        double radiusDeg = searchRadiusKm / 111.0;
+        if (radiusDeg > 90.0) return 90.0; // Límite máximo
+        if (radiusDeg < 1.0) return 1.0;   // Límite mínimo
+        return radiusDeg;
+    }
+
+    private String construirUrlAbove(GeoPosition observerPos, double radiusDeg) {
+        return String.format(Locale.US, "%sabove/%.4f/%.4f/%.1f/%.1f/0/&apiKey=%s", 
+                BASE_URL, observerPos.getLatitude(), observerPos.getLongitude(), observerPos.getAltitude(), radiusDeg, apiKey);
     }
 
     private void parseSatellitesAboveFromJson(String json, List<OrbitalObject> resultList) {

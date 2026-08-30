@@ -37,29 +37,36 @@ public class SpaceStation extends OrbitalObject {
 
     @Override
     public void move() {
-        // La posición en órbita se sincroniza en tiempo real desde la API N2YO.
-        // Simulación de sistemas internos (se ejecuta 1 vez por segundo/tick)
-        
-        // 1. Oxígeno: Se consume lentamente por la tripulación
+        // Simulación de subsistemas internos de soporte vital por tick
+        consumirOxigeno();
+        actualizarBaterias();
+        regularTemperatura();
+    }
+
+    private void consumirOxigeno() {
         oxygenLevel -= 0.05;
-        if (oxygenLevel < 0) oxygenLevel = 0;
-        
-        // 2. Batería: Depende de los paneles solares
+        if (oxygenLevel < 0.0) {
+            oxygenLevel = 0.0;
+        }
+    }
+
+    private void actualizarBaterias() {
         if (solarPanelsDeployed) {
-            batteryLevel += 0.2; // Recarga
+            batteryLevel += 0.2; // Recarga solar
         } else {
             batteryLevel -= 0.8; // Consumo
         }
         if (batteryLevel > 100.0) batteryLevel = 100.0;
-        if (batteryLevel < 0) batteryLevel = 0;
-        
-        // 3. Temperatura: Tiende a bajar si no hay energía suficiente para la calefacción
+        if (batteryLevel < 0.0) batteryLevel = 0.0;
+    }
+
+    private void regularTemperatura() {
         if (batteryLevel > 20.0) {
-            // Regulación térmica activa
+            // Regulación térmica activa hacia temperatura óptima (22°C)
             if (temperature < 22.0) temperature += 0.1;
             if (temperature > 22.0) temperature -= 0.1;
         } else {
-            // Falla de regulación térmica, el frío del espacio entra
+            // Falla de regulación térmica por baja energía
             temperature -= 0.5;
         }
     }

@@ -109,20 +109,36 @@ public class TelemetryLogger {
         if (ship == null) return "No hay nave seleccionada";
 
         StringBuilder sb = new StringBuilder();
+        formatearEncabezadoIdentidad(sb, ship);
+        formatearPosicionYCinematica(sb, ship);
+        formatearCombustible(sb, ship);
+        formatearSubsistemasEspecificos(sb, ship);
+
+        return sb.toString();
+    }
+
+    private static void formatearEncabezadoIdentidad(StringBuilder sb, OrbitalObject ship) {
         sb.append("=== DATOS DE LA NAVE ===\n\n");
         sb.append("Nombre: ").append(ship.getName()).append("\n");
         sb.append("Tipo:   ").append(ship.getType()).append("\n");
         sb.append("NORAD:  ").append(ship.getNoradId()).append("\n");
         sb.append("ID:     ").append(ship.getId()).append("\n\n");
+    }
 
+    private static void formatearPosicionYCinematica(StringBuilder sb, OrbitalObject ship) {
         sb.append("--- POSICIÓN REGISTRADA ---\n");
-        sb.append(String.format("Latitud:  %.4f°\n", ship.getPosition().getLatitude()));
-        sb.append(String.format("Longitud: %.4f°\n", ship.getPosition().getLongitude()));
-        sb.append(String.format("Altitud:  %.1f km\n\n", ship.getPosition().getAltitude()));
-
+        if (ship.getPosition() != null) {
+            sb.append(String.format("Latitud:  %.4f°\n", ship.getPosition().getLatitude()));
+            sb.append(String.format("Longitud: %.4f°\n", ship.getPosition().getLongitude()));
+            sb.append(String.format("Altitud:  %.1f km\n\n", ship.getPosition().getAltitude()));
+        } else {
+            sb.append("Posición: N/A\n\n");
+        }
         sb.append("--- ESTADO ---\n");
         sb.append(String.format("Velocidad: %.1f km/h\n", ship.getVelocityKmH()));
+    }
 
+    private static void formatearCombustible(StringBuilder sb, OrbitalObject ship) {
         if (ship instanceof Spacecraft) {
             Spacecraft craft = (Spacecraft) ship;
             if (craft.getFuelTank() != null) {
@@ -134,42 +150,55 @@ public class TelemetryLogger {
         } else {
             sb.append("Combust:   N/A (Sin motor / En órbita)\n");
         }
+    }
 
+    private static void formatearSubsistemasEspecificos(StringBuilder sb, OrbitalObject ship) {
         if (ship instanceof SpaceStation) {
-            SpaceStation station = (SpaceStation) ship;
-            sb.append("\n--- SISTEMAS VITALES ---\n");
-            sb.append(String.format("Oxígeno:   %.1f%%\n", station.getOxygenLevel()));
-            sb.append(String.format("Batería:   %.1f%%\n", station.getBatteryLevel()));
-            sb.append(String.format("Temp:      %.1f °C\n", station.getTemperature()));
-            sb.append("Paneles:   ").append(station.areSolarPanelsDeployed() ? "DESPLEGADOS (Cargando)\n" : "RETRAÍDOS (Consumo)\n");
-        }
-
-        if (ship instanceof CrewShuttle) {
-            sb.append("\n--- TRIPULACIÓN ---\n");
-            CrewShuttle shuttle = (CrewShuttle) ship;
-            if (shuttle.getCrew().isEmpty()) {
-                sb.append("Sin tripulación a bordo\n");
-            } else {
-                for (Kerbal tripulante : shuttle.getCrew()) {
-                    sb.append("- ").append(tripulante.getName()).append(" (").append(tripulante.getRole()).append(")\n");
-                }
-            }
+            formatearEstacion(sb, (SpaceStation) ship);
+        } else if (ship instanceof CrewShuttle) {
+            formatearTripulacion(sb, (CrewShuttle) ship);
         } else if (ship instanceof CargoShip) {
-            CargoShip cargo = (CargoShip) ship;
-            sb.append("\n--- CARGA ---\n");
-            sb.append(String.format("Capacidad: %.1f ton\n", cargo.getCargoCapacityTons()));
-            sb.append(String.format("Actual:    %.1f ton\n", cargo.getCurrentCargoTons()));
+            formatearCarga(sb, (CargoShip) ship);
         } else if (ship instanceof ExplorationProbe) {
-            ExplorationProbe probe = (ExplorationProbe) ship;
-            sb.append("\n--- SISTEMAS ---\n");
-            sb.append(String.format("Eficiencia Solar: %.0f%%\n", probe.getSolarEfficiency() * 100));
+            formatearSonda(sb, (ExplorationProbe) ship);
         } else if (ship instanceof SpaceDebris) {
-            SpaceDebris debris = (SpaceDebris) ship;
-            sb.append("\n--- RIESGO ---\n");
-            sb.append(String.format("Peligrosidad: %.1f/10\n", debris.getHazardLevel()));
+            formatearBasura(sb, (SpaceDebris) ship);
         }
+    }
 
-        return sb.toString();
+    private static void formatearEstacion(StringBuilder sb, SpaceStation station) {
+        sb.append("\n--- SISTEMAS VITALES ---\n");
+        sb.append(String.format("Oxígeno:   %.1f%%\n", station.getOxygenLevel()));
+        sb.append(String.format("Batería:   %.1f%%\n", station.getBatteryLevel()));
+        sb.append(String.format("Temp:      %.1f °C\n", station.getTemperature()));
+        sb.append("Paneles:   ").append(station.areSolarPanelsDeployed() ? "DESPLEGADOS (Cargando)\n" : "RETRAÍDOS (Consumo)\n");
+    }
+
+    private static void formatearTripulacion(StringBuilder sb, CrewShuttle shuttle) {
+        sb.append("\n--- TRIPULACIÓN ---\n");
+        if (shuttle.getCrew().isEmpty()) {
+            sb.append("Sin tripulación a bordo\n");
+        } else {
+            for (Kerbal tripulante : shuttle.getCrew()) {
+                sb.append("- ").append(tripulante.getName()).append(" (").append(tripulante.getRole()).append(")\n");
+            }
+        }
+    }
+
+    private static void formatearCarga(StringBuilder sb, CargoShip cargo) {
+        sb.append("\n--- CARGA ---\n");
+        sb.append(String.format("Capacidad: %.1f ton\n", cargo.getCargoCapacityTons()));
+        sb.append(String.format("Actual:    %.1f ton\n", cargo.getCurrentCargoTons()));
+    }
+
+    private static void formatearSonda(StringBuilder sb, ExplorationProbe probe) {
+        sb.append("\n--- SISTEMAS ---\n");
+        sb.append(String.format("Eficiencia Solar: %.0f%%\n", probe.getSolarEfficiency() * 100));
+    }
+
+    private static void formatearBasura(StringBuilder sb, SpaceDebris debris) {
+        sb.append("\n--- RIESGO ---\n");
+        sb.append(String.format("Peligrosidad: %.1f/10\n", debris.getHazardLevel()));
     }
 
     /**
