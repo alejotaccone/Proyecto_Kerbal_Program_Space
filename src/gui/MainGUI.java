@@ -464,68 +464,25 @@ public class MainGUI extends JFrame {
     }
 
     /**
-     * Carga y escala suavemente la imagen de la nave seleccionada desde la carpeta Img.
-     */
-    private void cargarImagenNave(String nombreImagen) {
-        if (nombreImagen == null || nombreImagen.trim().isEmpty()) {
-            lblImagenNave.setIcon(null);
-            lblImagenNave.setText("[ SIN NAVE SELECCIONADA ]");
-            return;
-        }
-
-        try {
-            java.io.File file = new java.io.File("src/Img/" + nombreImagen);
-            if (!file.exists()) {
-                file = new java.io.File("Img/" + nombreImagen);
-            }
-
-            if (file.exists()) {
-                java.awt.image.BufferedImage imgOriginal = javax.imageio.ImageIO.read(file);
-                if (imgOriginal != null) {
-                    int targetW = 290;
-                    int targetH = 170;
-
-                    double ratioW = (double) targetW / imgOriginal.getWidth();
-                    double ratioH = (double) targetH / imgOriginal.getHeight();
-                    double scale = Math.min(ratioW, ratioH);
-
-                    int newW = (int) (imgOriginal.getWidth() * scale);
-                    int newH = (int) (imgOriginal.getHeight() * scale);
-
-                    Image scaled = imgOriginal.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
-                    lblImagenNave.setIcon(new ImageIcon(scaled));
-                    lblImagenNave.setText("");
-                    return;
-                }
-            }
-        } catch (Exception e) {
-            // Ignorar y mostrar fallback
-        }
-
-        lblImagenNave.setIcon(null);
-        lblImagenNave.setText("[ " + nombreImagen + " ]");
-    }
-
-    /**
      * Actualiza el contenido estático del monitor de nave secundaria.
      * Solo se llama cuando se selecciona una nave manualmente o se realiza una acción.
      */
     private void actualizarMonitorNave() {
         if (engine == null || engine.getTrackedObjects() == null) {
-            cargarImagenNave(null);
+            ShipImageLoader.cargarImagenNave(lblImagenNave, null);
             txtMonitorNave.setText("\nNo hay nave seleccionada");
             return;
         }
         
         int idx = cmbNaves.getSelectedIndex() - 1;
         if (idx < 0 || idx >= engine.getTrackedObjects().size()) {
-            cargarImagenNave(null);
+            ShipImageLoader.cargarImagenNave(lblImagenNave, null);
             txtMonitorNave.setText("\nNo hay nave seleccionada");
             return;
         }
 
         OrbitalObject ship = engine.getTrackedObjects().get(idx);
-        cargarImagenNave(ship.getNombreImagen());
+        ShipImageLoader.cargarImagenNave(lblImagenNave, ship.getNombreImagen());
         txtMonitorNave.setText(TelemetryLogger.generarResumenNave(ship));
         txtMonitorNave.setCaretPosition(0);
     }
@@ -865,7 +822,27 @@ public class MainGUI extends JFrame {
                     radarPanel.repaint();
 
                     // Evaluar eventos de crisis y colisión
-                    evaluarEventosCrisis();
+                    boolean crisisOcurrio = CrisisDialogHandler.evaluarEventosCrisis(
+                            MainGUI.this,
+                            engine,
+                            () -> {
+                                simulationTimer.stop();
+                                radarSweepTimer.stop();
+                            },
+                            () -> {
+                                if (simulationRunning) {
+                                    simulationTimer.start();
+                                    radarSweepTimer.start();
+                                }
+                            },
+                            MainGUI.this::logConsola
+                    );
+
+                    if (crisisOcurrio) {
+                        actualizarComboNaves();
+                        actualizarMonitorNave();
+                        radarPanel.repaint();
+                    }
 
                 } catch (Exception ex) {
                     logConsola("[ERROR]: Fallo en tick #" + tickActual + ": " + ex.getMessage());
@@ -877,98 +854,6 @@ public class MainGUI extends JFrame {
         };
         tickWorker.execute();
     }
-
-    /**
-     * Revisa si hay una amenaza activa (RogueDebris) cerca de su objetivo y lanza el Pop-up interactivo.
-     */
-    private void evaluarEventosCrisis() {
-        if (engine == null || engine.getTrackedObjects() == null) return;
-        
-        model.spacecraft.RogueDebris threat = buscarAmenazaRogue();
-        if (threat == null || threat.getTarget() == null) return;
-
-        OrbitalObject target = threat.getTarget();
-        double dist = threat.getPosition().distanceTo(target.getPosition());
-        
-        // Si está a menos de 100km, se activa la crisis interactiva
-        if (dist < 100.0) {
-            pausarSimulacionParaCrisis();
-            int seleccion = mostrarDialogoCrisis(threat, target, dist);
-            procesarDecisionCrisis(seleccion, target);
-            finalizarCrisis(threat);
-        }
-    }
-
-    private model.spacecraft.RogueDebris buscarAmenazaRogue() {
-        for (OrbitalObject nave : engine.getTrackedObjects()) {
-            if (nave instanceof model.spacecraft.RogueDebris) {
-                return (model.spacecraft.RogueDebris) nave;
-            }
-        }
-        return null;
-    }
-
-    private void pausarSimulacionParaCrisis() {
-        simulationTimer.stop();
-        radarSweepTimer.stop();
-    }
-
-    private int mostrarDialogoCrisis(model.spacecraft.RogueDebris threat, OrbitalObject target, double dist) {
-        String mensaje = "¡ALERTA DE IMPACTO INMINENTE!\n\n"
-                + "La Basura Espacial Hostil [" + threat.getName() + "]\n"
-                + "se encuentra a " + String.format("%.1f", dist) + " km de la nave [" + target.getName() + "].\n\n"
-                + "¿Qué orden de emergencia desea ejecutar, Comandante?";
-        
-        Object[] opciones = {
-            "Forzar Evasión (-15L Combustible)",
-            "Ignorar (Aceptar Impacto Crítico)"
-        };
-        
-        return JOptionPane.showOptionDialog(
-                this,
-                mensaje,
-                "CRISIS DE COLISIÓN DETECTADA",
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE,
-                null,
-                opciones,
-                opciones[0]);
-    }
-
-    private void procesarDecisionCrisis(int seleccion, OrbitalObject target) {
-        if (seleccion == 0) { // Evasión
-            boolean success = false;
-            if (target instanceof Spacecraft) {
-                success = ((Spacecraft) target).evade(0.5, 0.5);
-            }
-            if (success) {
-                logConsola("[CRISIS]: ¡Evasión exitosa! [" + target.getName() + "] maniobró a tiempo.");
-            } else {
-                logConsola("[CRISIS FATAL]: [" + target.getName() + "] no pudo evadir el impacto (sin propulsión/combustible). OBJETO DESTRUIDO.");
-                engine.removeShip(target);
-            }
-        } else { // Ignorar
-            logConsola("[CRISIS FATAL]: [" + target.getName() + "] ha recibido un impacto directo. OBJETO DESTRUIDO.");
-            engine.removeShip(target);
-        }
-    }
-
-    private void finalizarCrisis(model.spacecraft.RogueDebris threat) {
-        // La amenaza pasa de largo o explota, desaparece del radar
-        engine.removeShip(threat);
-        
-        // Actualizar interfaz gráfica inmediatamente
-        actualizarComboNaves();
-        actualizarMonitorNave();
-        radarPanel.repaint();
-        
-        // Reanudar la simulación si estaba activa
-        if (simulationRunning) {
-            simulationTimer.start();
-            radarSweepTimer.start();
-        }
-    }
-
 
     /**
      * Detiene la simulación y limpia los timers.
@@ -1060,339 +945,6 @@ public class MainGUI extends JFrame {
     /** Devuelve la hora actual formateada */
     private String obtenerHora() {
         return new SimpleDateFormat("HH:mm:ss").format(new Date());
-    }
-
-    // =========================================================================
-    // CLASE INTERNA: RadarPanel - Pantalla del Radar Animada
-    // =========================================================================
-
-    /**
-     * Panel personalizado que dibuja la pantalla del radar con:
-     * - Fondo verde oscuro
-     * - Círculos concéntricos (anillos de alcance)
-     * - Cruz central (ubicación del observador)
-     * - Línea de barrido rotativa con resplandor
-     * - Blips de naves (puntos de colores según tipo)
-     * - Etiquetas de identificación de cada nave
-     * - Efecto de persistencia fosforescente en las estelas
-     */
-    static class RadarPanel extends JPanel {
-        
-        // Ángulo actual de la línea de barrido (en radianes)
-        private double sweepAngle = 0.0;
-        
-        // Referencia a las naves (se establece desde el exterior)
-        private List<OrbitalObject> naves;
-        
-        // Centro del radar en coordenadas geográficas (para mapear lat/lng a píxeles)
-        private double centroLat = -34.60;
-        private double centroLng = -58.38;
-        private double radioKm = 100.0;
-        
-        // Historial de posiciones para el efecto de estela
-        private List<Point2D.Double> trail = new ArrayList<>();
-        
-        // Índice de la nave seleccionada (-1 si ninguna)
-        private int selectedIndex = -1;
-        
-        public void setSelectedIndex(int index) {
-            this.selectedIndex = index;
-        }
-        
-        RadarPanel() {
-            setBackground(COLOR_RADAR_BG);
-            setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 2));
-        }
-
-        /** Avanza el ángulo de barrido para la animación */
-        void avanzarBarrido() {
-            sweepAngle += 0.03;  // ~1.7° por frame → ~6 segundos por rotación completa
-            if (sweepAngle >= 2 * Math.PI) {
-                sweepAngle -= 2 * Math.PI;
-            }
-        }
-
-        /** Establece la lista de naves a dibujar */
-        void setNaves(List<OrbitalObject> naves) {
-            this.naves = naves;
-        }
-
-        /** Actualiza el centro del radar basado en la posición del observador */
-        void setCentro(double lat, double lng, double radioKm) {
-            this.centroLat = lat;
-            this.centroLng = lng;
-            this.radioKm = radioKm;
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g.create();
-            
-            // Activar anti-aliasing para gráficos suaves
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-
-            int ancho = getWidth();
-            int alto = getHeight();
-            int centroX = ancho / 2;     // Centro X del radar
-            int centroY = alto / 2;     // Centro Y del radar
-            int radio = Math.min(centroX, centroY) - 30;  // Radio máximo del radar en píxeles
-
-            // ---- 1. FONDO CON GRADIENTE RADIAL ----
-            RadialGradientPaint bgGrad = new RadialGradientPaint(
-                centroX, centroY, radio + 50,
-                new float[]{0.0f, 0.7f, 1.0f},
-                new Color[]{
-                    new Color(5, 18, 5),
-                    new Color(3, 10, 3),
-                    new Color(0, 5, 0)
-                }
-            );
-            g2.setPaint(bgGrad);
-            g2.fillRect(0, 0, ancho, alto);
-
-            // ---- 2. CÍRCULOS CONCÉNTRICOS (Anillos de alcance) ----
-            g2.setStroke(new BasicStroke(1.0f));
-            int numCirculos = 5;
-            for (int i = 1; i <= numCirculos; i++) {
-                int r = (radio * i) / numCirculos;
-                
-                // Gradiente de opacidad: más brillante en el exterior
-                int alpha = 40 + (i * 15);
-                g2.setColor(new Color(0, 80, 0, Math.min(alpha, 255)));
-                g2.drawOval(centroX - r, centroY - r, r * 2, r * 2);
-
-                // Etiqueta de distancia en km
-                int distKm = (int) ((radioKm * i) / numCirculos);
-                g2.setFont(new Font("Consolas", Font.PLAIN, 10));
-                g2.setColor(new Color(0, 100, 0, 150));
-                g2.drawString(distKm + " km", centroX + r + 4, centroY - 3);
-            }
-
-            // ---- 3. LÍNEAS CARDINALES (Cruz del radar) ----
-            g2.setColor(new Color(0, 50, 0, 100));
-            g2.setStroke(new BasicStroke(0.8f));
-            g2.drawLine(centroX, centroY - radio, centroX, centroY + radio);  // Línea vertical
-            g2.drawLine(centroX - radio, centroY, centroX + radio, centroY);    // Línea horizontal
-
-            // Etiquetas N, S, E, O
-            g2.setFont(new Font("Consolas", Font.BOLD, 12));
-            g2.setColor(COLOR_TEXT_DIM);
-            g2.drawString("N", centroX - 4, centroY - radio - 5);
-            g2.drawString("S", centroX - 4, centroY + radio + 15);
-            g2.drawString("E", centroX + radio + 8, centroY + 4);
-            g2.drawString("O", centroX - radio - 18, centroY + 4);
-
-            // ---- 4. LÍNEA DE BARRIDO (efecto sweep) ----
-            dibujarBarrido(g2, centroX, centroY, radio);
-
-            // ---- 5. CENTRO DEL RADAR (ubicación del observador) ----
-            // Punto central brillante
-            g2.setColor(new Color(0, 255, 100, 200));
-            g2.fillOval(centroX - 5, centroY - 5, 10, 10);
-            // Anillo pulsante alrededor del centro
-            int pulso = (int)(4 * Math.sin(sweepAngle * 2)) + 10;
-            g2.setColor(new Color(0, 200, 100, 60));
-            g2.setStroke(new BasicStroke(1.5f));
-            g2.drawOval(centroX - pulso, centroY - pulso, pulso * 2, pulso * 2);
-
-            // ---- 6. BLIPS DE NAVES ----
-            dibujarNaves(g2, centroX, centroY, radio);
-
-            // ---- 7. INFORMACIÓN SUPERPUESTA ----
-            g2.setFont(new Font("Consolas", Font.PLAIN, 10));
-            g2.setColor(COLOR_TEXT_DIM);
-            g2.drawString("RADAR v2.0 | Lat: " + String.format("%.2f", centroLat) 
-                + "° | Lng: " + String.format("%.2f", centroLng) + "°", 10, alto - 10);
-            g2.drawString("Radio: " + (int)radioKm + " km | Ángulo: " 
-                + String.format("%.0f", Math.toDegrees(sweepAngle)) + "°", 10, alto - 25);
-
-            g2.dispose();
-        }
-
-        /**
-         * Dibuja la línea de barrido del radar con efecto de resplandor cónico.
-         */
-        private void dibujarBarrido(Graphics2D g2, int centroX, int centroY, int radio) {
-            // Cono de resplandor (trail del sweep)
-            int trailDegrees = 40;  // Amplitud del cono de resplandor
-            for (int i = 0; i < trailDegrees; i++) {
-                double angle = sweepAngle - Math.toRadians(i);
-                int alpha = (int)(25.0 * (1.0 - (double)i / trailDegrees));
-                g2.setColor(new Color(0, 255, 80, Math.max(alpha, 0)));
-                g2.setStroke(new BasicStroke(1.0f));
-                int endX = centroX + (int)(radio * Math.cos(angle));
-                int endY = centroY + (int)(radio * Math.sin(angle));
-                g2.drawLine(centroX, centroY, endX, endY);
-            }
-
-            // Línea principal del barrido (más brillante)
-            g2.setColor(COLOR_RADAR_LINE);
-            g2.setStroke(new BasicStroke(2.0f));
-            int endX = centroX + (int)(radio * Math.cos(sweepAngle));
-            int endY = centroY + (int)(radio * Math.sin(sweepAngle));
-            g2.drawLine(centroX, centroY, endX, endY);
-        }
-
-        /**
-         * Calcula las coordenadas en pantalla (pixelX, pixelY) de una nave en el radar,
-         * aplicando la proyección geográfica y limitando al radio visible.
-         */
-        private Point calcularPosicionPantalla(OrbitalObject craft, int centroX, int centroY, int radio) {
-            if (craft == null || craft.getPosition() == null) return new Point(centroX, centroY);
-
-            GeoPosition pos = craft.getPosition();
-            double deltaLat = (craft instanceof SpaceStation) ? 0.0 : (pos.getLatitude() - centroLat);
-            double deltaLng = (craft instanceof SpaceStation) ? 0.0 : (pos.getLongitude() - centroLng);
-
-            double kmPerDegLat = 111.0;
-            double kmPerDegLng = 111.0 * Math.cos(Math.toRadians(centroLat));
-            
-            double distXKm = deltaLng * kmPerDegLng;
-            double distYKm = -deltaLat * kmPerDegLat;  // Invertir Y (pantalla crece hacia abajo)
-
-            double escala = (double) radio / radioKm;
-            int pixelX = centroX + (int)(distXKm * escala);
-            int pixelY = centroY + (int)(distYKm * escala);
-
-            double distPixel = Math.sqrt((pixelX - centroX) * (pixelX - centroX) + (pixelY - centroY) * (pixelY - centroY));
-            if (distPixel > radio) {
-                double factor = radio / distPixel;
-                pixelX = centroX + (int)((pixelX - centroX) * factor);
-                pixelY = centroY + (int)((pixelY - centroY) * factor);
-            }
-
-            return new Point(pixelX, pixelY);
-        }
-
-        private static class EstiloVisual {
-            final Color color;
-            final int tamano;
-            final boolean esTriangulo;
-
-            EstiloVisual(Color color, int tamano, boolean esTriangulo) {
-                this.color = color;
-                this.tamano = tamano;
-                this.esTriangulo = esTriangulo;
-            }
-        }
-
-        private EstiloVisual determinarEstiloVisual(OrbitalObject craft) {
-            if (craft instanceof SpaceStation) {
-                return new EstiloVisual(COLOR_ACCENT_CYAN, 9, false);
-            } else if (craft instanceof SpaceDebris) {
-                return new EstiloVisual(COLOR_ACCENT_RED, 5, true);
-            } else if (craft instanceof CrewShuttle) {
-                return new EstiloVisual(COLOR_ACCENT_YELLOW, 7, false);
-            } else if (craft.getType().contains("Carga")) {
-                return new EstiloVisual(COLOR_ACCENT_ORANGE, 7, false);
-            } else {
-                return new EstiloVisual(COLOR_TEXT_PRIMARY, 6, false);
-            }
-        }
-
-        /**
-         * Dibuja los blips (puntos) de cada nave en sus coordenadas mapeadas.
-         * El color y la forma dependen del tipo de nave (polimorfismo visual).
-         */
-        private void dibujarNaves(Graphics2D g2, int centroX, int centroY, int radio) {
-            if (naves == null || naves.isEmpty()) return;
-
-            for (OrbitalObject craft : naves) {
-                if (craft.getPosition() == null) continue;
-
-                Point screenPos = calcularPosicionPantalla(craft, centroX, centroY, radio);
-                EstiloVisual estilo = determinarEstiloVisual(craft);
-
-                dibujarIluminacionBarrido(g2, screenPos.x, screenPos.y, centroX, centroY, estilo);
-                dibujarIconoNave(g2, craft, screenPos.x, screenPos.y, estilo);
-
-                if (naves.indexOf(craft) == selectedIndex) {
-                    dibujarBordeSeleccion(g2, screenPos.x, screenPos.y, estilo);
-                }
-
-                dibujarEtiquetaNave(g2, craft, screenPos.x, screenPos.y, estilo);
-            }
-        }
-
-        private void dibujarIluminacionBarrido(Graphics2D g2, int pixelX, int pixelY, int centroX, int centroY, EstiloVisual estilo) {
-            double anguloNave = Math.atan2(pixelY - centroY, pixelX - centroX);
-            double diffAngulo = Math.abs(sweepAngle - anguloNave);
-            if (diffAngulo > Math.PI) diffAngulo = 2 * Math.PI - diffAngulo;
-
-            if (diffAngulo < 0.3) { // ~17° de proximidad al barrido
-                g2.setColor(new Color(estilo.color.getRed(), estilo.color.getGreen(), estilo.color.getBlue(), 60));
-                g2.fillOval(pixelX - estilo.tamano * 2, pixelY - estilo.tamano * 2, estilo.tamano * 4, estilo.tamano * 4);
-            }
-        }
-
-        private void dibujarIconoNave(Graphics2D g2, OrbitalObject craft, int pixelX, int pixelY, EstiloVisual estilo) {
-            g2.setColor(estilo.color);
-            if (estilo.esTriangulo) {
-                int[] xPoints = {pixelX, pixelX - estilo.tamano, pixelX + estilo.tamano};
-                int[] yPoints = {pixelY - estilo.tamano, pixelY + estilo.tamano, pixelY + estilo.tamano};
-                g2.fillPolygon(xPoints, yPoints, 3);
-            } else {
-                g2.fillOval(pixelX - estilo.tamano / 2, pixelY - estilo.tamano / 2, estilo.tamano, estilo.tamano);
-                if (craft instanceof SpaceStation) {
-                    g2.setStroke(new BasicStroke(1.5f));
-                    g2.drawOval(pixelX - estilo.tamano, pixelY - estilo.tamano, estilo.tamano * 2, estilo.tamano * 2);
-                }
-            }
-        }
-
-        private void dibujarBordeSeleccion(Graphics2D g2, int pixelX, int pixelY, EstiloVisual estilo) {
-            g2.setColor(Color.WHITE);
-            g2.setStroke(new BasicStroke(1.5f));
-            int selSize = estilo.tamano + 2;
-            if (estilo.esTriangulo) {
-                int[] xPointsSel = {pixelX, pixelX - selSize, pixelX + selSize};
-                int[] yPointsSel = {pixelY - selSize, pixelY + selSize, pixelY + selSize};
-                g2.drawPolygon(xPointsSel, yPointsSel, 3);
-            } else {
-                g2.drawOval(pixelX - selSize, pixelY - selSize, selSize * 2, selSize * 2);
-            }
-        }
-
-        private void dibujarEtiquetaNave(Graphics2D g2, OrbitalObject craft, int pixelX, int pixelY, EstiloVisual estilo) {
-            g2.setFont(new Font("Consolas", Font.PLAIN, 9));
-            g2.setColor(new Color(estilo.color.getRed(), estilo.color.getGreen(), estilo.color.getBlue(), 180));
-
-            String labelNombre = craft.getName();
-            if (labelNombre.length() > 20) {
-                labelNombre = labelNombre.substring(0, 18) + "…";
-            }
-            g2.drawString(labelNombre, pixelX + estilo.tamano + 3, pixelY + 3);
-        }
-
-        /**
-         * Calcula si las coordenadas del ratón coinciden con alguna de las naves dibujadas.
-         * Retorna el índice de la nave, o -1 si no se clickeó ninguna.
-         */
-        public int getShipIndexAt(int mouseX, int mouseY) {
-            if (naves == null || naves.isEmpty()) return -1;
-            
-            int ancho = getWidth();
-            int alto = getHeight();
-            int centroX = ancho / 2;
-            int centroY = alto / 2;
-            int radio = Math.min(centroX, centroY) - 30;
-            
-            for (int i = naves.size() - 1; i >= 0; i--) {
-                OrbitalObject craft = naves.get(i);
-                if (craft.getPosition() == null) continue;
-
-                Point screenPos = calcularPosicionPantalla(craft, centroX, centroY, radio);
-
-                // Check distance to mouse click (radius of 10 pixels for ease of clicking)
-                double distToMouse = Math.sqrt((screenPos.x - mouseX) * (screenPos.x - mouseX) + (screenPos.y - mouseY) * (screenPos.y - mouseY));
-                if (distToMouse <= 10.0) {
-                    return i;
-                }
-            }
-            return -1;
-        }
     }
 
     // =========================================================================

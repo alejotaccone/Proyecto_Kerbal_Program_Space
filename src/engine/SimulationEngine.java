@@ -25,11 +25,13 @@ public class SimulationEngine {
     private int monitoredShipIndex;
     private String lastMonitorAction;
     private int targetStationNoradId;
+    private OrbitalEventSpawner eventSpawner;
 
     public SimulationEngine(String apiKey, int targetNoradId) {
         this.currentTick = 0;
         this.trackedObjects = new ArrayList<>();
         this.apiClient = new N2YOApiClient(apiKey);
+        this.eventSpawner = new OrbitalEventSpawner();
         this.monitoredShipIndex = -1;
         this.lastMonitorAction = "";
         // Inicializar el radar con coordenadas 0,0 por defecto
@@ -153,12 +155,7 @@ public class SimulationEngine {
     }
 
     private void generarEventosAleatorios() {
-        double rand = Math.random();
-        if (rand < 0.15) {
-            spawnSpaceDebris();   // 15% probabilidad por tick (~1 basura pasiva cada minuto)
-        } else if (rand < 0.20) {
-            triggerCrisisEvent(); // 5% probabilidad por tick (~1 amenaza hostil cada 3-4 minutos)
-        }
+        eventSpawner.evaluarEventosAleatoriosPorTick(trackedObjects);
     }
 
     private void sincronizarRedSiCorresponde() {
@@ -174,83 +171,13 @@ public class SimulationEngine {
     }
     
     // ==================== EVENTOS DE CRISIS Y BASURA ESPACIAL ====================
-    
-    /**
-     * Busca la estación espacial principal o devuelve el primer objeto rastreado como fallback.
-     */
-    private OrbitalObject buscarEstacionObjetivo() {
-        if (trackedObjects == null || trackedObjects.isEmpty()) return null;
-        for (OrbitalObject nave : trackedObjects) {
-            if (nave instanceof SpaceStation) {
-                return nave;
-            }
-        }
-        return trackedObjects.get(0);
-    }
-
-    /**
-     * Genera una posición geográfica polar aleatoria alrededor de una coordenada central.
-     */
-    private GeoPosition generarPosicionCercana(GeoPosition centro, double minDistDeg, double maxDistDeg) {
-        if (centro == null) return null;
-        double angle = Math.random() * 2 * Math.PI;
-        double distDeg = minDistDeg + Math.random() * (maxDistDeg - minDistDeg);
-        double spawnLat = centro.getLatitude() + Math.cos(angle) * distDeg;
-        double spawnLng = centro.getLongitude() + Math.sin(angle) * distDeg;
-        return new GeoPosition(spawnLat, spawnLng, centro.getAltitude());
-    }
 
     public boolean spawnSpaceDebris() {
-        if (trackedObjects == null || trackedObjects.isEmpty()) return false;
-        
-        long countDebris = trackedObjects.stream()
-                .filter(nave -> (nave instanceof model.spacecraft.SpaceDebris && !(nave instanceof model.spacecraft.RogueDebris)))
-                .count();
-                
-        if (countDebris >= 3) return false; // Límite máximo de 3 basuras pasivas en pantalla
-        
-        OrbitalObject station = buscarEstacionObjetivo();
-        if (station != null && station.getPosition() != null) {
-            GeoPosition spawnPos = generarPosicionCercana(station.getPosition(), 0.25, 0.80);
-            
-            int idNum = (int)(Math.random() * 9000 + 1000);
-            SpacecraftInfo info = new SpacecraftInfo("DEB-" + idNum, "Restos NORAD-" + idNum, 90000 + idNum);
-            model.spacecraft.SpaceDebris debris = new model.spacecraft.SpaceDebris(
-                    info,
-                    spawnPos,
-                    6.5 + Math.random() * 3.0
-            );
-            
-            trackedObjects.add(debris);
-            TelemetryLogger.printMessage("Radar detectó nuevo fragmento de Basura Espacial [" + debris.getName() + "].");
-            return true;
-        }
-        return false;
+        return eventSpawner.spawnSpaceDebris(trackedObjects);
     }
 
     public boolean triggerCrisisEvent() {
-        if (trackedObjects == null || trackedObjects.isEmpty()) return false;
-        
-        boolean hasRogue = trackedObjects.stream().anyMatch(nave -> nave instanceof model.spacecraft.RogueDebris);
-        if (!hasRogue) {
-            OrbitalObject target = buscarEstacionObjetivo();
-            if (target != null && target.getPosition() != null) {
-                GeoPosition spawnPos = generarPosicionCercana(target.getPosition(), 0.9, 0.9);
-                
-                int idNum = (int)(Math.random() * 900 + 100);
-                SpacecraftInfo info = new SpacecraftInfo("RD-" + idNum, "ANOMALÍA CINÉTICA RD-" + idNum, 99999);
-                model.spacecraft.RogueDebris rogue = new model.spacecraft.RogueDebris(
-                        info, 
-                        spawnPos, 
-                        9.5, 
-                        target);
-                
-                trackedObjects.add(rogue);
-                TelemetryLogger.printMessage("¡ALERTA CRÍTICA DEL RADAR! Anomalía Cinética (Rogue Debris) ingresó al sector en rumbo de impacto.");
-                return true;
-            }
-        }
-        return false;
+        return eventSpawner.triggerCrisisEvent(trackedObjects);
     }
     
     public void removeShip(OrbitalObject ship) {
