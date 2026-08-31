@@ -13,17 +13,17 @@ public class SpaceStation extends OrbitalObject {
     private double temperature;        // Grados Celsius
     private boolean solarPanelsDeployed; // Estado de los paneles
 
-    public SpaceStation(String id, String name, int noradId, GeoPosition position) {
-        this(id, name, noradId, position, "SpaceStation_Internacional.jpg", "Estación Espacial Internacional (ISS)");
+    public SpaceStation(SpacecraftInfo info, GeoPosition position) {
+        this(info, position, "SpaceStation_Internacional.jpg", "Estación Espacial Internacional (ISS)");
     }
 
-    public SpaceStation(String id, String name, int noradId, GeoPosition position, String nombreImagen) {
-        this(id, name, noradId, position, nombreImagen, "Estación Espacial Orbital");
+    public SpaceStation(SpacecraftInfo info, GeoPosition position, String nombreImagen) {
+        this(info, position, nombreImagen, "Estación Espacial Orbital");
     }
 
-    public SpaceStation(String id, String name, int noradId, GeoPosition position, String nombreImagen, String stationType) {
+    public SpaceStation(SpacecraftInfo info, GeoPosition position, String nombreImagen, String stationType) {
         // La estación espacial es un objeto orbital con velocidad orbital estándar (~27600 km/h)
-        super(id, name, noradId, position, 27600.0);
+        super(info, position, 27600.0);
         this.dockingAvailable = true;
         this.nombreImagen = nombreImagen;
         this.stationType = stationType;

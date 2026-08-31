@@ -7,8 +7,8 @@ public class CargoShip extends Spacecraft {
     private double cargoCapacityTons;
     private double currentCargoTons;
 
-    public CargoShip(String id, String name, int noradId, GeoPosition position, FuelTank fuelTank, double cargoCapacityTons) {
-        super(id, name, noradId, position, fuelTank, 24000.0); // Velocidad estándar ~24,000 km/h
+    public CargoShip(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank, double cargoCapacityTons) {
+        super(info, position, fuelTank, 24000.0); // Velocidad estándar ~24,000 km/h
         this.cargoCapacityTons = cargoCapacityTons;
         this.currentCargoTons = cargoCapacityTons * 0.8; // 80% llena por defecto
         this.nombreImagen = "Cargoship.jpg";

@@ -11,9 +11,9 @@ public class Radar {
     private GeoPosition observerPosition;
     private double coverageRadiusKm;
 
-    public Radar(String observerCity, double latitude, double longitude, double altitude, double coverageRadiusKm) {
+    public Radar(String observerCity, GeoPosition observerPosition, double coverageRadiusKm) {
         this.observerCity = observerCity;
-        this.observerPosition = new GeoPosition(latitude, longitude, altitude);
+        this.observerPosition = (observerPosition != null) ? observerPosition : new GeoPosition(0.0, 0.0, 400.0);
         this.coverageRadiusKm = coverageRadiusKm;
     }
 

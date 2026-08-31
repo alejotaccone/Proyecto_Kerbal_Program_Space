@@ -18,6 +18,7 @@ import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceDebris;
 import model.spacecraft.SpaceStation;
 import model.spacecraft.Spacecraft;
+import model.spacecraft.SpacecraftInfo;
 
 public class N2YOApiClient {
     private static final String BASE_URL = "https://api.n2yo.com/rest/v1/satellite/";
@@ -152,9 +153,12 @@ public class N2YOApiClient {
     /**
      * Petición HTTP a N2YO para actualizar la posición en tiempo real de un satélite individual.
      */
-    public GeoPosition fetchRealSatellitePosition(int noradId, double fallbackLat, double fallbackLng, double fallbackAlt) {
+    public GeoPosition fetchRealSatellitePosition(int noradId, GeoPosition fallbackPos) {
+        if (fallbackPos == null) {
+            fallbackPos = new GeoPosition(0.0, 0.0, 400.0);
+        }
         String url = String.format(Locale.US, "%spositions/%d/%.4f/%.4f/%.1f/1/&apiKey=%s", 
-                BASE_URL, noradId, fallbackLat, fallbackLng, fallbackAlt, apiKey);
+                BASE_URL, noradId, fallbackPos.getLatitude(), fallbackPos.getLongitude(), fallbackPos.getAltitude(), apiKey);
 
         String responseBody = sendGet(url, Duration.ofSeconds(2));
         if (responseBody != null && responseBody.contains("\"positions\":")) {
@@ -162,7 +166,7 @@ public class N2YOApiClient {
             if (pos != null) return pos;
         }
 
-        return new GeoPosition(fallbackLat, fallbackLng, fallbackAlt);
+        return fallbackPos;
     }
 
     /**
@@ -193,22 +197,23 @@ public class N2YOApiClient {
     private OrbitalObject instantiateFromN2YOData(int noradId, String satName, GeoPosition pos) {
         String upper = satName.toUpperCase();
         String craftId = "SAT-" + noradId;
+        SpacecraftInfo info = new SpacecraftInfo(craftId, satName + " (N2YO API)", noradId);
 
         if (upper.contains("TIANHE") || upper.contains("TIANGONG") || upper.contains("CSS") || upper.contains("CHINA") || noradId == NORAD_TIANGONG) {
-            return new SpaceStation(craftId, satName + " (N2YO API)", noradId, pos, "SpaceSation_China.jfif", "Estación Espacial China (Tiangong)");
+            return new SpaceStation(info, pos, "SpaceSation_China.jfif", "Estación Espacial China (Tiangong)");
         } else if (upper.contains("STATION") || upper.contains("ISS") || noradId == NORAD_ISS) {
-            return new SpaceStation(craftId, satName + " (N2YO API)", noradId, pos, "SpaceStation_Internacional.jpg", "Estación Espacial Internacional (ISS)");
+            return new SpaceStation(info, pos, "SpaceStation_Internacional.jpg", "Estación Espacial Internacional (ISS)");
         } else if (upper.contains("ONEWEB") || upper.contains("DEBRIS") || upper.contains("COSMOS") || upper.contains("DEB") || upper.contains("SL-")) {
-            return new SpaceDebris(craftId, satName + " (N2YO API)", noradId, pos, 8.2);
+            return new SpaceDebris(info, pos, 8.2);
         } else if (upper.contains("NOAA") || upper.contains("CARGO") || upper.contains("DRAGON") || upper.contains("DELTA") || upper.contains("ATLAS")) {
-            return new CargoShip(craftId, satName + " (N2YO API)", noradId, pos, new FuelTank(200.0, 180.0, 3.0), 18.5);
+            return new CargoShip(info, pos, new FuelTank(200.0, 180.0, 3.0), 18.5);
         } else if (upper.contains("SOYUZ") || upper.contains("CREW") || upper.contains("STARLINER")) {
-            CrewShuttle shuttle = new CrewShuttle(craftId, satName + " (N2YO API)", noradId, pos, new FuelTank(180.0, 150.0, 3.0));
+            CrewShuttle shuttle = new CrewShuttle(info, pos, new FuelTank(180.0, 150.0, 3.0));
             shuttle.addCrewMember(new Kerbal("Comandante Real", "PILOT", 90));
             return shuttle;
         } else {
             // Sonda de exploración por defecto para satélites científicos como HST (Hubble), TELSTAR, ESSA, etc.
-            return new ExplorationProbe(craftId, satName + " (N2YO API)", noradId, pos, new FuelTank(120.0, 100.0, 1.5), 0.95);
+            return new ExplorationProbe(info, pos, new FuelTank(120.0, 100.0, 1.5), 0.95);
         }
     }
 

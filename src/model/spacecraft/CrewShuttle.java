@@ -9,8 +9,8 @@ import model.geometry.GeoPosition;
 public class CrewShuttle extends Spacecraft {
     private List<Kerbal> crew;
 
-    public CrewShuttle(String id, String name, int noradId, GeoPosition position, FuelTank fuelTank) {
-        super(id, name, noradId, position, fuelTank, 25000.0);
+    public CrewShuttle(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank) {
+        super(info, position, fuelTank, 25000.0);
         this.crew = new ArrayList<>();
         this.nombreImagen = "Spacecraft.jpg";
     }

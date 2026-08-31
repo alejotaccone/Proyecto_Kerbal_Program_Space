@@ -15,10 +15,10 @@ public abstract class OrbitalObject {
     protected double velocityKmH;
     protected String nombreImagen;
 
-    public OrbitalObject(String id, String name, int noradId, GeoPosition position, double velocityKmH) {
-        this.id = id;
-        this.name = name;
-        this.noradId = noradId;
+    public OrbitalObject(SpacecraftInfo info, GeoPosition position, double velocityKmH) {
+        this.id = (info != null) ? info.getId() : "";
+        this.name = (info != null) ? info.getName() : "Desconocido";
+        this.noradId = (info != null) ? info.getNoradId() : 0;
         this.position = position;
         this.velocityKmH = velocityKmH;
         this.nombreImagen = "Spacecraft.jpg";

@@ -6,8 +6,8 @@ import model.geometry.GeoPosition;
 public class ExplorationProbe extends Spacecraft {
     private double solarEfficiency;
 
-    public ExplorationProbe(String id, String name, int noradId, GeoPosition position, FuelTank fuelTank, double solarEfficiency) {
-        super(id, name, noradId, position, fuelTank, 27500.0);
+    public ExplorationProbe(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank, double solarEfficiency) {
+        super(info, position, fuelTank, 27500.0);
         this.solarEfficiency = solarEfficiency;
         this.nombreImagen = "Spacecraft.jpg";
     }

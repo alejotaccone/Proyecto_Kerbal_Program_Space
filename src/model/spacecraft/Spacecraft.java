@@ -6,8 +6,8 @@ import model.geometry.GeoPosition;
 public abstract class Spacecraft extends OrbitalObject {
     protected FuelTank fuelTank;
 
-    public Spacecraft(String id, String name, int noradId, GeoPosition position, FuelTank fuelTank, double velocityKmH) {
-        super(id, name, noradId, position, velocityKmH);
+    public Spacecraft(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank, double velocityKmH) {
+        super(info, position, velocityKmH);
         this.fuelTank = fuelTank;
     }
 

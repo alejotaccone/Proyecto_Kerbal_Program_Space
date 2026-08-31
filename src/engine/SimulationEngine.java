@@ -14,6 +14,7 @@ import model.spacecraft.ExplorationProbe;
 import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceStation;
 import model.spacecraft.Spacecraft;
+import model.spacecraft.SpacecraftInfo;
 import radar.Radar;
 
 public class SimulationEngine {
@@ -32,7 +33,7 @@ public class SimulationEngine {
         this.monitoredShipIndex = -1;
         this.lastMonitorAction = "";
         // Inicializar el radar con coordenadas 0,0 por defecto
-        this.radar = new Radar("Estación", 0.0, 0.0, 400.0, 100.0);
+        this.radar = new Radar("Estación", new GeoPosition(0.0, 0.0, 400.0), 100.0);
 
         setTargetStation(targetNoradId);
     }
@@ -76,7 +77,7 @@ public class SimulationEngine {
             
             // Actualizar el "radar" local para que se centre en la estación
             GeoPosition pos = station.getPosition();
-            this.radar = new Radar(station.getName(), pos.getLatitude(), pos.getLongitude(), pos.getAltitude(), 100.0);
+            this.radar = new Radar(station.getName(), pos, 100.0);
             
             this.monitoredShipIndex = 0; // Seleccionar automáticamente la estación
             TelemetryLogger.printMessage("Centro de Comando conectado exitosamente con: " + station.getName() 
@@ -106,9 +107,7 @@ public class SimulationEngine {
         for (OrbitalObject craft : trackedObjects) {
             GeoPosition updatedPos = apiClient.fetchRealSatellitePosition(
                     craft.getNoradId(), 
-                    craft.getPosition().getLatitude(), 
-                    craft.getPosition().getLongitude(), 
-                    craft.getPosition().getAltitude()
+                    craft.getPosition()
             );
             if (updatedPos != null) {
                 craft.getPosition().setLatitude(updatedPos.getLatitude());
@@ -215,10 +214,9 @@ public class SimulationEngine {
             GeoPosition spawnPos = generarPosicionCercana(station.getPosition(), 0.25, 0.80);
             
             int idNum = (int)(Math.random() * 9000 + 1000);
+            SpacecraftInfo info = new SpacecraftInfo("DEB-" + idNum, "Restos NORAD-" + idNum, 90000 + idNum);
             model.spacecraft.SpaceDebris debris = new model.spacecraft.SpaceDebris(
-                    "DEB-" + idNum,
-                    "Restos NORAD-" + idNum,
-                    90000 + idNum,
+                    info,
                     spawnPos,
                     6.5 + Math.random() * 3.0
             );
@@ -240,9 +238,9 @@ public class SimulationEngine {
                 GeoPosition spawnPos = generarPosicionCercana(target.getPosition(), 0.9, 0.9);
                 
                 int idNum = (int)(Math.random() * 900 + 100);
+                SpacecraftInfo info = new SpacecraftInfo("RD-" + idNum, "ANOMALÍA CINÉTICA RD-" + idNum, 99999);
                 model.spacecraft.RogueDebris rogue = new model.spacecraft.RogueDebris(
-                        "RD-" + idNum, 
-                        "ANOMALÍA CINÉTICA RD-" + idNum, 
+                        info, 
                         spawnPos, 
                         9.5, 
                         target);

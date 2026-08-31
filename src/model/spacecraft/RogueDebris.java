@@ -11,8 +11,8 @@ public class RogueDebris extends SpaceDebris {
     
     private OrbitalObject target;
 
-    public RogueDebris(String id, String name, GeoPosition position, double hazardLevel, OrbitalObject target) {
-        super(id, name, 99999, position, hazardLevel); // 99999 es un NORAD ID falso para que N2YO lo ignore
+    public RogueDebris(SpacecraftInfo info, GeoPosition position, double hazardLevel, OrbitalObject target) {
+        super(info, position, hazardLevel);
         this.target = target;
     }
 
