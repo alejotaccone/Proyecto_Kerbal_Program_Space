@@ -82,11 +82,10 @@ public class SpaceStation extends OrbitalObject {
     }
 
     public boolean refuelShip(Spacecraft ship) {
-        if (ship != null && ship.getFuelTank() != null) {
+        if (ship != null && this.position != null && ship.getPosition() != null) {
             double distance = this.position.distanceTo(ship.getPosition());
             if (distance <= 500.0) { // Dentro del radio de acople (500 km)
-                ship.getFuelTank().refuel(50.0);
-                return true;
+                return ship.refuel(50.0);
             }
         }
         return false;

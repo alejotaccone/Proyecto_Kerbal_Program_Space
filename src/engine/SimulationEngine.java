@@ -125,10 +125,8 @@ public class SimulationEngine {
      * Actualiza el centro del radar local para que siga la posición de la estación objetivo.
      */
     private void actualizarPosicionRadar(OrbitalObject craft) {
-        if (craft != null && craft.getNoradId() == targetStationNoradId && radar != null && craft.getPosition() != null) {
-            radar.getObserverPosition().setLatitude(craft.getPosition().getLatitude());
-            radar.getObserverPosition().setLongitude(craft.getPosition().getLongitude());
-            radar.getObserverPosition().setAltitude(craft.getPosition().getAltitude());
+        if (craft != null && craft.getNoradId() == targetStationNoradId && radar != null) {
+            radar.actualizarUbicacion(craft.getPosition());
         }
     }
 

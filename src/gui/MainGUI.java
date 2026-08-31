@@ -985,10 +985,9 @@ public class MainGUI extends JFrame {
         radarPanel.setSelectedIndex(cmbNaves.getSelectedIndex() - 1);
         
         Radar radar = engine.getRadar();
-        if (radar != null && radar.getObserverPosition() != null) {
+        if (radar != null) {
             radarPanel.setCentro(
-                radar.getObserverPosition().getLatitude(),
-                radar.getObserverPosition().getLongitude(),
+                radar.getObserverPosition(),
                 radar.getCoverageRadiusKm()
             );
         }

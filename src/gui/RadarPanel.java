@@ -68,6 +68,14 @@ public class RadarPanel extends JPanel {
     }
 
     /** Actualiza el centro del radar basado en la posición del observador */
+    public void setCentro(GeoPosition pos, double radioKm) {
+        if (pos != null) {
+            this.centroLat = pos.getLatitude();
+            this.centroLng = pos.getLongitude();
+            this.radioKm = radioKm;
+        }
+    }
+
     public void setCentro(double lat, double lng, double radioKm) {
         this.centroLat = lat;
         this.centroLng = lng;

@@ -67,6 +67,22 @@ public class Radar {
         return observerPosition;
     }
 
+    /**
+     * Actualiza la posición geográfica del observador / centro del radar.
+     * Respeta el principio de encapsulamiento (Tell, Don't Ask).
+     */
+    public void actualizarUbicacion(GeoPosition nuevaPosicion) {
+        if (nuevaPosicion != null) {
+            if (this.observerPosition == null) {
+                this.observerPosition = new GeoPosition(nuevaPosicion.getLatitude(), nuevaPosicion.getLongitude(), nuevaPosicion.getAltitude());
+            } else {
+                this.observerPosition.setLatitude(nuevaPosicion.getLatitude());
+                this.observerPosition.setLongitude(nuevaPosicion.getLongitude());
+                this.observerPosition.setAltitude(nuevaPosicion.getAltitude());
+            }
+        }
+    }
+
     public double getCoverageRadiusKm() {
         return coverageRadiusKm;
     }

@@ -30,6 +30,18 @@ public abstract class Spacecraft extends OrbitalObject {
         return false;
     }
 
+    /**
+     * Recarga el tanque de combustible de la nave con la cantidad especificada.
+     * Respeta el encapsulamiento protegiendo la manipulación interna de FuelTank.
+     */
+    public boolean refuel(double amount) {
+        if (fuelTank != null) {
+            fuelTank.refuel(amount);
+            return true;
+        }
+        return false;
+    }
+
     public FuelTank getFuelTank() {
         return fuelTank;
     }
