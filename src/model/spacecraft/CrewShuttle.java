@@ -30,7 +30,7 @@ public class CrewShuttle extends Spacecraft {
     public String performSpecialAbility() {
         if (!crew.isEmpty()) {
             Kerbal pilot = crew.get(0);
-            return "El tripulante " + pilot.getName() + " (" + pilot.getRole() + ") realizó un ajuste fino de inclinación orbital con valentía del " + pilot.getCourage() + "%.";
+            return pilot.ejecutarManiobraPilotaje();
         }
         return "Transbordador sin tripulación a bordo para realizar la maniobra.";
     }
