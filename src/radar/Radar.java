@@ -18,22 +18,6 @@ public class Radar {
     }
 
     /**
-     * Escanea la lista de objetos espaciales y retorna aquellos dentro del rango del radar.
-     */
-    public List<OrbitalObject> scanCoverageArea(List<OrbitalObject> allObjects) {
-        List<OrbitalObject> detected = new ArrayList<>();
-        if (allObjects != null) {
-            for (OrbitalObject craft : allObjects) {
-                double distance = observerPosition.distanceTo(craft.getPosition());
-                if (distance <= coverageRadiusKm) {
-                    detected.add(craft);
-                }
-            }
-        }
-        return detected;
-    }
-
-    /**
      * Evalúa potenciales riesgos de colisión o alertas entre objetos espaciales.
      */
     public List<String> detectCollisionRisks(List<OrbitalObject> allObjects) {

@@ -5,8 +5,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import model.components.FuelTank;
 import model.components.Kerbal;
@@ -17,7 +15,6 @@ import model.spacecraft.ExplorationProbe;
 import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceDebris;
 import model.spacecraft.SpaceStation;
-import model.spacecraft.Spacecraft;
 import model.spacecraft.SpacecraftInfo;
 
 public class N2YOApiClient {
@@ -25,7 +22,6 @@ public class N2YOApiClient {
     public static final String DEFAULT_KEY = "DPP6C4-6KSLTW-K5Z8BU-5THO";
     private String apiKey;
     private HttpClient httpClient;
-    private boolean onlineMode;
 
     public static final int NORAD_ISS = 25544;       // Estación Espacial Internacional (ISS)
     public static final int NORAD_HUBBLE = 20580;    // Telescopio Espacial Hubble (HST)
@@ -33,21 +29,11 @@ public class N2YOApiClient {
     public static final int NORAD_NOAA19 = 33591;    // Satélite de observación NOAA 19
     public static final int NORAD_ONEWEB = 48212;    // Satélite / Restos en órbita polar ONEWEB-0179
 
-    // Lista de NORAD IDs reales de respaldo si la ciudad elegida no tiene satélites inmediatos sobrevolando
-    private static final int[] REAL_NORAD_IDS = {
-        NORAD_ISS,
-        NORAD_HUBBLE,
-        NORAD_TIANGONG,
-        NORAD_NOAA19,
-        NORAD_ONEWEB
-    };
-
     public N2YOApiClient(String apiKey) {
         this.apiKey = (apiKey != null && !apiKey.trim().isEmpty()) ? apiKey : DEFAULT_KEY;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(4))
                 .build();
-        this.onlineMode = true;
     }
 
     /**
@@ -69,85 +55,6 @@ public class N2YOApiClient {
             // Manejo de errores de conexión o timeout
         }
         return null;
-    }
-
-    /**
-     * Consulta el servicio N2YO /above para obtener los satélites reales sobrevolando las coordenadas dadas.
-     */
-    public List<OrbitalObject> fetchSatellitesAbove(GeoPosition observerPos, double searchRadiusKm) {
-        if (observerPos == null) return fetchLiveSpaceObjects();
-
-        double radiusDeg = convertirRadioKmAGrados(searchRadiusKm);
-        String url = construirUrlAbove(observerPos, radiusDeg);
-
-        List<OrbitalObject> detectedAbove = new ArrayList<>();
-        String responseBody = sendGet(url, Duration.ofSeconds(5));
-        if (responseBody != null && responseBody.contains("\"above\":")) {
-            parseSatellitesAboveFromJson(responseBody, detectedAbove);
-        }
-
-        // Fallback a satélites globales si /above no retornó resultados
-        return detectedAbove.isEmpty() ? fetchLiveSpaceObjects() : detectedAbove;
-    }
-
-    private double convertirRadioKmAGrados(double searchRadiusKm) {
-        // N2YO requiere el radio de búsqueda en GRADOS (1 grado ≈ 111 km)
-        double radiusDeg = searchRadiusKm / 111.0;
-        if (radiusDeg > 90.0) return 90.0; // Límite máximo
-        if (radiusDeg < 1.0) return 1.0;   // Límite mínimo
-        return radiusDeg;
-    }
-
-    private String construirUrlAbove(GeoPosition observerPos, double radiusDeg) {
-        return String.format(Locale.US, "%sabove/%.4f/%.4f/%.1f/%.1f/0/&apiKey=%s", 
-                BASE_URL, observerPos.getLatitude(), observerPos.getLongitude(), observerPos.getAltitude(), radiusDeg, apiKey);
-    }
-
-    private void parseSatellitesAboveFromJson(String json, List<OrbitalObject> resultList) {
-        try {
-            int abovePos = json.indexOf("\"above\":");
-            if (abovePos == -1) return;
-
-            String aboveSection = json.substring(abovePos);
-            String[] objects = aboveSection.split("\\{\"satid\":");
-
-            int count = 0;
-            for (int i = 1; i < objects.length && count < 8; i++) {
-                String objJson = "{\"satid\":" + objects[i];
-
-                double satIdDbl = extractJsonDouble(objJson, "\"satid\":");
-                int satId = (int) satIdDbl;
-                String satName = extractJsonString(objJson, "\"satname\":");
-                double satLat = extractJsonDouble(objJson, "\"satlat\":");
-                double satLng = extractJsonDouble(objJson, "\"satlng\":");
-                double satAlt = extractJsonDouble(objJson, "\"satalt\":");
-
-                if (satName != null && !satName.trim().isEmpty()) {
-                    GeoPosition posObj = new GeoPosition(satLat, satLng, satAlt);
-                    OrbitalObject craft = instantiateFromN2YOData(satId, satName.trim(), posObj);
-                    resultList.add(craft);
-                    count++;
-                }
-            }
-        } catch (Exception e) {
-            // Parse error fallback
-        }
-    }
-
-    /**
-     * Consulta la API N2YO en vivo para la lista global de satélites.
-     */
-    public List<OrbitalObject> fetchLiveSpaceObjects() {
-        List<OrbitalObject> liveObjects = new ArrayList<>();
-
-        for (int noradId : REAL_NORAD_IDS) {
-            OrbitalObject craft = fetchRealSatellite(noradId);
-            if (craft != null) {
-                liveObjects.add(craft);
-            }
-        }
-
-        return liveObjects;
     }
 
     /**
@@ -252,12 +159,7 @@ public class N2YOApiClient {
         return json.substring(start + 1, end);
     }
 
-    public boolean isOnlineMode() {
-        return onlineMode;
-    }
-
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
-        this.onlineMode = apiKey != null && !apiKey.trim().isEmpty();
     }
 }

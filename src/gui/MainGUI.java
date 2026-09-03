@@ -3,19 +3,12 @@ package gui;
 import engine.SimulationEngine;
 import engine.TelemetryLogger;
 import model.spacecraft.OrbitalObject;
-import model.spacecraft.Spacecraft;
-import model.spacecraft.SpaceDebris;
-import model.spacecraft.SpaceStation;
-import model.spacecraft.CrewShuttle;
-import model.geometry.GeoPosition;
 import radar.Radar;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.*;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -44,9 +37,6 @@ public class MainGUI extends JFrame {
     private static final Color COLOR_BG_DARK       = new Color(10, 12, 18);       // Fondo principal ultra oscuro
     private static final Color COLOR_PANEL_BG      = new Color(16, 20, 30);       // Fondo de paneles
     private static final Color COLOR_RADAR_BG      = new Color(5, 10, 5);         // Fondo verde oscuro del radar
-    private static final Color COLOR_RADAR_GRID    = new Color(0, 60, 0, 120);    // Círculos concéntricos del radar
-    private static final Color COLOR_RADAR_LINE    = new Color(0, 255, 80, 200);  // Línea de barrido del radar
-    private static final Color COLOR_RADAR_GLOW    = new Color(0, 255, 80, 30);   // Resplandor del barrido
     private static final Color COLOR_TEXT_PRIMARY   = new Color(0, 230, 80);       // Texto verde principal (estilo terminal)
     private static final Color COLOR_TEXT_SECONDARY = new Color(0, 180, 60);       // Texto verde secundario
     private static final Color COLOR_TEXT_DIM       = new Color(0, 120, 40);       // Texto verde tenue
@@ -884,14 +874,6 @@ public class MainGUI extends JFrame {
             // Auto-scroll hacia abajo
             txtConsola.setCaretPosition(txtConsola.getDocument().getLength());
         });
-    }
-
-    /** Log de acción sobre una nave específica */
-    private void logAccionNave(int idx, String accion) {
-        if (engine != null && engine.getTrackedObjects() != null && idx < engine.getTrackedObjects().size()) {
-            OrbitalObject craft = engine.getTrackedObjects().get(idx);
-            logConsola("[Acción]: " + accion + " sobre [" + craft.getName() + "]");
-        }
     }
 
     /** Actualiza el JComboBox con la lista actual de naves.

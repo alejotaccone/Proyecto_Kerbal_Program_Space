@@ -1,20 +1,12 @@
 package engine;
 
-
 import api.N2YOApiClient;
-import engine.TelemetryLogger;
 import java.util.ArrayList;
 import java.util.List;
-import model.components.FuelTank;
-import model.components.Kerbal;
 import model.geometry.GeoPosition;
-import model.spacecraft.CargoShip;
-import model.spacecraft.CrewShuttle;
-import model.spacecraft.ExplorationProbe;
 import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceStation;
 import model.spacecraft.Spacecraft;
-import model.spacecraft.SpacecraftInfo;
 import radar.Radar;
 
 public class SimulationEngine {

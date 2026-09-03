@@ -1,8 +1,6 @@
 package gui;
 
 import java.awt.*;
-import java.awt.geom.Point2D;
-import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
@@ -39,9 +37,6 @@ public class RadarPanel extends JPanel {
     private double centroLng = -58.38;
     private double radioKm = 100.0;
 
-    // Historial de posiciones para el efecto de estela
-    private List<Point2D.Double> trail = new ArrayList<>();
-
     // Índice de la nave seleccionada (-1 si ninguna)
     private int selectedIndex = -1;
 
@@ -74,12 +69,6 @@ public class RadarPanel extends JPanel {
             this.centroLng = pos.getLongitude();
             this.radioKm = radioKm;
         }
-    }
-
-    public void setCentro(double lat, double lng, double radioKm) {
-        this.centroLat = lat;
-        this.centroLng = lng;
-        this.radioKm = radioKm;
     }
 
     @Override

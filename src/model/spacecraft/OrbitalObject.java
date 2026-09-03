@@ -60,14 +60,6 @@ public abstract class OrbitalObject {
         this.nombreImagen = nombreImagen;
     }
 
-    public String getImg() {
-        return nombreImagen;
-    }
-
-    public void setImg(String img) {
-        this.nombreImagen = img;
-    }
-
     @Override
     public String toString() {
         return String.format("%s (%s) | NORAD: %d | Pos: %s", 

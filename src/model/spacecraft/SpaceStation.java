@@ -1,10 +1,8 @@
 package model.spacecraft;
 
-import model.components.FuelTank;
 import model.geometry.GeoPosition;
 
 public class SpaceStation extends OrbitalObject {
-    private boolean dockingAvailable;
     private String stationType;
     
     // Variables de sistemas internos (Telemetría Micro)
@@ -17,14 +15,9 @@ public class SpaceStation extends OrbitalObject {
         this(info, position, "SpaceStation_Internacional.jpg", "Estación Espacial Internacional (ISS)");
     }
 
-    public SpaceStation(SpacecraftInfo info, GeoPosition position, String nombreImagen) {
-        this(info, position, nombreImagen, "Estación Espacial Orbital");
-    }
-
     public SpaceStation(SpacecraftInfo info, GeoPosition position, String nombreImagen, String stationType) {
         // La estación espacial es un objeto orbital con velocidad orbital estándar (~27600 km/h)
         super(info, position, 27600.0);
-        this.dockingAvailable = true;
         this.nombreImagen = nombreImagen;
         this.stationType = stationType;
         
@@ -90,30 +83,10 @@ public class SpaceStation extends OrbitalObject {
         }
         return false;
     }
-
-    public boolean isDockingAvailable() {
-        return dockingAvailable;
-    }
     
-    // Getters y Setters de telemetría
+    // Getters de telemetría
     public double getOxygenLevel() { return oxygenLevel; }
-    public void setOxygenLevel(double oxygenLevel) { this.oxygenLevel = oxygenLevel; }
-
     public double getBatteryLevel() { return batteryLevel; }
-    public void setBatteryLevel(double batteryLevel) { this.batteryLevel = batteryLevel; }
-
     public double getTemperature() { return temperature; }
-    public void setTemperature(double temperature) { this.temperature = temperature; }
-
     public boolean areSolarPanelsDeployed() { return solarPanelsDeployed; }
-    public void toggleSolarPanels() { this.solarPanelsDeployed = !this.solarPanelsDeployed; }
-    
-    // Métodos de control interactivo
-    public void generateOxygen() {
-        if (batteryLevel > 15.0) {
-            batteryLevel -= 10.0;
-            oxygenLevel += 25.0;
-            if (oxygenLevel > 100.0) oxygenLevel = 100.0;
-        }
-    }
 }

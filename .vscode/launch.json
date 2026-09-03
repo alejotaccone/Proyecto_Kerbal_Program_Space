@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "MainGUI",
+            "request": "launch",
+            "mainClass": "gui.MainGUI",
+            "projectName": "Proyecto_Kerbal_Program_Space_cb70c003"
+        },
+        {
+            "type": "java",
+            "name": "Ejecutar MainGUI (Dashboard)",
+            "request": "launch",
+            "mainClass": "gui.MainGUI",
+            "projectName": "Proyecto_Kerbal_Program_Space",
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "java",
+            "name": "Ejecutar Main (Consola)",
+            "request": "launch",
+            "mainClass": "Main",
+            "projectName": "Proyecto_Kerbal_Program_Space",
+            "console": "integratedTerminal"
+        }
+    ]
+}
