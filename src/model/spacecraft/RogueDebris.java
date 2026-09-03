@@ -6,6 +6,7 @@ import model.geometry.GeoPosition;
  * Basura Espacial Hostil (Anomalía de colisión).
  * Esta clase hereda de SpaceDebris pero sobreescribe el movimiento para
  * interceptar activamente a su objetivo simulando una crisis.
+ * Utiliza getPosition() para respetar el encapsulamiento de su superclase.
  */
 public class RogueDebris extends SpaceDebris {
     
@@ -18,12 +19,12 @@ public class RogueDebris extends SpaceDebris {
 
     @Override
     public void move() {
-        if (target != null && target.getPosition() != null) {
+        if (target != null && target.getPosition() != null && getPosition() != null) {
             double targetLat = target.getPosition().getLatitude();
             double targetLng = target.getPosition().getLongitude();
             
-            double currentLat = position.getLatitude();
-            double currentLng = position.getLongitude();
+            double currentLat = getPosition().getLatitude();
+            double currentLng = getPosition().getLongitude();
             
             double deltaLat = targetLat - currentLat;
             double deltaLng = targetLng - currentLng;
@@ -35,11 +36,11 @@ public class RogueDebris extends SpaceDebris {
                 double step = 0.3;
                 if (dist < step) {
                     // Si está muy cerca, salta directamente a la posición
-                    position.setLatitude(targetLat);
-                    position.setLongitude(targetLng);
+                    getPosition().setLatitude(targetLat);
+                    getPosition().setLongitude(targetLng);
                 } else {
-                    position.setLatitude(currentLat + (deltaLat / dist) * step);
-                    position.setLongitude(currentLng + (deltaLng / dist) * step);
+                    getPosition().setLatitude(currentLat + (deltaLat / dist) * step);
+                    getPosition().setLongitude(currentLng + (deltaLng / dist) * step);
                 }
             }
         }

@@ -18,8 +18,7 @@ public class SpaceStation extends OrbitalObject {
 
     public SpaceStation(SpacecraftInfo info, GeoPosition position, String nombreImagen, String stationType) {
         // La estación espacial es un objeto orbital con velocidad orbital estándar (~27600 km/h)
-        super(info, position, 27600.0);
-        this.nombreImagen = nombreImagen;
+        super(info, position, 27600.0, nombreImagen);
         this.stationType = stationType;
         
         // Inicializar componentes de subsistemas
@@ -67,12 +66,12 @@ public class SpaceStation extends OrbitalObject {
 
     @Override
     public String performSpecialAbility() {
-        return "Estación Espacial [" + name + "] emitió una señal de acople y recarga para naves cercanas.";
+        return "Estación Espacial [" + getName() + "] emitió una señal de acople y recarga para naves cercanas.";
     }
 
     public boolean refuelShip(Spacecraft ship) {
-        if (ship != null && this.position != null && ship.getPosition() != null) {
-            double distance = this.position.distanceTo(ship.getPosition());
+        if (ship != null && getPosition() != null && ship.getPosition() != null) {
+            double distance = getPosition().distanceTo(ship.getPosition());
             if (distance <= 500.0) { // Dentro del radio de acople (500 km)
                 return ship.refuel(50.0);
             }

@@ -7,9 +7,8 @@ public class ExplorationProbe extends Spacecraft {
     private double solarEfficiency;
 
     public ExplorationProbe(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank, double solarEfficiency) {
-        super(info, position, fuelTank, 27500.0);
+        super(info, position, fuelTank, 27500.0, "Spacecraft.jpg");
         this.solarEfficiency = solarEfficiency;
-        this.nombreImagen = "Spacecraft.jpg";
     }
 
     @Override
@@ -19,12 +18,12 @@ public class ExplorationProbe extends Spacecraft {
 
     @Override
     public String performSpecialAbility() {
-        if (fuelTank != null) {
+        if (getFuelTank() != null) {
             double rechargedAmount = 10.0 * solarEfficiency;
-            fuelTank.refuel(rechargedAmount);
-            return "Sonda [" + name + "] desplegó sus paneles solares y recargó " + String.format("%.1f", rechargedAmount) + " L de energía.";
+            getFuelTank().refuel(rechargedAmount);
+            return "Sonda [" + getName() + "] desplegó sus paneles solares y recargó " + String.format("%.1f", rechargedAmount) + " L de energía.";
         }
-        return "Sonda [" + name + "] sin tanque de energía válido.";
+        return "Sonda [" + getName() + "] sin tanque de energía válido.";
     }
 
     public double getSolarEfficiency() {

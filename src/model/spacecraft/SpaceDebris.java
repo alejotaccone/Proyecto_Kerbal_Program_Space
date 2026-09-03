@@ -7,9 +7,8 @@ public class SpaceDebris extends OrbitalObject {
 
     public SpaceDebris(SpacecraftInfo info, GeoPosition position, double hazardLevel) {
         // La basura espacial no tiene motor/propulsión: extiende OrbitalObject directamente
-        super(info, position, 28000.0);
+        super(info, position, 28000.0, "SpaceDebris.jpg");
         this.hazardLevel = hazardLevel;
-        this.nombreImagen = "SpaceDebris.jpg";
     }
 
     @Override
@@ -24,7 +23,7 @@ public class SpaceDebris extends OrbitalObject {
 
     @Override
     public String performSpecialAbility() {
-        return "Basura Espacial [" + name + "] genera interferencia de radar y riesgo cinético (Nivel " + hazardLevel + "/10).";
+        return "Basura Espacial [" + getName() + "] genera interferencia de radar y riesgo cinético (Nivel " + hazardLevel + "/10).";
     }
 
     public double getHazardLevel() {

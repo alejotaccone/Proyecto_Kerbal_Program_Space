@@ -8,10 +8,9 @@ public class CargoShip extends Spacecraft {
     private double currentCargoTons;
 
     public CargoShip(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank, double cargoCapacityTons) {
-        super(info, position, fuelTank, 24000.0); // Velocidad estándar ~24,000 km/h
+        super(info, position, fuelTank, 24000.0, "Cargoship.jpg"); // Velocidad estándar ~24,000 km/h
         this.cargoCapacityTons = cargoCapacityTons;
         this.currentCargoTons = cargoCapacityTons * 0.8; // 80% llena por defecto
-        this.nombreImagen = "Cargoship.jpg";
     }
 
     @Override
@@ -23,9 +22,9 @@ public class CargoShip extends Spacecraft {
     public String performSpecialAbility() {
         if (currentCargoTons > 5.0) {
             currentCargoTons -= 5.0;
-            return "Nave [" + name + "] eyectó 5 toneladas de carga pesada para ganar agilidad y ahorrar combustible.";
+            return "Nave [" + getName() + "] eyectó 5 toneladas de carga pesada para ganar agilidad y ahorrar combustible.";
         }
-        return "Nave [" + name + "] no tiene suficiente carga extra para eyectar.";
+        return "Nave [" + getName() + "] no tiene suficiente carga extra para eyectar.";
     }
 
     public double getCargoCapacityTons() {

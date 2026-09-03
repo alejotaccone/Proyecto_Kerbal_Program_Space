@@ -10,9 +10,8 @@ public class CrewShuttle extends Spacecraft {
     private List<Kerbal> crew;
 
     public CrewShuttle(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank) {
-        super(info, position, fuelTank, 25000.0);
+        super(info, position, fuelTank, 25000.0, "Spacecraft.jpg");
         this.crew = new ArrayList<>();
-        this.nombreImagen = "Spacecraft.jpg";
     }
 
     public void addCrewMember(Kerbal kerbal) {

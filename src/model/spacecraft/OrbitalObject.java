@@ -4,24 +4,28 @@ import model.geometry.GeoPosition;
 
 /**
  * Superclase abstracta que modela cualquier objeto en órbita terrestre.
- * Contiene únicamente identidad espacial y cinemática común (posición, velocidad, imagen),
- * resolviendo el problema de Herencia Rechazada (Refused Bequest).
+ * Todos sus atributos están estrictamente encapsulados como private,
+ * resolviendo el Bad Smell de Intimidad Inapropiada (Inappropriate Intimacy).
  */
 public abstract class OrbitalObject {
-    protected String id;
-    protected String name;
-    protected int noradId;
-    protected GeoPosition position;
-    protected double velocityKmH;
-    protected String nombreImagen;
+    private String id;
+    private String name;
+    private int noradId;
+    private GeoPosition position;
+    private double velocityKmH;
+    private String nombreImagen;
 
     public OrbitalObject(SpacecraftInfo info, GeoPosition position, double velocityKmH) {
+        this(info, position, velocityKmH, "Spacecraft.jpg");
+    }
+
+    public OrbitalObject(SpacecraftInfo info, GeoPosition position, double velocityKmH, String nombreImagen) {
         this.id = (info != null) ? info.getId() : "";
         this.name = (info != null) ? info.getName() : "Desconocido";
         this.noradId = (info != null) ? info.getNoradId() : 0;
         this.position = position;
         this.velocityKmH = velocityKmH;
-        this.nombreImagen = "Spacecraft.jpg";
+        this.nombreImagen = (nombreImagen != null && !nombreImagen.isEmpty()) ? nombreImagen : "Spacecraft.jpg";
     }
 
     public abstract void move();
