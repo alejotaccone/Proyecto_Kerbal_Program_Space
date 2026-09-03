@@ -1,15 +1,16 @@
 package model.spacecraft;
 
+import model.components.PercentageGauge;
 import model.geometry.GeoPosition;
 
 public class SpaceStation extends OrbitalObject {
     private String stationType;
     
-    // Variables de sistemas internos (Telemetría Micro)
-    private double oxygenLevel;        // Porcentaje (0.0 a 100.0)
-    private double batteryLevel;       // Porcentaje (0.0 a 100.0)
-    private double temperature;        // Grados Celsius
-    private boolean solarPanelsDeployed; // Estado de los paneles
+    // Subsistemas internos encapsulados con tipado de dominio (PercentageGauge)
+    private PercentageGauge oxygenGauge;       // Porcentaje de soporte vital (0.0% a 100.0%)
+    private PercentageGauge batteryGauge;      // Porcentaje de energía eléctrica (0.0% a 100.0%)
+    private double temperature;                // Grados Celsius
+    private boolean solarPanelsDeployed;       // Estado de los paneles solares
 
     public SpaceStation(SpacecraftInfo info, GeoPosition position) {
         this(info, position, "SpaceStation_Internacional.jpg", "Estación Espacial Internacional (ISS)");
@@ -21,9 +22,9 @@ public class SpaceStation extends OrbitalObject {
         this.nombreImagen = nombreImagen;
         this.stationType = stationType;
         
-        // Inicializar sistemas
-        this.oxygenLevel = 100.0;
-        this.batteryLevel = 100.0;
+        // Inicializar componentes de subsistemas
+        this.oxygenGauge = new PercentageGauge(100.0);
+        this.batteryGauge = new PercentageGauge(100.0);
         this.temperature = 22.0;
         this.solarPanelsDeployed = true;
     }
@@ -37,24 +38,19 @@ public class SpaceStation extends OrbitalObject {
     }
 
     private void consumirOxigeno() {
-        oxygenLevel -= 0.05;
-        if (oxygenLevel < 0.0) {
-            oxygenLevel = 0.0;
-        }
+        oxygenGauge.decrease(0.05);
     }
 
     private void actualizarBaterias() {
         if (solarPanelsDeployed) {
-            batteryLevel += 0.2; // Recarga solar
+            batteryGauge.increase(0.2); // Recarga solar
         } else {
-            batteryLevel -= 0.8; // Consumo
+            batteryGauge.decrease(0.8); // Consumo
         }
-        if (batteryLevel > 100.0) batteryLevel = 100.0;
-        if (batteryLevel < 0.0) batteryLevel = 0.0;
     }
 
     private void regularTemperatura() {
-        if (batteryLevel > 20.0) {
+        if (batteryGauge.isAbove(20.0)) {
             // Regulación térmica activa hacia temperatura óptima (22°C)
             if (temperature < 22.0) temperature += 0.1;
             if (temperature > 22.0) temperature -= 0.1;
@@ -84,9 +80,11 @@ public class SpaceStation extends OrbitalObject {
         return false;
     }
     
-    // Getters de telemetría
-    public double getOxygenLevel() { return oxygenLevel; }
-    public double getBatteryLevel() { return batteryLevel; }
+    // Getters de telemetría y subsistemas
+    public double getOxygenLevel() { return oxygenGauge.getLevel(); }
+    public double getBatteryLevel() { return batteryGauge.getLevel(); }
+    public PercentageGauge getOxygenGauge() { return oxygenGauge; }
+    public PercentageGauge getBatteryGauge() { return batteryGauge; }
     public double getTemperature() { return temperature; }
     public boolean areSolarPanelsDeployed() { return solarPanelsDeployed; }
 }

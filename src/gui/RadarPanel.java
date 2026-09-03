@@ -5,6 +5,7 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import model.geometry.GeoPosition;
+import model.spacecraft.CargoShip;
 import model.spacecraft.CrewShuttle;
 import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceDebris;
@@ -220,7 +221,7 @@ public class RadarPanel extends JPanel {
             return new EstiloVisual(COLOR_ACCENT_RED, 5, true);
         } else if (craft instanceof CrewShuttle) {
             return new EstiloVisual(COLOR_ACCENT_YELLOW, 7, false);
-        } else if (craft.getType().contains("Carga")) {
+        } else if (craft instanceof CargoShip) {
             return new EstiloVisual(COLOR_ACCENT_ORANGE, 7, false);
         } else {
             return new EstiloVisual(COLOR_TEXT_PRIMARY, 6, false);
