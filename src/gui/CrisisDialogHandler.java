@@ -1,10 +1,27 @@
 package gui;
 
 import engine.SimulationEngine;
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dialog;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.GridLayout;
+import java.awt.Window;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.function.Consumer;
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
-import javax.swing.JOptionPane;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import model.spacecraft.OrbitalObject;
 import model.spacecraft.RogueDebris;
 import model.spacecraft.SpaceStation;
@@ -13,6 +30,7 @@ import model.spacecraft.Spacecraft;
 /**
  * Controlador de diálogos interactivos y lógica de decisión ante eventos de crisis y colisiones.
  * Desacopla la lógica de juego y manejo de alertas de impacto fuera de MainGUI (God Class).
+ * Renderiza ventanas modales personalizadas sin marco nativo con la misma paleta táctica oscura de la UI.
  */
 public class CrisisDialogHandler {
 
@@ -69,26 +87,70 @@ public class CrisisDialogHandler {
         return null;
     }
 
+    /**
+     * Muestra la ventana modal táctica de crisis de colisión con estilo oscuro desacoplado de Windows.
+     */
     private static int mostrarDialogoCrisis(Component parent, RogueDebris threat, OrbitalObject target, double dist) {
-        String mensaje = "¡ALERTA DE IMPACTO INMINENTE!\n\n"
-                + "La Basura Espacial Hostil [" + threat.getName() + "]\n"
-                + "se encuentra a " + String.format("%.1f", dist) + " km de la nave [" + target.getName() + "].\n\n"
-                + "¿Qué orden de emergencia desea ejecutar, Comandante?";
+        Window owner = SwingUtilities.getWindowAncestor(parent);
+        JDialog dialog = (owner instanceof Frame) ? new JDialog((Frame) owner, true) : new JDialog((Dialog) owner, true);
+        dialog.setUndecorated(true);
 
-        Object[] opciones = {
-            "Forzar Evasión (-15L Combustible)",
-            "Ignorar (Aceptar Impacto Crítico)"
-        };
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 15));
+        mainPanel.setBackground(new Color(8, 14, 8));
+        mainPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 60, 60), 2),
+            BorderFactory.createEmptyBorder(18, 20, 18, 20)
+        ));
 
-        return JOptionPane.showOptionDialog(
-                parent,
-                mensaje,
-                "CRISIS DE COLISIÓN DETECTADA",
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE,
-                null,
-                opciones,
-                opciones[0]);
+        // Título de Alerta
+        JLabel lblHeader = new JLabel("═══ ⚠ ALERTA DE IMPACTO INMINENTE ═══");
+        lblHeader.setFont(new Font("Consolas", Font.BOLD, 14));
+        lblHeader.setForeground(new Color(255, 60, 60));
+        lblHeader.setHorizontalAlignment(SwingConstants.CENTER);
+        mainPanel.add(lblHeader, BorderLayout.NORTH);
+
+        // Mensaje de Cuerpo
+        String bodyHtml = String.format(
+            "<html><div style='text-align: center; font-family: Consolas; font-size: 11px; color: #00FF66; width: 340px;'>" +
+            "La Basura Espacial Hostil <b style='color: #FF5555;'>[%s]</b><br>" +
+            "se encuentra a <b style='color: #FFFF55;'>%.1f km</b> de la nave <b style='color: #00FFFF;'>[%s]</b>.<br><br>" +
+            "<span style='color: #FFFFFF;'>¿Qué orden de emergencia desea ejecutar, Comandante?</span>" +
+            "</div></html>",
+            threat.getName(), dist, target.getName()
+        );
+        JLabel lblBody = new JLabel(bodyHtml);
+        lblBody.setHorizontalAlignment(SwingConstants.CENTER);
+        mainPanel.add(lblBody, BorderLayout.CENTER);
+
+        // Opciones Tácticas (Botones)
+        JPanel btnPanel = new JPanel(new GridLayout(2, 1, 0, 8));
+        btnPanel.setOpaque(false);
+
+        JButton btnEvade = crearBotonTactico("[1] FORZAR EVASIÓN (-15L Combustible)", new Color(255, 180, 0));
+        JButton btnIgnore = crearBotonTactico("[2] IGNORAR (Aceptar Impacto Crítico)", new Color(255, 60, 60));
+
+        final int[] result = new int[]{1}; // Por defecto ignorar si se fuerza el cierre
+
+        btnEvade.addActionListener(e -> {
+            result[0] = 0;
+            dialog.dispose();
+        });
+
+        btnIgnore.addActionListener(e -> {
+            result[0] = 1;
+            dialog.dispose();
+        });
+
+        btnPanel.add(btnEvade);
+        btnPanel.add(btnIgnore);
+        mainPanel.add(btnPanel, BorderLayout.SOUTH);
+
+        dialog.setContentPane(mainPanel);
+        dialog.pack();
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
+
+        return result[0];
     }
 
     private static void procesarDecisionCrisis(
@@ -116,6 +178,9 @@ public class CrisisDialogHandler {
         }
     }
 
+    /**
+     * Despliega la ventana emergente táctica personalizada cuando una estación es destruida.
+     */
     private static void manejarDestruccionObjeto(
             Component parent, 
             OrbitalObject target, 
@@ -125,37 +190,65 @@ public class CrisisDialogHandler {
         if (target instanceof SpaceStation) {
             SpaceStation station = (SpaceStation) target;
 
-            // 1. Mostrar ventana emergente (Pop-up) con la imagen de la estación destruida e informar el evento
             String imgDestruida = station.getImagenDestruida();
             String textoDestruccion = station.getTextoDestruccion();
 
-            ImageIcon iconDestruida = ShipImageLoader.obtenerImageIconEscalado(imgDestruida, 360, 220);
+            ImageIcon iconDestruida = ShipImageLoader.obtenerImageIconEscalado(imgDestruida, 360, 210);
 
-            javax.swing.JPanel panelDialog = new javax.swing.JPanel(new java.awt.BorderLayout(0, 10));
-            panelDialog.setBackground(new java.awt.Color(20, 10, 10));
-            panelDialog.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            Window owner = SwingUtilities.getWindowAncestor(parent);
+            JDialog dialog = (owner instanceof Frame) ? new JDialog((Frame) owner, true) : new JDialog((Dialog) owner, true);
+            dialog.setUndecorated(true);
+
+            JPanel mainPanel = new JPanel(new BorderLayout(0, 12));
+            mainPanel.setBackground(new Color(8, 14, 8));
+            mainPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(255, 50, 50), 2),
+                BorderFactory.createEmptyBorder(16, 18, 16, 18)
+            ));
+
+            // Encabezado
+            JLabel lblHeader = new JLabel("═══ [!] ALERTA CRÍTICA: ESTACIÓN DESTRUIDA ═══");
+            lblHeader.setFont(new Font("Consolas", Font.BOLD, 13));
+            lblHeader.setForeground(new Color(255, 60, 60));
+            lblHeader.setHorizontalAlignment(SwingConstants.CENTER);
+            mainPanel.add(lblHeader, BorderLayout.NORTH);
+
+            // Panel Central (Imagen + Mensaje)
+            JPanel centerPanel = new JPanel(new BorderLayout(0, 10));
+            centerPanel.setOpaque(false);
 
             if (iconDestruida != null) {
-                javax.swing.JLabel lblImg = new javax.swing.JLabel(iconDestruida);
-                lblImg.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-                panelDialog.add(lblImg, java.awt.BorderLayout.CENTER);
+                JLabel lblImg = new JLabel(iconDestruida);
+                lblImg.setHorizontalAlignment(SwingConstants.CENTER);
+                lblImg.setBorder(BorderFactory.createLineBorder(new Color(100, 30, 30), 1));
+                centerPanel.add(lblImg, BorderLayout.CENTER);
             }
 
-            javax.swing.JLabel lblTexto = new javax.swing.JLabel(
-                "<html><div style='text-align: center; color: #FF4444; font-weight: bold; font-family: Consolas; font-size: 13px;'>" 
+            JLabel lblTexto = new JLabel(
+                "<html><div style='text-align: center; color: #FF5555; font-weight: bold; font-family: Consolas; font-size: 12px; width: 360px;'>" 
                 + textoDestruccion + "</div></html>"
             );
-            lblTexto.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-            panelDialog.add(lblTexto, java.awt.BorderLayout.SOUTH);
+            lblTexto.setHorizontalAlignment(SwingConstants.CENTER);
+            centerPanel.add(lblTexto, BorderLayout.SOUTH);
 
-            JOptionPane.showMessageDialog(
-                parent,
-                panelDialog,
-                "¡ESTACIÓN ESPACIAL DESTRUIDA!",
-                JOptionPane.ERROR_MESSAGE
-            );
+            mainPanel.add(centerPanel, BorderLayout.CENTER);
 
-            // 2. Notificar callback a la GUI para cambiar la imagen lateral derecha a Señal_Perdida.jpg
+            // Botón Táctico de Cierre
+            JButton btnOk = crearBotonTactico("[ ENTENDIDO / CORTAR TRANSMISIÓN ]", new Color(255, 80, 80));
+            btnOk.addActionListener(e -> dialog.dispose());
+
+            JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            southPanel.setOpaque(false);
+            southPanel.add(btnOk);
+
+            mainPanel.add(southPanel, BorderLayout.SOUTH);
+
+            dialog.setContentPane(mainPanel);
+            dialog.pack();
+            dialog.setLocationRelativeTo(parent);
+            dialog.setVisible(true);
+
+            // Notificar callback a la GUI para cambiar la imagen lateral derecha a Señal_Perdida.jpg
             if (onEstacionDestruida != null) {
                 onEstacionDestruida.accept(station);
             }
@@ -175,5 +268,31 @@ public class CrisisDialogHandler {
         if (onReanudarSimulacion != null) {
             onReanudarSimulacion.run();
         }
+    }
+
+    /** Crea botones estilizados tácticos acordes a la paleta cibernética de la UI */
+    private static JButton crearBotonTactico(String texto, Color colorTexto) {
+        JButton btn = new JButton(texto);
+        btn.setFont(new Font("Consolas", Font.BOLD, 12));
+        btn.setForeground(colorTexto);
+        btn.setBackground(new Color(15, 25, 15));
+        btn.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(colorTexto, 1),
+            BorderFactory.createEmptyBorder(8, 16, 8, 16)
+        ));
+        btn.setFocusPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        btn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btn.setBackground(new Color(35, 55, 35));
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btn.setBackground(new Color(15, 25, 15));
+            }
+        });
+        return btn;
     }
 }
