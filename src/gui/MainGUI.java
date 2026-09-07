@@ -841,9 +841,8 @@ public class MainGUI extends JFrame {
                     int navesCount = (naves != null) ? naves.size() : 0;
                     lblNavesDetectadas.setText("Naves rastreadas: " + navesCount);
 
-                    // Actualizar el combo de naves
+                    // Actualizar el combo de naves (actualiza automáticamente el monitor derecho)
                     actualizarComboNaves();
-                    actualizarMonitorNave(); // Actualización en tiempo real
 
                     // Repintar el radar
                     radarPanel.repaint();
