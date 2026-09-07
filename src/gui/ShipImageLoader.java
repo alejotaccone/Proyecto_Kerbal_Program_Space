@@ -56,4 +56,33 @@ public class ShipImageLoader {
         lblImagen.setIcon(null);
         lblImagen.setText("[ " + nombreImagen + " ]");
     }
+
+    public static ImageIcon obtenerImageIconEscalado(String nombreImagen, int targetW, int targetH) {
+        if (nombreImagen == null || nombreImagen.trim().isEmpty()) return null;
+
+        try {
+            File file = new File("src/Img/" + nombreImagen);
+            if (!file.exists()) {
+                file = new File("Img/" + nombreImagen);
+            }
+
+            if (file.exists()) {
+                BufferedImage imgOriginal = ImageIO.read(file);
+                if (imgOriginal != null) {
+                    double ratioW = (double) targetW / imgOriginal.getWidth();
+                    double ratioH = (double) targetH / imgOriginal.getHeight();
+                    double scale = Math.min(ratioW, ratioH);
+
+                    int newW = (int) (imgOriginal.getWidth() * scale);
+                    int newH = (int) (imgOriginal.getHeight() * scale);
+
+                    Image scaled = imgOriginal.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
+                    return new ImageIcon(scaled);
+                }
+            }
+        } catch (Exception e) {
+            // Ignorar errores de carga
+        }
+        return null;
+    }
 }

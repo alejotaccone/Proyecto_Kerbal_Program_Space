@@ -82,6 +82,8 @@ public class MainGUI extends JFrame {
     private JTextArea txtMonitorNave;
     private JLabel lblImagenNave;
     private boolean isUpdatingCombo = false;
+    private boolean estacionDestruida = false;
+    private model.spacecraft.SpaceStation estacionDestruidaRef = null;
 
     // =========================================================================
     // LÓGICA DE BACKEND Y TIMERS
@@ -458,6 +460,11 @@ public class MainGUI extends JFrame {
      * Solo se llama cuando se selecciona una nave manualmente o se realiza una acción.
      */
     private void actualizarMonitorNave() {
+        if (estacionDestruida) {
+            mostrarSenalPerdida(estacionDestruidaRef);
+            return;
+        }
+
         if (engine == null || engine.getTrackedObjects() == null) {
             ShipImageLoader.cargarImagenNave(lblImagenNave, null);
             txtMonitorNave.setText("\nNo hay nave seleccionada");
@@ -474,6 +481,32 @@ public class MainGUI extends JFrame {
         OrbitalObject ship = engine.getTrackedObjects().get(idx);
         ShipImageLoader.cargarImagenNave(lblImagenNave, ship.getNombreImagen());
         txtMonitorNave.setText(TelemetryLogger.generarResumenNave(ship));
+        txtMonitorNave.setCaretPosition(0);
+    }
+
+    /**
+     * Muestra la imagen de Señal_Perdida.jpg y el mensaje de telemetría interrumpida tras un choque crítico.
+     */
+    public void mostrarSenalPerdida(model.spacecraft.SpaceStation station) {
+        this.estacionDestruida = true;
+        this.estacionDestruidaRef = station;
+
+        ShipImageLoader.cargarImagenNave(lblImagenNave, "Señal_Perdida.jpg");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== TELEMETRÍA INTERRUMPIDA ===\n\n");
+        sb.append("⚠ SEÑAL PERDIDA CON LA ESTACIÓN ⚠\n\n");
+        if (station != null && station.getTextoDestruccion() != null) {
+            sb.append(station.getTextoDestruccion()).append("\n\n");
+        } else {
+            sb.append("La Estación Espacial quedó totalmente inoperativa.\n\n");
+        }
+        sb.append("-----------------------------------\n");
+        sb.append("Razón:  Impacto crítico kinetico.\n");
+        sb.append("Estado: TRANSMISIÓN INTERRUMPIDA\n");
+        sb.append("Sector: ALERTA DE EMERGENCIA\n");
+
+        txtMonitorNave.setText(sb.toString());
         txtMonitorNave.setCaretPosition(0);
     }
 
@@ -627,6 +660,8 @@ public class MainGUI extends JFrame {
                         // Iniciar los timers de simulación y radar
                         simulationRunning = true;
                         tickCount = 0;
+                        estacionDestruida = false;
+                        estacionDestruidaRef = null;
                         sincronizarDatosRadar();  // Pasar datos iniciales al radar
                         simulationTimer.start();
                         radarSweepTimer.start();
@@ -661,6 +696,8 @@ public class MainGUI extends JFrame {
             if (engine == null) return;
             
             logConsola("[Sistema]: Reubicando foco a nueva estación...");
+            estacionDestruida = false;
+            estacionDestruidaRef = null;
             
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
                 @Override
@@ -825,7 +862,8 @@ public class MainGUI extends JFrame {
                                     radarSweepTimer.start();
                                 }
                             },
-                            MainGUI.this::logConsola
+                            MainGUI.this::logConsola,
+                            station -> MainGUI.this.mostrarSenalPerdida(station)
                     );
 
                     if (crisisOcurrio) {

@@ -5,6 +5,8 @@ import model.geometry.GeoPosition;
 
 public class SpaceStation extends OrbitalObject {
     private String stationType;
+    private String imagenDestruida;
+    private String textoDestruccion;
     
     // Subsistemas internos encapsulados con tipado de dominio (PercentageGauge)
     private PercentageGauge oxygenGauge;       // Porcentaje de soporte vital (0.0% a 100.0%)
@@ -20,6 +22,15 @@ public class SpaceStation extends OrbitalObject {
         // La estación espacial es un objeto orbital con velocidad orbital estándar (~27600 km/h)
         super(info, position, 27600.0, nombreImagen);
         this.stationType = stationType;
+        
+        // Configurar imagen y texto de destrucción según el tipo de estación
+        if (stationType != null && stationType.contains("China")) {
+            this.imagenDestruida = "ISS_Destruida.jpg"; // Usar la misma imagen por ahora hasta tener la de la estación china
+            this.textoDestruccion = "La Estación Espacial China (Tiangong) quedó totalmente inoperativa";
+        } else {
+            this.imagenDestruida = "ISS_Destruida.jpg";
+            this.textoDestruccion = "La Estación Espacial Internacional quedó totalmente inoperativa";
+        }
         
         // Inicializar componentes de subsistemas
         this.oxygenGauge = new PercentageGauge(100.0);
@@ -86,4 +97,9 @@ public class SpaceStation extends OrbitalObject {
     public PercentageGauge getBatteryGauge() { return batteryGauge; }
     public double getTemperature() { return temperature; }
     public boolean areSolarPanelsDeployed() { return solarPanelsDeployed; }
+    
+    public String getImagenDestruida() { return imagenDestruida; }
+    public void setImagenDestruida(String imagenDestruida) { this.imagenDestruida = imagenDestruida; }
+    public String getTextoDestruccion() { return textoDestruccion; }
+    public void setTextoDestruccion(String textoDestruccion) { this.textoDestruccion = textoDestruccion; }
 }
