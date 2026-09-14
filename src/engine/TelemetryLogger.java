@@ -7,6 +7,7 @@ import java.util.List;
 import model.components.Kerbal;
 import model.spacecraft.CrewShuttle;
 import model.spacecraft.OrbitalObject;
+import model.spacecraft.SpaceStation;
 import model.spacecraft.Spacecraft;
 
 public class TelemetryLogger {
@@ -116,11 +117,13 @@ public class TelemetryLogger {
             if (craft.getFuelTank() != null) {
                 sb.append(String.format("Combust:   %.1f%%\n", craft.getFuelTank().getPercentage()));
                 sb.append(String.format("Nivel:     %.1f / %.1f L\n", craft.getFuelTank().getCurrentLevel(), craft.getFuelTank().getCapacity()));
-            } else {
-                sb.append("Combust:   N/A (Sin motor)\n");
             }
-        } else {
-            sb.append("Combust:   N/A (Sin motor / En órbita)\n");
+        } else if (ship instanceof SpaceStation) {
+            SpaceStation station = (SpaceStation) ship;
+            if (station.getFuelTank() != null) {
+                sb.append(String.format("Combust:   %.1f%% (Reserva Acople)\n", station.getFuelTank().getPercentage()));
+                sb.append(String.format("Nivel:     %.1f / %.1f L\n", station.getFuelTank().getCurrentLevel(), station.getFuelTank().getCapacity()));
+            }
         }
     }
 

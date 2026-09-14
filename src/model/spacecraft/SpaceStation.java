@@ -1,5 +1,6 @@
 package model.spacecraft;
 
+import model.components.FuelTank;
 import model.components.PercentageGauge;
 import model.geometry.GeoPosition;
 
@@ -8,7 +9,8 @@ public class SpaceStation extends OrbitalObject {
     private String imagenDestruida;
     private String textoDestruccion;
     
-    // Subsistemas internos encapsulados con tipado de dominio (PercentageGauge)
+    // Subsistemas internos encapsulados con tipado de dominio
+    private FuelTank fuelTank;                 // Reserva de combustible para acople y maniobras orbitales
     private PercentageGauge oxygenGauge;       // Porcentaje de soporte vital (0.0% a 100.0%)
     private PercentageGauge batteryGauge;      // Porcentaje de energía eléctrica (0.0% a 100.0%)
     private double temperature;                // Grados Celsius
@@ -32,7 +34,8 @@ public class SpaceStation extends OrbitalObject {
             this.textoDestruccion = "La Estación Espacial Internacional quedó totalmente inoperativa";
         }
         
-        // Inicializar componentes de subsistemas
+        // Inicializar componentes de subsistemas y reserva de combustible
+        this.fuelTank = new FuelTank(2500.0, 2500.0, 0.0);
         this.oxygenGauge = new PercentageGauge(100.0);
         this.batteryGauge = new PercentageGauge(100.0);
         this.temperature = 22.0;
@@ -108,9 +111,17 @@ public class SpaceStation extends OrbitalObject {
 
     public boolean refuelShip(Spacecraft ship) {
         if (ship != null && this.distanceTo(ship) <= 500.0) { // Dentro del radio de acople (500 km)
-            return ship.refuel(50.0);
+            double cantidad = 50.0;
+            if (fuelTank != null && fuelTank.getCurrentLevel() >= cantidad) {
+                fuelTank.consume(cantidad);
+                return ship.refuel(cantidad);
+            }
         }
         return false;
+    }
+    
+    public FuelTank getFuelTank() {
+        return fuelTank;
     }
     
     // Getters de telemetría y subsistemas

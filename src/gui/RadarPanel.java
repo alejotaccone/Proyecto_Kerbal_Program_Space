@@ -30,6 +30,7 @@ public class RadarPanel extends JPanel {
     private List<OrbitalObject> naves;
 
     // Centro del radar en coordenadas geográficas (para mapear lat/lng a píxeles)
+    private GeoPosition centroPos;
     private double centroLat = -34.60;
     private double centroLng = -58.38;
     private double radioKm = 100.0;
@@ -62,6 +63,7 @@ public class RadarPanel extends JPanel {
     /** Actualiza el centro del radar basado en la posición del observador */
     public void setCentro(GeoPosition pos, double radioKm) {
         if (pos != null) {
+            this.centroPos = pos;
             this.centroLat = pos.getLatitude();
             this.centroLng = pos.getLongitude();
             this.radioKm = radioKm;
@@ -142,10 +144,12 @@ public class RadarPanel extends JPanel {
         dibujarNaves(g2, centroX, centroY, radio);
 
         // ---- 7. INFORMACIÓN SUPERPUESTA ----
+        double cLat = (centroPos != null) ? centroPos.getLatitude() : centroLat;
+        double cLng = (centroPos != null) ? centroPos.getLongitude() : centroLng;
         g2.setFont(new Font("Consolas", Font.PLAIN, 10));
         g2.setColor(COLOR_TEXT_DIM);
-        g2.drawString("RADAR v2.0 | Lat: " + String.format("%.2f", centroLat) 
-            + "° | Lng: " + String.format("%.2f", centroLng) + "°", 10, alto - 10);
+        g2.drawString("RADAR v2.0 | Lat: " + String.format("%.2f", cLat) 
+            + "° | Lng: " + String.format("%.2f", cLng) + "°", 10, alto - 10);
         g2.drawString("Radio: " + (int)radioKm + " km | Ángulo: " 
             + String.format("%.0f", Math.toDegrees(sweepAngle)) + "°", 10, alto - 25);
 
@@ -175,11 +179,19 @@ public class RadarPanel extends JPanel {
         if (craft == null || craft.getPosition() == null) return new Point(centroX, centroY);
 
         GeoPosition pos = craft.getPosition();
-        double deltaLat = pos.getLatitude() - centroLat;
-        double deltaLng = pos.getLongitude() - centroLng;
+        // Si el objeto es la estación central o coincide con el centro del radar, se ancla exactamente en el centro
+        if (craft.tieneAnilloRadar() || (centroPos != null && pos == centroPos)) {
+            return new Point(centroX, centroY);
+        }
+
+        double cLat = (centroPos != null) ? centroPos.getLatitude() : centroLat;
+        double cLng = (centroPos != null) ? centroPos.getLongitude() : centroLng;
+
+        double deltaLat = pos.getLatitude() - cLat;
+        double deltaLng = pos.getLongitude() - cLng;
 
         double kmPerDegLat = 111.0;
-        double kmPerDegLng = 111.0 * Math.cos(Math.toRadians(centroLat));
+        double kmPerDegLng = 111.0 * Math.cos(Math.toRadians(cLat));
 
         double distXKm = deltaLng * kmPerDegLng;
         double distYKm = -deltaLat * kmPerDegLat;
