@@ -6,16 +6,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Locale;
-import model.components.FuelTank;
-import model.components.Kerbal;
 import model.geometry.GeoPosition;
-import model.spacecraft.CargoShip;
-import model.spacecraft.CrewShuttle;
-import model.spacecraft.ExplorationProbe;
 import model.spacecraft.OrbitalObject;
-import model.spacecraft.SpaceDebris;
-import model.spacecraft.SpaceStation;
-import model.spacecraft.SpacecraftInfo;
+import model.spacecraft.SpacecraftFactory;
 
 public class N2YOApiClient {
     private static final String BASE_URL = "https://api.n2yo.com/rest/v1/satellite/";
@@ -78,6 +71,7 @@ public class N2YOApiClient {
 
     /**
      * Petición HTTP a N2YO para un satélite individual.
+     * Delega la instanciación polimórfica a SpacecraftFactory (GRASP Creator).
      */
     public OrbitalObject fetchRealSatellite(int noradId) {
         String url = String.format(Locale.US, "%spositions/%d/-34.60/-58.38/25/1/&apiKey=%s", BASE_URL, noradId, apiKey);
@@ -91,37 +85,11 @@ public class N2YOApiClient {
 
             GeoPosition pos = parsePositionFromJson(responseBody);
             if (pos != null) {
-                return instantiateFromN2YOData(noradId, satName.trim(), pos);
+                return SpacecraftFactory.crearDesdeDatosN2YO(noradId, satName.trim(), pos);
             }
         }
 
         return null;
-    }
-
-    /**
-     * Mapeo dinámico polimórfico basado estrictamente en el nombre y NORAD ID real de la API N2YO.
-     */
-    private OrbitalObject instantiateFromN2YOData(int noradId, String satName, GeoPosition pos) {
-        String upper = satName.toUpperCase();
-        String craftId = "SAT-" + noradId;
-        SpacecraftInfo info = new SpacecraftInfo(craftId, satName + " (N2YO API)", noradId);
-
-        if (upper.contains("TIANHE") || upper.contains("TIANGONG") || upper.contains("CSS") || upper.contains("CHINA") || noradId == NORAD_TIANGONG) {
-            return new SpaceStation(info, pos, "SpaceSation_China.jfif", "Estación Espacial China (Tiangong)");
-        } else if (upper.contains("STATION") || upper.contains("ISS") || noradId == NORAD_ISS) {
-            return new SpaceStation(info, pos, "SpaceStation_Internacional.jpg", "Estación Espacial Internacional (ISS)");
-        } else if (upper.contains("ONEWEB") || upper.contains("DEBRIS") || upper.contains("COSMOS") || upper.contains("DEB") || upper.contains("SL-")) {
-            return new SpaceDebris(info, pos, 8.2);
-        } else if (upper.contains("NOAA") || upper.contains("CARGO") || upper.contains("DRAGON") || upper.contains("DELTA") || upper.contains("ATLAS")) {
-            return new CargoShip(info, pos, new FuelTank(200.0, 180.0, 3.0), 18.5);
-        } else if (upper.contains("SOYUZ") || upper.contains("CREW") || upper.contains("STARLINER")) {
-            CrewShuttle shuttle = new CrewShuttle(info, pos, new FuelTank(180.0, 150.0, 3.0));
-            shuttle.addCrewMember(new Kerbal("Comandante Real", "PILOT", 90));
-            return shuttle;
-        } else {
-            // Sonda de exploración por defecto para satélites científicos como HST (Hubble), TELSTAR, ESSA, etc.
-            return new ExplorationProbe(info, pos, new FuelTank(120.0, 100.0, 1.5), 0.95);
-        }
     }
 
     private GeoPosition parsePositionFromJson(String json) {

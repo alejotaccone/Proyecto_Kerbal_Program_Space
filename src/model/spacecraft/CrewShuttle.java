@@ -20,6 +20,13 @@ public class CrewShuttle extends Spacecraft {
         }
     }
 
+    /**
+     * Crea y agrega un tripulante a bordo aplicando el patrón GRASP Creator.
+     */
+    public void agregarTripulante(String name, model.components.KerbalRole role, int courage) {
+        crew.add(new Kerbal(name, role, courage));
+    }
+
     @Override
     public String getType() {
         return "Transbordador Tripulado";

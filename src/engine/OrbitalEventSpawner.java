@@ -11,7 +11,7 @@ import model.spacecraft.SpacecraftInfo;
 /**
  * Clase responsable de la generación estocástica de eventos orbitales,
  * spawning de fragmentos de basura espacial pasiva y activación de anomalías cinéticas (Rogue Debris).
- * Extrae la lógica de eventos fuera de SimulationEngine (God Class).
+ * Aplica el patrón GRASP Creator / Factory para la instanciación de debris en el motor.
  */
 public class OrbitalEventSpawner {
 
@@ -67,14 +67,7 @@ public class OrbitalEventSpawner {
         OrbitalObject station = buscarEstacionObjetivo(trackedObjects);
         if (station != null && station.getPosition() != null) {
             GeoPosition spawnPos = generarPosicionCercana(station.getPosition(), 0.25, 0.80);
-
-            int idNum = (int)(Math.random() * 9000 + 1000);
-            SpacecraftInfo info = new SpacecraftInfo("DEB-" + idNum, "Restos NORAD-" + idNum, 90000 + idNum);
-            SpaceDebris debris = new SpaceDebris(
-                    info,
-                    spawnPos,
-                    6.5 + Math.random() * 3.0
-            );
+            SpaceDebris debris = fabricarBasuraPasiva(spawnPos);
 
             trackedObjects.add(debris);
             TelemetryLogger.printMessage("Radar detectó nuevo fragmento de Basura Espacial [" + debris.getName() + "].");
@@ -94,14 +87,7 @@ public class OrbitalEventSpawner {
             OrbitalObject target = buscarEstacionObjetivo(trackedObjects);
             if (target != null && target.getPosition() != null) {
                 GeoPosition spawnPos = generarPosicionCercana(target.getPosition(), 0.9, 0.9);
-
-                int idNum = (int)(Math.random() * 900 + 100);
-                SpacecraftInfo info = new SpacecraftInfo("RD-" + idNum, "ANOMALÍA CINÉTICA RD-" + idNum, 99999);
-                RogueDebris rogue = new RogueDebris(
-                        info, 
-                        spawnPos, 
-                        9.5, 
-                        target);
+                RogueDebris rogue = fabricarAnomaliaHostil(spawnPos, target);
 
                 trackedObjects.add(rogue);
                 TelemetryLogger.printMessage("¡ALERTA CRÍTICA DEL RADAR! Anomalía Cinética (Rogue Debris) ingresó al sector en rumbo de impacto.");
@@ -109,5 +95,23 @@ public class OrbitalEventSpawner {
             }
         }
         return false;
+    }
+
+    /**
+     * Fabrica una nueva instancia de SpaceDebris pasiva con identificadores únicos (GRASP Creator).
+     */
+    private SpaceDebris fabricarBasuraPasiva(GeoPosition spawnPos) {
+        int idNum = (int)(Math.random() * 9000 + 1000);
+        SpacecraftInfo info = new SpacecraftInfo("DEB-" + idNum, "Restos NORAD-" + idNum, 90000 + idNum);
+        return new SpaceDebris(info, spawnPos, 6.5 + Math.random() * 3.0);
+    }
+
+    /**
+     * Fabrica una nueva instancia de RogueDebris hostil apuntada a su objetivo (GRASP Creator).
+     */
+    private RogueDebris fabricarAnomaliaHostil(GeoPosition spawnPos, OrbitalObject target) {
+        int idNum = (int)(Math.random() * 900 + 100);
+        SpacecraftInfo info = new SpacecraftInfo("RD-" + idNum, "ANOMALÍA CINÉTICA RD-" + idNum, 99999);
+        return new RogueDebris(info, spawnPos, 9.5, target);
     }
 }
