@@ -4,8 +4,8 @@ import model.geometry.GeoPosition;
 
 /**
  * Superclase abstracta que modela cualquier objeto en órbita terrestre.
- * Todos sus atributos están estrictamente encapsulados como private,
- * resolviendo el Bad Smell de Intimidad Inapropiada (Inappropriate Intimacy).
+ * Aplica el patrón GRASP Experto en Información (Information Expert)
+ * centralizando el cálculo de distancias y la interfaz de telemetría polimórfica.
  */
 public abstract class OrbitalObject {
     private String id;
@@ -31,6 +31,23 @@ public abstract class OrbitalObject {
     public abstract void move();
     public abstract String getType();
     public abstract String performSpecialAbility();
+
+    /**
+     * Retorna el bloque de telemetría y estado de los subsistemas propios del objeto.
+     * Aplica el patrón GRASP Experto en Información + Polimorfismo.
+     */
+    public abstract String getDetalleTelemetria();
+
+    /**
+     * Calcula la distancia en kilómetros hacia otro objeto orbital.
+     * Aplica el patrón GRASP Experto en Información delegando en GeoPosition.
+     */
+    public double distanceTo(OrbitalObject other) {
+        if (other == null || other.position == null || this.position == null) {
+            return Double.MAX_VALUE;
+        }
+        return this.position.distanceTo(other.position);
+    }
 
     public String getId() {
         return id;

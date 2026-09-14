@@ -34,6 +34,19 @@ public class CrewShuttle extends Spacecraft {
         return "Transbordador sin tripulación a bordo para realizar la maniobra.";
     }
 
+    @Override
+    public String getDetalleTelemetria() {
+        StringBuilder sb = new StringBuilder("\n--- TRIPULACIÓN ---\n");
+        if (crew.isEmpty()) {
+            sb.append("Sin tripulación a bordo\n");
+        } else {
+            for (Kerbal tripulante : crew) {
+                sb.append("- ").append(tripulante.getName()).append(" (").append(tripulante.getRole()).append(")\n");
+            }
+        }
+        return sb.toString();
+    }
+
     public List<Kerbal> getCrew() {
         return crew;
     }

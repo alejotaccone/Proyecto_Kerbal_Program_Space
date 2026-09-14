@@ -5,12 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import model.components.Kerbal;
-import model.spacecraft.CargoShip;
 import model.spacecraft.CrewShuttle;
-import model.spacecraft.ExplorationProbe;
 import model.spacecraft.OrbitalObject;
-import model.spacecraft.SpaceDebris;
-import model.spacecraft.SpaceStation;
 import model.spacecraft.Spacecraft;
 
 public class TelemetryLogger {
@@ -103,7 +99,7 @@ public class TelemetryLogger {
 
     /**
      * Genera el texto completo de telemetría y estado de una nave.
-     * Utilizado tanto por la GUI como por la consola secundaria de monitoreo.
+     * Delega el formateo de subsistemas específicos a la propia nave (Experto en Información + Polimorfismo).
      */
     public static String generarResumenNave(OrbitalObject ship) {
         if (ship == null) return "No hay nave seleccionada";
@@ -112,7 +108,11 @@ public class TelemetryLogger {
         formatearEncabezadoIdentidad(sb, ship);
         formatearPosicionYCinematica(sb, ship);
         formatearCombustible(sb, ship);
-        formatearSubsistemasEspecificos(sb, ship);
+        
+        String detalleSubsistemas = ship.getDetalleTelemetria();
+        if (detalleSubsistemas != null && !detalleSubsistemas.isEmpty()) {
+            sb.append(detalleSubsistemas);
+        }
 
         return sb.toString();
     }
@@ -150,55 +150,6 @@ public class TelemetryLogger {
         } else {
             sb.append("Combust:   N/A (Sin motor / En órbita)\n");
         }
-    }
-
-    private static void formatearSubsistemasEspecificos(StringBuilder sb, OrbitalObject ship) {
-        if (ship instanceof SpaceStation) {
-            formatearEstacion(sb, (SpaceStation) ship);
-        } else if (ship instanceof CrewShuttle) {
-            formatearTripulacion(sb, (CrewShuttle) ship);
-        } else if (ship instanceof CargoShip) {
-            formatearCarga(sb, (CargoShip) ship);
-        } else if (ship instanceof ExplorationProbe) {
-            formatearSonda(sb, (ExplorationProbe) ship);
-        } else if (ship instanceof SpaceDebris) {
-            formatearBasura(sb, (SpaceDebris) ship);
-        }
-    }
-
-    private static void formatearEstacion(StringBuilder sb, SpaceStation station) {
-        sb.append("\n--- SISTEMAS VITALES ---\n");
-        sb.append(String.format("Oxígeno:   %.1f%%\n", station.getOxygenLevel()));
-        sb.append(String.format("Batería:   %.1f%%\n", station.getBatteryLevel()));
-        sb.append(String.format("Temp:      %.1f °C\n", station.getTemperature()));
-        sb.append("Paneles:   ").append(station.areSolarPanelsDeployed() ? "DESPLEGADOS (Cargando)\n" : "RETRAÍDOS (Consumo)\n");
-    }
-
-    private static void formatearTripulacion(StringBuilder sb, CrewShuttle shuttle) {
-        sb.append("\n--- TRIPULACIÓN ---\n");
-        if (shuttle.getCrew().isEmpty()) {
-            sb.append("Sin tripulación a bordo\n");
-        } else {
-            for (Kerbal tripulante : shuttle.getCrew()) {
-                sb.append("- ").append(tripulante.getName()).append(" (").append(tripulante.getRole()).append(")\n");
-            }
-        }
-    }
-
-    private static void formatearCarga(StringBuilder sb, CargoShip cargo) {
-        sb.append("\n--- CARGA ---\n");
-        sb.append(String.format("Capacidad: %.1f ton\n", cargo.getCargoCapacityTons()));
-        sb.append(String.format("Actual:    %.1f ton\n", cargo.getCurrentCargoTons()));
-    }
-
-    private static void formatearSonda(StringBuilder sb, ExplorationProbe probe) {
-        sb.append("\n--- SISTEMAS ---\n");
-        sb.append(String.format("Eficiencia Solar: %.0f%%\n", probe.getSolarEfficiency() * 100));
-    }
-
-    private static void formatearBasura(StringBuilder sb, SpaceDebris debris) {
-        sb.append("\n--- RIESGO ---\n");
-        sb.append(String.format("Peligrosidad: %.1f/10\n", debris.getHazardLevel()));
     }
 
     /**

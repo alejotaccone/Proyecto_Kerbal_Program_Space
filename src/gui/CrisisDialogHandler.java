@@ -63,7 +63,7 @@ public class CrisisDialogHandler {
         if (threat == null || threat.getTarget() == null) return false;
 
         OrbitalObject target = threat.getTarget();
-        double dist = threat.getPosition().distanceTo(target.getPosition());
+        double dist = threat.distanceTo(target);
 
         // Si está a menos de 100km, se activa la crisis interactiva
         if (dist < 100.0) {

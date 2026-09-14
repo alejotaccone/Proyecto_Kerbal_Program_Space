@@ -26,6 +26,14 @@ public class ExplorationProbe extends Spacecraft {
         return "Sonda [" + getName() + "] sin tanque de energía válido.";
     }
 
+    @Override
+    public String getDetalleTelemetria() {
+        return String.format(
+            "\n--- SISTEMAS ---\nEficiencia Solar: %.0f%%\n",
+            solarEfficiency * 100
+        );
+    }
+
     public double getSolarEfficiency() {
         return solarEfficiency;
     }

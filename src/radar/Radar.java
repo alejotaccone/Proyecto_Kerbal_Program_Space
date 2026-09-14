@@ -29,7 +29,7 @@ public class Radar {
                 OrbitalObject naveA = allObjects.get(i);
                 OrbitalObject naveB = allObjects.get(j);
 
-                double distance = naveA.getPosition().distanceTo(naveB.getPosition());
+                double distance = naveA.distanceTo(naveB);
                 if (distance < 200.0) { // Menos de 200 km en órbita es alerta de colisión
                     String alert = String.format("¡ALERTA DE COLISIÓN! [%s] y [%s] a sólo %.1f km de distancia.", 
                             naveA.getName(), naveB.getName(), distance);

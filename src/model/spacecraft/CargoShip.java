@@ -27,6 +27,15 @@ public class CargoShip extends Spacecraft {
         return "Nave [" + getName() + "] no tiene suficiente carga extra para eyectar.";
     }
 
+    @Override
+    public String getDetalleTelemetria() {
+        return String.format(
+            "\n--- CARGA ---\nCapacidad: %.1f ton\nActual:    %.1f ton\n",
+            cargoCapacityTons,
+            currentCargoTons
+        );
+    }
+
     public double getCargoCapacityTons() {
         return cargoCapacityTons;
     }

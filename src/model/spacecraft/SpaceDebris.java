@@ -26,6 +26,14 @@ public class SpaceDebris extends OrbitalObject {
         return "Basura Espacial [" + getName() + "] genera interferencia de radar y riesgo cinético (Nivel " + hazardLevel + "/10).";
     }
 
+    @Override
+    public String getDetalleTelemetria() {
+        return String.format(
+            "\n--- RIESGO ---\nPeligrosidad: %.1f/10\n",
+            hazardLevel
+        );
+    }
+
     public double getHazardLevel() {
         return hazardLevel;
     }

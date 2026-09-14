@@ -25,7 +25,7 @@ public class SpaceStation extends OrbitalObject {
         
         // Configurar imagen y texto de destrucción según el tipo de estación
         if (stationType != null && stationType.contains("China")) {
-            this.imagenDestruida = "ISS_Destruida.jpg"; // Usar la misma imagen por ahora hasta tener la de la estación china
+            this.imagenDestruida = "ISS_Destruida.jpg";
             this.textoDestruccion = "La Estación Espacial China (Tiangong) quedó totalmente inoperativa";
         } else {
             this.imagenDestruida = "ISS_Destruida.jpg";
@@ -80,12 +80,20 @@ public class SpaceStation extends OrbitalObject {
         return "Estación Espacial [" + getName() + "] emitió una señal de acople y recarga para naves cercanas.";
     }
 
+    @Override
+    public String getDetalleTelemetria() {
+        return String.format(
+            "\n--- SISTEMAS VITALES ---\nOxígeno:   %.1f%%\nBatería:   %.1f%%\nTemp:      %.1f °C\nPaneles:   %s\n",
+            getOxygenLevel(),
+            getBatteryLevel(),
+            getTemperature(),
+            areSolarPanelsDeployed() ? "DESPLEGADOS (Cargando)" : "RETRAÍDOS (Consumo)"
+        );
+    }
+
     public boolean refuelShip(Spacecraft ship) {
-        if (ship != null && getPosition() != null && ship.getPosition() != null) {
-            double distance = getPosition().distanceTo(ship.getPosition());
-            if (distance <= 500.0) { // Dentro del radio de acople (500 km)
-                return ship.refuel(50.0);
-            }
+        if (ship != null && this.distanceTo(ship) <= 500.0) { // Dentro del radio de acople (500 km)
+            return ship.refuel(50.0);
         }
         return false;
     }
