@@ -79,8 +79,7 @@ public class MainGUI extends JFrame {
     private JScrollPane scrollConsola;
 
     // Monitor de Nave Seleccionada (EAST)
-    private JTextArea txtMonitorNave;
-    private JLabel lblImagenNave;
+    private ShipMonitorPanel shipMonitorPanel;
     private boolean isUpdatingCombo = false;
     private boolean estacionDestruida = false;
     private model.spacecraft.SpaceStation estacionDestruidaRef = null;
@@ -155,7 +154,7 @@ public class MainGUI extends JFrame {
         add(splitPane, BorderLayout.CENTER);
         add(crearPanelConsola(), BorderLayout.SOUTH);
         add(crearBarraSuperior(), BorderLayout.NORTH);
-        add(crearPanelMonitorNave(), BorderLayout.EAST);
+        add(shipMonitorPanel = new ShipMonitorPanel(), BorderLayout.EAST);
 
         // Configurar los timers
         configurarTimers();
@@ -410,104 +409,37 @@ public class MainGUI extends JFrame {
      * Crea el panel lateral (EAST) que actúa como consola secundaria estática 
      * para la nave seleccionada.
      */
-    private JPanel crearPanelMonitorNave() {
-        JPanel panelOuter = new JPanel(new BorderLayout());
-        panelOuter.setPreferredSize(new Dimension(320, 0));
-        panelOuter.setBackground(COLOR_PANEL_BG);
-        panelOuter.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(0, 2, 0, 0, COLOR_BORDER),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-
-        panelOuter.add(crearEtiquetaSeccion(">> CONSOLA DE NAVE SELECCIONADA"), BorderLayout.NORTH);
-
-        lblImagenNave = new JLabel("[ SIN NAVE SELECCIONADA ]", SwingConstants.CENTER);
-        lblImagenNave.setPreferredSize(new Dimension(290, 170));
-        lblImagenNave.setMinimumSize(new Dimension(290, 170));
-        lblImagenNave.setMaximumSize(new Dimension(Integer.MAX_VALUE, 170));
-        lblImagenNave.setBackground(new Color(8, 12, 8));
-        lblImagenNave.setOpaque(true);
-        lblImagenNave.setForeground(COLOR_TEXT_DIM);
-        lblImagenNave.setFont(new Font("Consolas", Font.ITALIC, 11));
-        lblImagenNave.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1));
-
-        txtMonitorNave = new JTextArea();
-        txtMonitorNave.setEditable(false);
-        txtMonitorNave.setBackground(new Color(8, 12, 8));
-        txtMonitorNave.setForeground(new Color(150, 255, 150));
-        txtMonitorNave.setFont(new Font("Consolas", Font.PLAIN, 12));
-        txtMonitorNave.setMargin(new Insets(10, 10, 10, 10));
-        txtMonitorNave.setText("\nNo hay nave seleccionada");
-
-        JScrollPane scroll = new JScrollPane(txtMonitorNave);
-        scroll.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1));
-        scroll.setBackground(COLOR_PANEL_BG);
-        scroll.getViewport().setBackground(COLOR_PANEL_BG);
-
-        // Panel central con la imagen arriba y los datos abajo
-        JPanel centerPanel = new JPanel(new BorderLayout(0, 8));
-        centerPanel.setBackground(COLOR_PANEL_BG);
-        centerPanel.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
-        centerPanel.add(lblImagenNave, BorderLayout.NORTH);
-        centerPanel.add(scroll, BorderLayout.CENTER);
-
-        panelOuter.add(centerPanel, BorderLayout.CENTER);
-        return panelOuter;
-    }
-
     /**
-     * Actualiza el contenido estático del monitor de nave secundaria.
-     * Solo se llama cuando se selecciona una nave manualmente o se realiza una acción.
+     * Actualiza el contenido del monitor lateral delegando en el componente especialista ShipMonitorPanel.
      */
     private void actualizarMonitorNave() {
         if (estacionDestruida) {
-            mostrarSenalPerdida(estacionDestruidaRef);
+            shipMonitorPanel.mostrarSenalPerdida(estacionDestruidaRef);
             return;
         }
 
         if (engine == null || engine.getTrackedObjects() == null) {
-            ShipImageLoader.cargarImagenNave(lblImagenNave, null);
-            txtMonitorNave.setText("\nNo hay nave seleccionada");
+            shipMonitorPanel.actualizar(null);
             return;
         }
         
         int idx = cmbNaves.getSelectedIndex() - 1;
         if (idx < 0 || idx >= engine.getTrackedObjects().size()) {
-            ShipImageLoader.cargarImagenNave(lblImagenNave, null);
-            txtMonitorNave.setText("\nNo hay nave seleccionada");
+            shipMonitorPanel.actualizar(null);
             return;
         }
 
         OrbitalObject ship = engine.getTrackedObjects().get(idx);
-        ShipImageLoader.cargarImagenNave(lblImagenNave, ship.getNombreImagen());
-        txtMonitorNave.setText(TelemetryLogger.generarResumenNave(ship));
-        txtMonitorNave.setCaretPosition(0);
+        shipMonitorPanel.actualizar(ship);
     }
 
     /**
-     * Muestra la imagen de Señal_Perdida.jpg y el mensaje de telemetría interrumpida tras un choque crítico.
+     * Muestra la señal perdida delegando en ShipMonitorPanel tras un choque crítico.
      */
     public void mostrarSenalPerdida(model.spacecraft.SpaceStation station) {
         this.estacionDestruida = true;
         this.estacionDestruidaRef = station;
-
-        ShipImageLoader.cargarImagenNave(lblImagenNave, "Señal_Perdida.jpg");
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== TELEMETRÍA INTERRUMPIDA ===\n\n");
-        sb.append("⚠ SEÑAL PERDIDA CON LA ESTACIÓN ⚠\n\n");
-        if (station != null && station.getTextoDestruccion() != null) {
-            sb.append(station.getTextoDestruccion()).append("\n\n");
-        } else {
-            sb.append("La Estación Espacial quedó totalmente inoperativa.\n\n");
-        }
-        sb.append("-----------------------------------\n");
-        sb.append("Razón:  Impacto crítico kinetico.\n");
-        sb.append("Estado: TRANSMISIÓN INTERRUMPIDA\n");
-        sb.append("Sector: ALERTA DE EMERGENCIA\n");
-
-        txtMonitorNave.setText(sb.toString());
-        txtMonitorNave.setCaretPosition(0);
+        shipMonitorPanel.mostrarSenalPerdida(station);
     }
 
     // =========================================================================

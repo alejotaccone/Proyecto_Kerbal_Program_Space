@@ -63,38 +63,10 @@ public class TelemetryLogger {
     // ==================== MONITOR DE NAVE (Segunda Consola) ====================
 
     /**
-     * Lanza una segunda ventana de consola (PowerShell) que muestra el archivo nave_monitor.txt
-     * de forma continua, refrescándolo cada 800ms.
+     * Lanza una segunda ventana de consola delegando en el especialista ExternalMonitorLauncher.
      */
     public static void launchMonitorConsole() {
-        try {
-            String script = "$host.UI.RawUI.WindowTitle = 'MONITOR DE NAVE - Kerbal Program Space'\r\n"
-                    + "while($true) {\r\n"
-                    + "    Clear-Host\r\n"
-                    + "    if (Test-Path '" + MONITOR_FILE + "') {\r\n"
-                    + "        Get-Content '" + MONITOR_FILE + "'\r\n"
-                    + "    } else {\r\n"
-                    + "        Write-Host ''\r\n"
-                    + "        Write-Host '  =================================================================='\r\n"
-                    + "        Write-Host '       MONITOR DE NAVE - KERBAL PROGRAM SPACE'\r\n"
-                    + "        Write-Host '  =================================================================='\r\n"
-                    + "        Write-Host ''\r\n"
-                    + "        Write-Host '  Esperando seleccion de nave...'\r\n"
-                    + "        Write-Host '  Use la opcion [8] del menu principal para seleccionar una nave.'\r\n"
-                    + "        Write-Host ''\r\n"
-                    + "    }\r\n"
-                    + "    Start-Sleep -Milliseconds 800\r\n"
-                    + "}\r\n";
-
-            Files.writeString(Path.of("monitor.ps1"), script);
-
-            new ProcessBuilder("cmd", "/c", "start", "powershell", "-ExecutionPolicy", "Bypass", "-File", "monitor.ps1")
-                    .directory(new File(System.getProperty("user.dir")))
-                    .start();
-
-        } catch (Exception e) {
-            System.out.println("[Sistema]: No se pudo abrir la ventana de monitoreo de nave. " + e.getMessage());
-        }
+        ExternalMonitorLauncher.lanzarConsolaPowerShell(MONITOR_FILE);
     }
 
     /**
