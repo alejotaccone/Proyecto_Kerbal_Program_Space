@@ -28,6 +28,16 @@ public class CargoShip extends Spacecraft {
     }
 
     @Override
+    public java.awt.Color getColorRadar() {
+        return new java.awt.Color(255, 140, 0); // Naranja
+    }
+
+    @Override
+    public int getTamanoIconoRadar() {
+        return 7;
+    }
+
+    @Override
     public String getDetalleTelemetria() {
         return String.format(
             "\n--- CARGA ---\nCapacidad: %.1f ton\nActual:    %.1f ton\n",

@@ -20,10 +20,14 @@ public class SimulationEngine {
     private OrbitalEventSpawner eventSpawner;
 
     public SimulationEngine(String apiKey, int targetNoradId) {
+        this(new N2YOApiClient(apiKey), new OrbitalEventSpawner(), targetNoradId);
+    }
+
+    public SimulationEngine(N2YOApiClient apiClient, OrbitalEventSpawner eventSpawner, int targetNoradId) {
         this.currentTick = 0;
         this.trackedObjects = new ArrayList<>();
-        this.apiClient = new N2YOApiClient(apiKey);
-        this.eventSpawner = new OrbitalEventSpawner();
+        this.apiClient = (apiClient != null) ? apiClient : new N2YOApiClient(null);
+        this.eventSpawner = (eventSpawner != null) ? eventSpawner : new OrbitalEventSpawner();
         this.monitoredShipIndex = -1;
         this.lastMonitorAction = "";
         // Inicializar el radar con coordenadas 0,0 por defecto

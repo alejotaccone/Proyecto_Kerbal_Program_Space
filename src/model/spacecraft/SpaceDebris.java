@@ -27,6 +27,21 @@ public class SpaceDebris extends OrbitalObject {
     }
 
     @Override
+    public java.awt.Color getColorRadar() {
+        return new java.awt.Color(255, 60, 60); // Rojo
+    }
+
+    @Override
+    public int getTamanoIconoRadar() {
+        return 5;
+    }
+
+    @Override
+    public boolean esIconoTriangular() {
+        return true;
+    }
+
+    @Override
     public String getDetalleTelemetria() {
         return String.format(
             "\n--- RIESGO ---\nPeligrosidad: %.1f/10\n",

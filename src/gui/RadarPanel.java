@@ -5,11 +5,7 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import model.geometry.GeoPosition;
-import model.spacecraft.CargoShip;
-import model.spacecraft.CrewShuttle;
 import model.spacecraft.OrbitalObject;
-import model.spacecraft.SpaceDebris;
-import model.spacecraft.SpaceStation;
 
 /**
  * Panel personalizado y autónomo que dibuja la pantalla del radar animada.
@@ -179,8 +175,8 @@ public class RadarPanel extends JPanel {
         if (craft == null || craft.getPosition() == null) return new Point(centroX, centroY);
 
         GeoPosition pos = craft.getPosition();
-        double deltaLat = (craft instanceof SpaceStation) ? 0.0 : (pos.getLatitude() - centroLat);
-        double deltaLng = (craft instanceof SpaceStation) ? 0.0 : (pos.getLongitude() - centroLng);
+        double deltaLat = pos.getLatitude() - centroLat;
+        double deltaLng = pos.getLongitude() - centroLng;
 
         double kmPerDegLat = 111.0;
         double kmPerDegLng = 111.0 * Math.cos(Math.toRadians(centroLat));
@@ -215,17 +211,10 @@ public class RadarPanel extends JPanel {
     }
 
     private EstiloVisual determinarEstiloVisual(OrbitalObject craft) {
-        if (craft instanceof SpaceStation) {
-            return new EstiloVisual(COLOR_ACCENT_CYAN, 9, false);
-        } else if (craft instanceof SpaceDebris) {
-            return new EstiloVisual(COLOR_ACCENT_RED, 5, true);
-        } else if (craft instanceof CrewShuttle) {
-            return new EstiloVisual(COLOR_ACCENT_YELLOW, 7, false);
-        } else if (craft instanceof CargoShip) {
-            return new EstiloVisual(COLOR_ACCENT_ORANGE, 7, false);
-        } else {
+        if (craft == null) {
             return new EstiloVisual(COLOR_TEXT_PRIMARY, 6, false);
         }
+        return new EstiloVisual(craft.getColorRadar(), craft.getTamanoIconoRadar(), craft.esIconoTriangular());
     }
 
     private void dibujarNaves(Graphics2D g2, int centroX, int centroY, int radio) {
@@ -267,7 +256,7 @@ public class RadarPanel extends JPanel {
             g2.fillPolygon(xPoints, yPoints, 3);
         } else {
             g2.fillOval(pixelX - estilo.tamano / 2, pixelY - estilo.tamano / 2, estilo.tamano, estilo.tamano);
-            if (craft instanceof SpaceStation) {
+            if (craft.tieneAnilloRadar()) {
                 g2.setStroke(new BasicStroke(1.5f));
                 g2.drawOval(pixelX - estilo.tamano, pixelY - estilo.tamano, estilo.tamano * 2, estilo.tamano * 2);
             }

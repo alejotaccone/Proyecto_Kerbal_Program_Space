@@ -81,6 +81,21 @@ public class SpaceStation extends OrbitalObject {
     }
 
     @Override
+    public java.awt.Color getColorRadar() {
+        return new java.awt.Color(0, 200, 220); // Cian
+    }
+
+    @Override
+    public int getTamanoIconoRadar() {
+        return 9;
+    }
+
+    @Override
+    public boolean tieneAnilloRadar() {
+        return true;
+    }
+
+    @Override
     public String getDetalleTelemetria() {
         return String.format(
             "\n--- SISTEMAS VITALES ---\nOxígeno:   %.1f%%\nBatería:   %.1f%%\nTemp:      %.1f °C\nPaneles:   %s\n",

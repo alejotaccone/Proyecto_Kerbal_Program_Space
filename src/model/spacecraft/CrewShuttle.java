@@ -42,6 +42,16 @@ public class CrewShuttle extends Spacecraft {
     }
 
     @Override
+    public java.awt.Color getColorRadar() {
+        return new java.awt.Color(255, 200, 0); // Amarillo
+    }
+
+    @Override
+    public int getTamanoIconoRadar() {
+        return 7;
+    }
+
+    @Override
     public String getDetalleTelemetria() {
         StringBuilder sb = new StringBuilder("\n--- TRIPULACIÓN ---\n");
         if (crew.isEmpty()) {
