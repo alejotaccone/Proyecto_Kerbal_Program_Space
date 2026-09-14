@@ -2,36 +2,29 @@
        MONITOR DE NAVE - KERBAL PROGRAM SPACE
 ==================================================================
 
-  Nave:     COSMOS 2294 (GLONASS) (N2YO API)
-  Tipo:     Basura Espacial / Chatarra
-  NORAD ID: 23398
-  ID:       SAT-23398
+=== DATOS DE LA NAVE ===
 
-------------------------------------------------------------------
-  POSICION ACTUAL
-------------------------------------------------------------------
-  Latitud:  36,7045
-  Longitud: 138,7011
-  Altitud:  19119,9 km
+Nombre: Cargo Dragon
+Tipo:   Nave de Carga Pesada
+NORAD:  48274
+ID:     CARGO-1
 
-------------------------------------------------------------------
-  COMBUSTIBLE
-------------------------------------------------------------------
-  N/A (Sin motor - Objeto a la deriva)
+--- POSICIÓN REGISTRADA ---
+Latitud:  0,5100°
+Longitud: 0,5100°
+Altitud:  400,0 km
 
-------------------------------------------------------------------
-  ESTADO GENERAL
-------------------------------------------------------------------
-  Escudo:    DESACTIVADO
-  Velocidad: 28000,0 km/h
+--- ESTADO ---
+Velocidad: 24000,0 km/h
+Combust:   85,0%
+Nivel:     85,0 / 100,0 L
 
-------------------------------------------------------------------
-  PELIGROSIDAD
-------------------------------------------------------------------
-  Nivel de riesgo: 8,2 / 10
+--- CARGA ---
+Capacidad: 500,0 ton
+Actual:    395,0 ton
 
 ==================================================================
   ULTIMA ACCION REGISTRADA
 ==================================================================
-  MANIOBRA FALLIDA! La nave [COSMOS 2294 (GLONASS) (N2YO API)] no tiene suficiente combustible.
+  Acople exitoso: La nave [Cargo Dragon] reposto en la estacion [Estacion ISS].
 ==================================================================

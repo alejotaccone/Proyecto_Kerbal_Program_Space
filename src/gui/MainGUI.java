@@ -653,7 +653,15 @@ public class MainGUI extends JFrame {
         btnEvadeShip.addActionListener(e -> {
             int idx = cmbNaves.getSelectedIndex() - 1;
             if (idx >= 0 && engine != null) {
-                logConsola("[INFO]: Función 'Maniobra de evasión' en desarrollo. Próximamente.");
+                boolean success = engine.evadeShip(idx);
+                if (success) {
+                    logConsola("[ÉXITO]: Maniobra de evasión ejecutada.");
+                } else {
+                    logConsola("[FALLO]: Maniobra de evasión fallida (sin motor o combustible insuficiente).");
+                }
+                actualizarComboNaves();
+                actualizarMonitorNave();
+                radarPanel.repaint();
             }
         });
 
@@ -661,7 +669,10 @@ public class MainGUI extends JFrame {
         btnSpecialAbility.addActionListener(e -> {
             int idx = cmbNaves.getSelectedIndex() - 1;
             if (idx >= 0 && engine != null) {
-                logConsola("[INFO]: Función 'Habilidad especial' en desarrollo. Próximamente.");
+                String resultado = engine.useSpecialAbility(idx);
+                logConsola("[HABILIDAD]: " + resultado);
+                actualizarMonitorNave();
+                radarPanel.repaint();
             }
         });
 
@@ -669,7 +680,14 @@ public class MainGUI extends JFrame {
         btnRefuel.addActionListener(e -> {
             int idx = cmbNaves.getSelectedIndex() - 1;
             if (idx >= 0 && engine != null) {
-                logConsola("[INFO]: Función 'Acople y recarga' en desarrollo. Próximamente.");
+                boolean success = engine.refuelShipAtStation(idx);
+                if (success) {
+                    logConsola("[ACOPLE]: Nave recargada con éxito en la estación.");
+                } else {
+                    logConsola("[FALLO]: No hay estación espacial en rango de acople (500 km) o la nave no requiere combustible.");
+                }
+                actualizarMonitorNave();
+                radarPanel.repaint();
             }
         });
 

@@ -227,12 +227,13 @@ public class SimulationEngine {
         return false;
     }
 
-    public void useSpecialAbility(int shipIndex) {
-        if (!isIndiceValido(shipIndex)) return;
+    public String useSpecialAbility(int shipIndex) {
+        if (!isIndiceValido(shipIndex)) return "Índice de nave inválido.";
 
         OrbitalObject craft = trackedObjects.get(shipIndex);
         String result = craft.performSpecialAbility();
         notificarYActualizarMonitor(shipIndex, result);
+        return result;
     }
 
     private boolean isIndiceValido(int index) {
