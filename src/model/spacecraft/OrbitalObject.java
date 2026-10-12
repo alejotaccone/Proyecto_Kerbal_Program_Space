@@ -1,14 +1,13 @@
 package model.spacecraft;
 
-import java.awt.Color;
 import model.geometry.GeoPosition;
 
 /**
  * Superclase abstracta que modela cualquier objeto en órbita terrestre.
- * Aplica los patrones GRASP Experto en Información y Bajo Acoplamiento,
- * centralizando el cálculo de distancias, la telemetría y la representación visual polimórfica.
+ * Aplica los patrones GRASP Experto en Información y Bajo Acoplamiento, y el principio
+ * SOLID de Segregación de Interfaces (ISP) delegando el contrato visual en RadarRenderable.
  */
-public abstract class OrbitalObject {
+public abstract class OrbitalObject implements RadarRenderable {
     private String id;
     private String name;
     private int noradId;
@@ -38,35 +37,6 @@ public abstract class OrbitalObject {
      * Aplica el patrón GRASP Experto en Información + Polimorfismo.
      */
     public abstract String getDetalleTelemetria();
-
-    /**
-     * Color asignado para la representación visual en el radar.
-     * Aplica el patrón GRASP Bajo Acoplamiento + Polimorfismo.
-     */
-    public Color getColorRadar() {
-        return new Color(0, 230, 80); // Verde por defecto (sondas / objetos genéricos)
-    }
-
-    /**
-     * Tamaño del ícono en píxeles sobre la pantalla de radar.
-     */
-    public int getTamanoIconoRadar() {
-        return 6;
-    }
-
-    /**
-     * Indica si el ícono debe dibujarse como triángulo de advertencia (para basura/amenazas).
-     */
-    public boolean esIconoTriangular() {
-        return false;
-    }
-
-    /**
-     * Indica si el ícono en el radar debe representarse con un anillo exterior (ej. estaciones nodriza).
-     */
-    public boolean tieneAnilloRadar() {
-        return false;
-    }
 
     /**
      * Calcula la distancia en kilómetros hacia otro objeto orbital.

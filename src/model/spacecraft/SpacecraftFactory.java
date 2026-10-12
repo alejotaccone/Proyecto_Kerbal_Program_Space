@@ -21,9 +21,23 @@ public class SpacecraftFactory {
         SpacecraftInfo info = new SpacecraftInfo(craftId, satName + " (N2YO API)", noradId);
 
         if (upper.contains("TIANHE") || upper.contains("TIANGONG") || upper.contains("CSS") || upper.contains("CHINA") || noradId == 48274) {
-            return new SpaceStation(info, pos, "SpaceSation_China.jfif", "Estación Espacial China (Tiangong)");
+            return new SpaceStation(
+                info,
+                pos,
+                "SpaceSation_China.jfif",
+                "Estación Espacial China (Tiangong)",
+                "ISS_Destruida.jpg",
+                "La Estación Espacial China (Tiangong) quedó totalmente inoperativa"
+            );
         } else if (upper.contains("STATION") || upper.contains("ISS") || noradId == 25544) {
-            return new SpaceStation(info, pos, "SpaceStation_Internacional.jpg", "Estación Espacial Internacional (ISS)");
+            return new SpaceStation(
+                info,
+                pos,
+                "SpaceStation_Internacional.jpg",
+                "Estación Espacial Internacional (ISS)",
+                "ISS_Destruida.jpg",
+                "La Estación Espacial Internacional quedó totalmente inoperativa"
+            );
         } else if (upper.contains("ONEWEB") || upper.contains("DEBRIS") || upper.contains("COSMOS") || upper.contains("DEB") || upper.contains("SL-")) {
             return new SpaceDebris(info, pos, 8.2);
         } else if (upper.contains("NOAA") || upper.contains("CARGO") || upper.contains("DRAGON") || upper.contains("DELTA") || upper.contains("ATLAS")) {

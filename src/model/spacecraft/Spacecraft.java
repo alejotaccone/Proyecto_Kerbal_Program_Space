@@ -5,9 +5,10 @@ import model.geometry.GeoPosition;
 
 /**
  * Superclase abstracta para vehículos espaciales activos con sistema de propulsión.
- * Encapsula estrictamente fuelTank como private.
+ * Aplica el Principio de Segregación de Interfaces (SOLID - ISP) implementando
+ * únicamente las capacidades de portar combustible (FuelCarrier) y maniobra evasiva (EvasiveCapable).
  */
-public abstract class Spacecraft extends OrbitalObject {
+public abstract class Spacecraft extends OrbitalObject implements FuelCarrier, EvasiveCapable {
     private FuelTank fuelTank;
 
     public Spacecraft(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank, double velocityKmH) {
@@ -27,6 +28,7 @@ public abstract class Spacecraft extends OrbitalObject {
         }
     }
 
+    @Override
     public boolean evade(double deltaLat, double deltaLng) {
         if (fuelTank != null && !fuelTank.isEmpty()) {
             boolean success = fuelTank.consume(15.0); // Consumo de energía/combustible por maniobra
@@ -51,6 +53,7 @@ public abstract class Spacecraft extends OrbitalObject {
         return false;
     }
 
+    @Override
     public FuelTank getFuelTank() {
         return fuelTank;
     }

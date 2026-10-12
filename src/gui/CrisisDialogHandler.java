@@ -22,10 +22,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import model.spacecraft.EvasiveCapable;
 import model.spacecraft.OrbitalObject;
 import model.spacecraft.RogueDebris;
 import model.spacecraft.SpaceStation;
-import model.spacecraft.Spacecraft;
 
 /**
  * Controlador de diálogos interactivos y lógica de decisión ante eventos de crisis y colisiones.
@@ -163,8 +163,8 @@ public class CrisisDialogHandler {
 
         if (seleccion == 0) { // Evasión
             boolean success = false;
-            if (target instanceof Spacecraft) {
-                success = ((Spacecraft) target).evade(0.5, 0.5);
+            if (target instanceof EvasiveCapable) {
+                success = ((EvasiveCapable) target).evade(0.5, 0.5);
             }
             if (success) {
                 if (logConsola != null) logConsola.accept("[CRISIS]: ¡Evasión exitosa! [" + target.getName() + "] maniobró a tiempo.");

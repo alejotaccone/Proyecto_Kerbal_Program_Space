@@ -6,6 +6,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import model.geometry.GeoPosition;
 import model.spacecraft.OrbitalObject;
+import model.spacecraft.RadarRenderable;
 
 /**
  * Panel personalizado y autónomo que dibuja la pantalla del radar animada.
@@ -222,11 +223,11 @@ public class RadarPanel extends JPanel {
         }
     }
 
-    private EstiloVisual determinarEstiloVisual(OrbitalObject craft) {
-        if (craft == null) {
+    private EstiloVisual determinarEstiloVisual(RadarRenderable renderable) {
+        if (renderable == null) {
             return new EstiloVisual(COLOR_TEXT_PRIMARY, 6, false);
         }
-        return new EstiloVisual(craft.getColorRadar(), craft.getTamanoIconoRadar(), craft.esIconoTriangular());
+        return new EstiloVisual(renderable.getColorRadar(), renderable.getTamanoIconoRadar(), renderable.esIconoTriangular());
     }
 
     private void dibujarNaves(Graphics2D g2, int centroX, int centroY, int radio) {
@@ -260,7 +261,7 @@ public class RadarPanel extends JPanel {
         }
     }
 
-    private void dibujarIconoNave(Graphics2D g2, OrbitalObject craft, int pixelX, int pixelY, EstiloVisual estilo) {
+    private void dibujarIconoNave(Graphics2D g2, RadarRenderable renderable, int pixelX, int pixelY, EstiloVisual estilo) {
         g2.setColor(estilo.color);
         if (estilo.esTriangulo) {
             int[] xPoints = {pixelX, pixelX - estilo.tamano, pixelX + estilo.tamano};
@@ -268,7 +269,7 @@ public class RadarPanel extends JPanel {
             g2.fillPolygon(xPoints, yPoints, 3);
         } else {
             g2.fillOval(pixelX - estilo.tamano / 2, pixelY - estilo.tamano / 2, estilo.tamano, estilo.tamano);
-            if (craft.tieneAnilloRadar()) {
+            if (renderable.tieneAnilloRadar()) {
                 g2.setStroke(new BasicStroke(1.5f));
                 g2.drawOval(pixelX - estilo.tamano, pixelY - estilo.tamano, estilo.tamano * 2, estilo.tamano * 2);
             }

@@ -15,6 +15,7 @@ public class N2YOApiClient {
     public static final String DEFAULT_KEY = "DPP6C4-6KSLTW-K5Z8BU-5THO";
     private String apiKey;
     private HttpClient httpClient;
+    private N2YOJsonParser jsonParser;
 
     public static final int NORAD_ISS = 25544;       // Estación Espacial Internacional (ISS)
     public static final int NORAD_HUBBLE = 20580;    // Telescopio Espacial Hubble (HST)
@@ -23,7 +24,12 @@ public class N2YOApiClient {
     public static final int NORAD_ONEWEB = 48212;    // Satélite / Restos en órbita polar ONEWEB-0179
 
     public N2YOApiClient(String apiKey) {
+        this(apiKey, new N2YOJsonParser());
+    }
+
+    public N2YOApiClient(String apiKey, N2YOJsonParser jsonParser) {
         this.apiKey = (apiKey != null && !apiKey.trim().isEmpty()) ? apiKey : DEFAULT_KEY;
+        this.jsonParser = (jsonParser != null) ? jsonParser : new N2YOJsonParser();
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(4))
                 .build();
@@ -61,8 +67,8 @@ public class N2YOApiClient {
                 BASE_URL, noradId, fallbackPos.getLatitude(), fallbackPos.getLongitude(), fallbackPos.getAltitude(), apiKey);
 
         String responseBody = sendGet(url, Duration.ofSeconds(2));
-        if (responseBody != null && responseBody.contains("\"positions\":")) {
-            GeoPosition pos = parsePositionFromJson(responseBody);
+        if (jsonParser.contienePosiciones(responseBody)) {
+            GeoPosition pos = jsonParser.parsePositionFromJson(responseBody);
             if (pos != null) return pos;
         }
 
@@ -71,60 +77,21 @@ public class N2YOApiClient {
 
     /**
      * Petición HTTP a N2YO para un satélite individual.
-     * Delega la instanciación polimórfica a SpacecraftFactory (GRASP Creator).
+     * Delega el parseo a N2YOJsonParser (SOLID - SRP) y la instanciación a SpacecraftFactory (GRASP Creator).
      */
     public OrbitalObject fetchRealSatellite(int noradId) {
         String url = String.format(Locale.US, "%spositions/%d/-34.60/-58.38/25/1/&apiKey=%s", BASE_URL, noradId, apiKey);
 
         String responseBody = sendGet(url, Duration.ofSeconds(4));
-        if (responseBody != null && responseBody.contains("\"positions\":")) {
-            String satName = extractJsonString(responseBody, "\"satname\":");
-            if (satName == null || satName.trim().isEmpty()) {
-                satName = "NORAD-" + noradId;
-            }
-
-            GeoPosition pos = parsePositionFromJson(responseBody);
+        if (jsonParser.contienePosiciones(responseBody)) {
+            String satName = jsonParser.parseSatelliteName(responseBody, noradId);
+            GeoPosition pos = jsonParser.parsePositionFromJson(responseBody);
             if (pos != null) {
-                return SpacecraftFactory.crearDesdeDatosN2YO(noradId, satName.trim(), pos);
+                return SpacecraftFactory.crearDesdeDatosN2YO(noradId, satName, pos);
             }
         }
 
         return null;
-    }
-
-    private GeoPosition parsePositionFromJson(String json) {
-        try {
-            if (json.contains("\"satlatitude\":") && json.contains("\"satlongitude\":")) {
-                double lat = extractJsonDouble(json, "\"satlatitude\":");
-                double lng = extractJsonDouble(json, "\"satlongitude\":");
-                double alt = json.contains("\"sataltitude\":") ? extractJsonDouble(json, "\"sataltitude\":") : 400.0;
-                return new GeoPosition(lat, lng, alt);
-            }
-        } catch (Exception e) {
-            // Error de parseo
-        }
-        return null;
-    }
-
-    private double extractJsonDouble(String json, String key) {
-        int index = json.indexOf(key);
-        if (index == -1) return 0.0;
-        int start = index + key.length();
-        int end = json.indexOf(",", start);
-        if (end == -1) end = json.indexOf("}", start);
-        if (end == -1) end = json.indexOf("]", start);
-        String valStr = json.substring(start, end).replace("}", "").replace("]", "").trim();
-        return Double.parseDouble(valStr);
-    }
-
-    private String extractJsonString(String json, String key) {
-        int index = json.indexOf(key);
-        if (index == -1) return "";
-        int start = json.indexOf("\"", index + key.length());
-        if (start == -1) return "";
-        int end = json.indexOf("\"", start + 1);
-        if (end == -1) return "";
-        return json.substring(start + 1, end);
     }
 
     public void setApiKey(String apiKey) {

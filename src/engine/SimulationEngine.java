@@ -4,6 +4,7 @@ import api.N2YOApiClient;
 import java.util.ArrayList;
 import java.util.List;
 import model.geometry.GeoPosition;
+import model.spacecraft.EvasiveCapable;
 import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceStation;
 import model.spacecraft.Spacecraft;
@@ -189,16 +190,16 @@ public class SimulationEngine {
         if (!isIndiceValido(index)) return false;
 
         OrbitalObject craft = trackedObjects.get(index);
-        if (!(craft instanceof Spacecraft)) {
+        if (!(craft instanceof EvasiveCapable)) {
             notificarYActualizarMonitor(index, "MANIOBRA IMPOSIBLE! El objeto [" + craft.getName() + "] no es una nave con propulsión propia.");
             return false;
         }
 
-        Spacecraft ship = (Spacecraft) craft;
-        boolean success = ship.evade(0.5, 0.5);
+        EvasiveCapable evasiveShip = (EvasiveCapable) craft;
+        boolean success = evasiveShip.evade(0.5, 0.5);
         String msg = success 
-                ? "MANIOBRA EXITOSA! La nave [" + ship.getName() + "] cambio su orbita para evitar impacto."
-                : "MANIOBRA FALLIDA! La nave [" + ship.getName() + "] no tiene suficiente combustible.";
+                ? "MANIOBRA EXITOSA! La nave [" + craft.getName() + "] cambio su orbita para evitar impacto."
+                : "MANIOBRA FALLIDA! La nave [" + craft.getName() + "] no tiene suficiente combustible.";
         notificarYActualizarMonitor(index, msg);
         return success;
     }

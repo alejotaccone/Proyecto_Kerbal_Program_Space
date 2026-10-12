@@ -4,7 +4,7 @@ import model.components.FuelTank;
 import model.components.PercentageGauge;
 import model.geometry.GeoPosition;
 
-public class SpaceStation extends OrbitalObject {
+public class SpaceStation extends OrbitalObject implements FuelCarrier {
     private String stationType;
     private String imagenDestruida;
     private String textoDestruccion;
@@ -17,22 +17,46 @@ public class SpaceStation extends OrbitalObject {
     private boolean solarPanelsDeployed;       // Estado de los paneles solares
 
     public SpaceStation(SpacecraftInfo info, GeoPosition position) {
-        this(info, position, "SpaceStation_Internacional.jpg", "Estación Espacial Internacional (ISS)");
+        this(
+            info,
+            position,
+            "SpaceStation_Internacional.jpg",
+            "Estación Espacial Internacional (ISS)",
+            "ISS_Destruida.jpg",
+            "La Estación Espacial Internacional quedó totalmente inoperativa"
+        );
     }
 
     public SpaceStation(SpacecraftInfo info, GeoPosition position, String nombreImagen, String stationType) {
+        this(
+            info,
+            position,
+            nombreImagen,
+            stationType,
+            "ISS_Destruida.jpg",
+            "La " + (stationType != null ? stationType : "Estación Espacial") + " quedó totalmente inoperativa"
+        );
+    }
+
+    /**
+     * Constructor parametrizado que aplica el Principio de Abierto/Cerrado (SOLID - OCP).
+     * Permite extender el sistema con nuevas estaciones espaciales (con sus propias imágenes y
+     * mensajes de destrucción) sin necesidad de abrir ni modificar el código de SpaceStation.
+     */
+    public SpaceStation(
+            SpacecraftInfo info,
+            GeoPosition position,
+            String nombreImagen,
+            String stationType,
+            String imagenDestruida,
+            String textoDestruccion) {
         // La estación espacial es un objeto orbital con velocidad orbital estándar (~27600 km/h)
         super(info, position, 27600.0, nombreImagen);
         this.stationType = stationType;
-        
-        // Configurar imagen y texto de destrucción según el tipo de estación
-        if (stationType != null && stationType.contains("China")) {
-            this.imagenDestruida = "ISS_Destruida.jpg";
-            this.textoDestruccion = "La Estación Espacial China (Tiangong) quedó totalmente inoperativa";
-        } else {
-            this.imagenDestruida = "ISS_Destruida.jpg";
-            this.textoDestruccion = "La Estación Espacial Internacional quedó totalmente inoperativa";
-        }
+        this.imagenDestruida = (imagenDestruida != null && !imagenDestruida.isEmpty()) ? imagenDestruida : "ISS_Destruida.jpg";
+        this.textoDestruccion = (textoDestruccion != null && !textoDestruccion.isEmpty())
+                ? textoDestruccion
+                : "La Estación Espacial quedó totalmente inoperativa";
         
         // Inicializar componentes de subsistemas y reserva de combustible
         this.fuelTank = new FuelTank(2500.0, 2500.0, 0.0);
@@ -120,8 +144,14 @@ public class SpaceStation extends OrbitalObject {
         return false;
     }
     
+    @Override
     public FuelTank getFuelTank() {
         return fuelTank;
+    }
+
+    @Override
+    public String getEtiquetaCombustible() {
+        return String.format("%.1f%% (Reserva Acople)", fuelTank != null ? fuelTank.getPercentage() : 0.0);
     }
     
     // Getters de telemetría y subsistemas
