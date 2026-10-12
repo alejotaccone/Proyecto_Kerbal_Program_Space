@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagramas de Clases UML - Kerbal Program Space</title>
+    <!-- Mermaid CDN standard UMD (compatible con file://) -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        header {
+            background-color: #161b22;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #30363d;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        h1 {
+            font-size: 1.1rem;
+            color: #58a6ff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 6px;
+            background-color: #0b0e14;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #8b949e;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .tab-btn:hover {
+            color: #e6edf3;
+            background-color: #21262d;
+        }
+        .tab-btn.active {
+            color: #58a6ff;
+            background-color: #1f6feb22;
+            border: 1px solid #1f6feb;
+        }
+        .controls {
+            display: flex;
+            gap: 6px;
+        }
+        .ctrl-btn {
+            background-color: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .ctrl-btn:hover {
+            background-color: #30363d;
+            color: #58a6ff;
+        }
+        #canvasContainer {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: radial-gradient(#161b22 1px, #0d1117 1px);
+            background-size: 20px 20px;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #canvasContainer:active {
+            cursor: grabbing;
+        }
+        #viewport {
+            transform-origin: 0 0;
+            transition: transform 0.05s ease-out;
+            display: inline-block;
+            padding: 40px;
+        }
+        .mermaid {
+            user-select: none;
+        }
+        .info-pill {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(22, 27, 34, 0.92);
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            color: #8b949e;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>◆ Kerbal Program Space — UML</h1>
+        
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab(0)">1. Dominio Espacial</button>
+            <button class="tab-btn" onclick="switchTab(1)">2. Motor & Radar</button>
+            <button class="tab-btn" onclick="switchTab(2)">3. Interfaz Gráfica</button>
+            <button class="tab-btn" onclick="switchTab(3)">4. Arquitectura General</button>
+        </div>
+
+        <div class="controls">
+            <button class="ctrl-btn" onclick="zoomIn()">Zoom +</button>
+            <button class="ctrl-btn" onclick="zoomOut()">Zoom -</button>
+            <button class="ctrl-btn" onclick="resetView()">Centrar</button>
+        </div>
+    </header>
+
+    <div id="canvasContainer">
+        <div id="viewport">
+            <div id="diagramTarget" class="mermaid"></div>
+        </div>
+        <div class="info-pill">Arrastrá con el mouse para moverte | Rueda para Zoom</div>
+    </div>
+
+    <script>
+        const diagrams = [
+            // Tab 0: Dominio Espacial
+            `classDiagram
+    class RadarRenderable {
+        <<interface>>
+        +getColorRadar() Color
+        +getTamanoIconoRadar() int
+        +esIconoTriangular() boolean
+        +tieneAnilloRadar() boolean
+    }
+    class FuelCarrier {
+        <<interface>>
+        +getFuelTank() FuelTank
+        +getEtiquetaCombustible() String
+    }
+    class EvasiveCapable {
+        <<interface>>
+        +evade(double deltaLat, double deltaLng) boolean
+    }
+    class OrbitalObject {
+        <<abstract>>
+        -SpacecraftInfo info
+        -GeoPosition position
+        -double velocityKmH
+        -String nombreImagen
+        +move()*
+        +getType()* String
+        +performSpecialAbility()* String
+        +getDetalleTelemetria()* String
+        +distanceTo(OrbitalObject other) double
+    }
+    class SpacecraftInfo {
+        -String id
+        -String name
+        -int noradId
+        +getId() String
+        +getName() String
+        +getNoradId() int
+    }
+    class Spacecraft {
+        <<abstract>>
+        -FuelTank fuelTank
+        +move()
+        +evade(double deltaLat, double deltaLng) boolean
+        +refuel(double amount) boolean
+        +getFuelTank() FuelTank
+    }
+    class SpaceStation {
+        -String stationType
+        -String imagenDestruida
+        -String textoDestruccion
+        -FuelTank fuelTank
+        -PercentageGauge oxygenGauge
+        -PercentageGauge batteryGauge
+        -double temperature
+        -boolean solarPanelsDeployed
+        +SpaceStation(info, pos, img, type, imgDest, txtDest)
+        +move()
+        +refuelShip(Spacecraft ship) boolean
+        +getFuelTank() FuelTank
+        +getEtiquetaCombustible() String
+        +getDetalleTelemetria() String
+        +getColorRadar() Color
+        +tieneAnilloRadar() boolean
+    }
+    class CargoShip {
+        -double cargoCapacityTons
+        -double currentCargoTons
+        +performSpecialAbility() String
+        +getDetalleTelemetria() String
+        +getColorRadar() Color
+    }
+    class CrewShuttle {
+        -List~Kerbal~ crew
+        +addCrewMember(Kerbal kerbal)
+        +agregarTripulante(String name, KerbalRole role, int courage)
+        +performSpecialAbility() String
+        +getDetalleTelemetria() String
+    }
+    class ExplorationProbe {
+        -double solarEfficiency
+        +performSpecialAbility() String
+        +getDetalleTelemetria() String
+    }
+    class SpaceDebris {
+        -double hazardLevel
+        +move()
+        +performSpecialAbility() String
+        +getDetalleTelemetria() String
+        +esIconoTriangular() boolean
+    }
+    class RogueDebris {
+        -OrbitalObject target
+        +move()
+        +getTarget() OrbitalObject
+    }
+    class GeoPosition {
+        -double latitude
+        -double longitude
+        -double altitude
+        +distanceTo(GeoPosition other) double
+    }
+    class FuelTank {
+        -double capacity
+        -double currentLevel
+        -double consumptionRate
+        +consume(double amount) boolean
+        +refuel(double amount) void
+        +getPercentage() double
+    }
+    class PercentageGauge {
+        -double level
+        +increase(double amount)
+        +decrease(double amount)
+        +isAbove(double threshold) boolean
+    }
+    class Kerbal {
+        -String name
+        -KerbalRole role
+        -int courage
+        +ejecutarManiobraPilotaje() String
+    }
+    class KerbalRole {
+        <<enumeration>>
+        PILOT
+        ENGINEER
+        SCIENTIST
+    }
+
+    RadarRenderable <|.. OrbitalObject : implements (ISP)
+    FuelCarrier <|.. Spacecraft : implements (ISP)
+    EvasiveCapable <|.. Spacecraft : implements (ISP)
+    FuelCarrier <|.. SpaceStation : implements (ISP)
+
+    OrbitalObject <|-- Spacecraft
+    OrbitalObject <|-- SpaceStation
+    OrbitalObject <|-- SpaceDebris
+    Spacecraft <|-- CargoShip
+    Spacecraft <|-- CrewShuttle
+    Spacecraft <|-- ExplorationProbe
+    SpaceDebris <|-- RogueDebris
+
+    OrbitalObject *-- "1" SpacecraftInfo : contiene
+    OrbitalObject *-- "1" GeoPosition : ubicado en
+    Spacecraft *-- "1" FuelTank : posee tanque
+    SpaceStation *-- "1" FuelTank : reserva acople
+    SpaceStation *-- "1" PercentageGauge : oxigeno
+    SpaceStation *-- "1" PercentageGauge : bateria
+    CrewShuttle *-- "0..*" Kerbal : tripulacion
+    Kerbal --> "1" KerbalRole : rol
+    RogueDebris --> "1" OrbitalObject : persigue`,
+
+            // Tab 1: Motor & Radar
+            `classDiagram
+    class SimulationEngine {
+        -int currentTick
+        -List~OrbitalObject~ trackedObjects
+        -Radar radar
+        -N2YOApiClient apiClient
+        -OrbitalEventSpawner eventSpawner
+        -int monitoredShipIndex
+        -int targetStationNoradId
+        +SimulationEngine(String apiKey, int targetNoradId)
+        +SimulationEngine(N2YOApiClient api, OrbitalEventSpawner spawner, int noradId)
+        +tick()
+        +syncWithN2YO()
+        +setTargetStation(int noradId)
+        +evadeShip(int index) boolean
+        +refuelShipAtStation(int shipIndex) boolean
+        +useSpecialAbility(int shipIndex) String
+        +triggerCrisisEvent() boolean
+    }
+    class Radar {
+        -String observerCity
+        -GeoPosition location
+        -double coverageRadiusKm
+        +detectCollisionRisks(List~OrbitalObject~ allObjects) List~String~
+        +actualizarUbicacion(GeoPosition nuevaPos)
+    }
+    class OrbitalEventSpawner {
+        +evaluarEventosAleatoriosPorTick(List~OrbitalObject~ trackedObjects)
+        +spawnSpaceDebris(List~OrbitalObject~ trackedObjects) boolean
+        +triggerCrisisEvent(List~OrbitalObject~ trackedObjects) boolean
+    }
+    class SpacecraftFactory {
+        +crearDesdeDatosN2YO(int noradId, String satName, GeoPosition pos)$ OrbitalObject
+    }
+    class N2YOApiClient {
+        -String apiKey
+        -HttpClient httpClient
+        -N2YOJsonParser jsonParser
+        +fetchRealSatellite(int noradId) OrbitalObject
+        +fetchRealSatellitePosition(int noradId, GeoPosition fallback) GeoPosition
+        -sendGet(String url, Duration timeout) String
+    }
+    class N2YOJsonParser {
+        +contienePosiciones(String json) boolean
+        +parseSatelliteName(String json, int noradId) String
+        +parsePositionFromJson(String json) GeoPosition
+        -extractJsonDouble(String json, String key) double
+        -extractJsonString(String json, String key) String
+    }
+    class TelemetryLogger {
+        +printHeader(int tick, String observerCity)$
+        +printSpacecraftStatus(List~OrbitalObject~ ships)$
+        +printAlerts(List~String~ alerts)$
+        +generarResumenNave(OrbitalObject ship)$ String
+        -formatearCombustible(StringBuilder sb, OrbitalObject ship)$
+        +launchMonitorConsole()$
+    }
+    class ExternalMonitorLauncher {
+        +lanzarConsolaPowerShell(String archivoMonitor)$
+    }
+    class GeoPosition {
+        -double latitude
+        -double longitude
+        -double altitude
+    }
+    class OrbitalObject {
+        <<abstract>>
+    }
+    class FuelCarrier {
+        <<interface>>
+        +getFuelTank() FuelTank
+        +getEtiquetaCombustible() String
+    }
+    class EvasiveCapable {
+        <<interface>>
+        +evade(double deltaLat, double deltaLng) boolean
+    }
+
+    SimulationEngine *-- "0..*" OrbitalObject : trackedObjects
+    SimulationEngine *-- "1" Radar : radar
+    SimulationEngine *-- "1" OrbitalEventSpawner : eventSpawner
+    SimulationEngine o-- "1" N2YOApiClient : apiClient
+    SimulationEngine ..> EvasiveCapable : ejecuta maniobra (ISP)
+    Radar *-- "1" GeoPosition : location
+    N2YOApiClient *-- "1" N2YOJsonParser : delega parseo JSON (SRP)
+    N2YOApiClient ..> SpacecraftFactory : usa para crear
+    SpacecraftFactory ..> OrbitalObject : instancia e inyecta config (OCP)
+    OrbitalEventSpawner ..> OrbitalObject : instancia eventos
+    TelemetryLogger ..> ExternalMonitorLauncher : lanza proceso
+    TelemetryLogger ..> OrbitalObject : formatea datos
+    TelemetryLogger ..> FuelCarrier : consulta tanque (ISP)`,
+
+            // Tab 2: Interfaz Gráfica
+            `classDiagram
+    class MainGUI {
+        -HeaderBarPanel headerBarPanel
+        -ControlPanel controlPanel
+        -RadarPanel radarPanel
+        -ShipMonitorPanel shipMonitorPanel
+        -ConsolePanel consolePanel
+        -SimulationEngine engine
+        -Timer simulationTimer
+        -Timer radarSweepTimer
+        +MainGUI()
+        +mostrarSenalPerdida(SpaceStation station)
+    }
+    class HeaderBarPanel {
+        -JLabel lblTitulo
+        -JLabel lblTickCount
+        +actualizarEstadoTick(int tick, String estado, String hora)
+    }
+    class ControlPanel {
+        -JComboBox cmbEstacion
+        -JTextField txtApiKey
+        -JButton btnIniciar
+        -JButton btnDetener
+        -JButton btnCambiarEstacion
+        -JComboBox cmbNaves
+        -JButton btnEvadeShip
+        -JButton btnSpecialAbility
+        -JButton btnRefuel
+        -JButton btnGenerarCrisis
+        +actualizarComboNaves(List~OrbitalObject~ naves, JSplitPane sp)
+        +setEstadoOnline(boolean online)
+        +getSelectedNoradId() int
+        +getSelectedShipIndex() int
+    }
+    class RadarPanel {
+        -List~OrbitalObject~ naves
+        -GeoPosition centroPos
+        -double radioKm
+        -int selectedIndex
+        +setNaves(List~OrbitalObject~ naves)
+        +setCentro(GeoPosition pos, double radioKm)
+        +avanzarBarrido()
+        -determinarEstiloVisual(RadarRenderable renderable) EstiloVisual
+        -dibujarIconoNave(Graphics2D g2, RadarRenderable renderable, int x, int y, EstiloVisual est)
+    }
+    class ShipMonitorPanel {
+        -JLabel lblImagenNave
+        -JTextArea txtMonitorNave
+        +actualizar(OrbitalObject nave)
+        +mostrarSenalPerdida(SpaceStation station)
+    }
+    class ConsolePanel {
+        -JTextArea txtConsola
+        +log(String mensaje)
+        +clear()
+    }
+    class ShipImageLoader {
+        +cargarImagenNave(JLabel lbl, String nombreImagen)$
+        +obtenerImageIconEscalado(String nombreImagen, int w, int h)$ ImageIcon
+    }
+    class CrisisDialogHandler {
+        +evaluarEventosCrisis(...)$ boolean
+        -procesarDecisionCrisis(...)$
+    }
+    class RadarRenderable {
+        <<interface>>
+        +getColorRadar() Color
+        +getTamanoIconoRadar() int
+        +esIconoTriangular() boolean
+        +tieneAnilloRadar() boolean
+    }
+    class EvasiveCapable {
+        <<interface>>
+        +evade(double deltaLat, double deltaLng) boolean
+    }
+    class SimulationEngine {
+        <<Controlador>>
+    }
+
+    MainGUI *-- "1" HeaderBarPanel : ensambla
+    MainGUI *-- "1" ControlPanel : ensambla
+    MainGUI *-- "1" RadarPanel : ensambla
+    MainGUI *-- "1" ShipMonitorPanel : ensambla
+    MainGUI *-- "1" ConsolePanel : ensambla
+    MainGUI o-- "1" SimulationEngine : coordina
+    RadarPanel ..> RadarRenderable : renderiza blips (ISP)
+    ShipMonitorPanel ..> ShipImageLoader : carga imagenes
+    CrisisDialogHandler ..> ShipImageLoader : carga ISS_Destruida
+    CrisisDialogHandler ..> EvasiveCapable : ordena evasion (ISP)
+    MainGUI ..> CrisisDialogHandler : gestiona dialogo`,
+
+            // Tab 3: Arquitectura General
+            `classDiagram
+    class MainGUI {
+        <<Capa Presentacion - Composite UI>>
+    }
+    class SimulationEngine {
+        <<Controlador GRASP>>
+    }
+    class TelemetryLogger {
+        <<Servicio Telemetria>>
+    }
+    class OrbitalObject {
+        <<Capa Dominio - Experto>>
+    }
+    class SpaceStation {
+        <<Entidad Abierta/Cerrada - SOLID OCP>>
+    }
+    class RadarRenderable {
+        <<interface SOLID ISP>>
+    }
+    class FuelCarrier {
+        <<interface SOLID ISP>>
+    }
+    class EvasiveCapable {
+        <<interface SOLID ISP>>
+    }
+    class Radar {
+        <<Deteccion Fisica>>
+    }
+    class N2YOApiClient {
+        <<Cliente HTTP - SOLID SRP>>
+    }
+    class N2YOJsonParser {
+        <<Parser JSON - SOLID SRP>>
+    }
+    class SpacecraftFactory {
+        <<Factoria - GRASP Creator y OCP>>
+    }
+
+    MainGUI o-- "1" SimulationEngine : delega acciones
+    MainGUI ..> RadarRenderable : renderiza en RadarPanel
+    MainGUI ..> EvasiveCapable : evade en CrisisDialogHandler
+    SimulationEngine *-- "0..*" OrbitalObject : rastrea
+    SimulationEngine ..> EvasiveCapable : ejecuta maniobra
+    SimulationEngine *-- "1" Radar : consulta proximidad
+    SimulationEngine ..> TelemetryLogger : registra eventos
+    TelemetryLogger ..> FuelCarrier : formatea tanque
+    SimulationEngine o-- "1" N2YOApiClient : actualiza coordenadas
+    N2YOApiClient *-- "1" N2YOJsonParser : delega parseo JSON
+    N2YOApiClient ..> SpacecraftFactory : solicita creacion
+    SpacecraftFactory ..> OrbitalObject : instancia
+    SpacecraftFactory ..> SpaceStation : inyecta config destruccion
+    RadarRenderable <|.. OrbitalObject : implements
+    FuelCarrier <|.. SpaceStation : implements`
+        ];
+
+        let scale = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let startX, startY;
+
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose'
+        });
+
+        async function renderDiagram(code) {
+            const target = document.getElementById('diagramTarget');
+            target.removeAttribute('data-processed');
+            target.innerHTML = '';
+            const { svg } = await mermaid.render('mermaidGraph_' + Date.now(), code);
+            target.innerHTML = svg;
+            resetView();
+        }
+
+        function switchTab(index) {
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === index);
+            });
+            renderDiagram(diagrams[index]);
+        }
+
+        function updateTransform() {
+            const viewport = document.getElementById('viewport');
+            viewport.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+        }
+
+        function zoomIn() {
+            scale = Math.min(scale * 1.25, 4.0);
+            updateTransform();
+        }
+
+        function zoomOut() {
+            scale = Math.max(scale / 1.25, 0.3);
+            updateTransform();
+        }
+
+        function resetView() {
+            scale = 1.0;
+            panX = 0;
+            panY = 0;
+            updateTransform();
+        }
+
+        const container = document.getElementById('canvasContainer');
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX - panX;
+            startY = e.clientY - panY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            panX = e.clientX - startX;
+            panY = e.clientY - startY;
+            updateTransform();
+        });
+
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 1.15 : 0.85;
+            scale = Math.min(Math.max(scale * delta, 0.3), 4.0);
+            updateTransform();
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            switchTab(0);
+        });
+    </script>
+</body>
+</html>
