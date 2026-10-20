@@ -92,6 +92,32 @@ src/
 
 ---
 
+## 🔑 Configuración de API Key (N2YO)
+
+Para obtener datos orbitales en vivo desde N2YO.com se requiere una API Key gratuita. El sistema admite múltiples métodos de configuración (en orden de prioridad):
+
+1. **Archivo `config.properties` (Recomendado):**
+   Copia el archivo de ejemplo y coloca tu clave:
+   ```bash
+   cp config.properties.example config.properties
+   ```
+   Dentro de `config.properties`:
+   ```properties
+   n2yo.api.key=TU_API_KEY_AQUI
+   ```
+   *(Nota: `config.properties` está ignorado en `.gitignore` para proteger tus credenciales).*
+
+2. **Variable de entorno del sistema:**
+   * PowerShell: `$env:N2YO_API_KEY="TU_API_KEY_AQUI"`
+   * Bash / Linux: `export N2YO_API_KEY="TU_API_KEY_AQUI"`
+
+3. **Ingreso manual en ejecución:**
+   Tanto la GUI (`MainGUI`) como la consola (`Main`) disponen de campos interactivos para ingresar o cambiar la clave en caliente.
+
+Si no se proporciona ninguna clave, la aplicación opera en **Modo Local de Contingencia**, simulando órbitas sin arrojar errores ni bloquear la interfaz.
+
+---
+
 ## 🚀 Compilación y Ejecución
 
 ### 1. Compilar todo el proyecto
@@ -103,16 +129,22 @@ Desde la raíz del proyecto, ejecuta en la terminal:
 mkdir bin
 
 # Compilar todos los archivos fuente con codificación UTF-8 (incluye controller/)
-javac -encoding UTF-8 -d bin src/model/geometry/*.java src/model/components/*.java src/model/spacecraft/*.java src/radar/*.java src/api/*.java src/engine/*.java src/controller/*.java src/gui/*.java src/Main.java
+javac -encoding UTF-8 -d bin src/model/geometry/*.java src/model/components/*.java src/model/spacecraft/*.java src/radar/*.java src/api/*.java src/engine/*.java src/controller/*.java src/gui/*.java src/test/*.java src/Main.java
 ```
 
-### 2. Ejecutar la Interfaz Gráfica (Recomendado)
+### 2. Ejecutar las Pruebas de Distancia 3D
+
+```bash
+java -cp bin test.GeoPositionCheck
+```
+
+### 3. Ejecutar la Interfaz Gráfica (Recomendado)
 
 ```bash
 java -cp bin gui.MainGUI
 ```
 
-### 3. Ejecutar en Modo Consola (CLI / Debug)
+### 4. Ejecutar en Modo Consola (CLI / Debug)
 
 ```bash
 java -cp bin Main

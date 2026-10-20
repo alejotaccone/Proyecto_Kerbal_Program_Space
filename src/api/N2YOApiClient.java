@@ -12,7 +12,7 @@ import model.spacecraft.SpacecraftFactory;
 
 public class N2YOApiClient {
     private static final String BASE_URL = "https://api.n2yo.com/rest/v1/satellite/";
-    public static final String DEFAULT_KEY = "DPP6C4-6KSLTW-K5Z8BU-5THO";
+    public static final String DEFAULT_KEY = "";
     private String apiKey;
     private HttpClient httpClient;
     private N2YOJsonParser jsonParser;
@@ -28,7 +28,8 @@ public class N2YOApiClient {
     }
 
     public N2YOApiClient(String apiKey, N2YOJsonParser jsonParser) {
-        this.apiKey = (apiKey != null && !apiKey.trim().isEmpty()) ? apiKey : DEFAULT_KEY;
+        String keyToUse = ApiConfig.esClaveValida(apiKey) ? apiKey.trim() : ApiConfig.obtenerApiKey();
+        this.apiKey = keyToUse != null ? keyToUse.trim() : "";
         this.jsonParser = (jsonParser != null) ? jsonParser : new N2YOJsonParser();
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(4))
@@ -51,7 +52,7 @@ public class N2YOApiClient {
                 return response.body();
             }
         } catch (Exception e) {
-            // Manejo de errores de conexión o timeout
+            // Manejo de errores de conexión o timeout sin exponer credenciales
         }
         return null;
     }
@@ -63,6 +64,11 @@ public class N2YOApiClient {
         if (fallbackPos == null) {
             fallbackPos = new GeoPosition(0.0, 0.0, 400.0);
         }
+
+        if (!ApiConfig.esClaveValida(apiKey)) {
+            return fallbackPos;
+        }
+
         String url = String.format(Locale.US, "%spositions/%d/%.4f/%.4f/%.1f/1/&apiKey=%s", 
                 BASE_URL, noradId, fallbackPos.getLatitude(), fallbackPos.getLongitude(), fallbackPos.getAltitude(), apiKey);
 
@@ -77,24 +83,37 @@ public class N2YOApiClient {
 
     /**
      * Petición HTTP a N2YO para un satélite individual.
-     * Delega el parseo a N2YOJsonParser (SOLID - SRP) y la instanciación a SpacecraftFactory (GRASP Creator).
+     * Si no hay API Key o falla la conexión, fabrica un objeto orbital con posición predeterminada de contingencia.
      */
     public OrbitalObject fetchRealSatellite(int noradId) {
-        String url = String.format(Locale.US, "%spositions/%d/-34.60/-58.38/25/1/&apiKey=%s", BASE_URL, noradId, apiKey);
+        GeoPosition posDefecto = new GeoPosition(-34.60, -58.38, 420.0);
+        String nombreFallback = (noradId == NORAD_TIANGONG) ? "Tiangong (CSS)" : "Estación Espacial Internacional (ISS)";
 
-        String responseBody = sendGet(url, Duration.ofSeconds(4));
-        if (jsonParser.contienePosiciones(responseBody)) {
-            String satName = jsonParser.parseSatelliteName(responseBody, noradId);
-            GeoPosition pos = jsonParser.parsePositionFromJson(responseBody);
-            if (pos != null) {
-                return SpacecraftFactory.crearDesdeDatosN2YO(noradId, satName, pos);
+        if (ApiConfig.esClaveValida(apiKey)) {
+            String url = String.format(Locale.US, "%spositions/%d/-34.60/-58.38/25/1/&apiKey=%s", BASE_URL, noradId, apiKey);
+            String responseBody = sendGet(url, Duration.ofSeconds(4));
+            if (jsonParser.contienePosiciones(responseBody)) {
+                String satName = jsonParser.parseSatelliteName(responseBody, noradId);
+                GeoPosition pos = jsonParser.parsePositionFromJson(responseBody);
+                if (pos != null) {
+                    return SpacecraftFactory.crearDesdeDatosN2YO(noradId, satName, pos);
+                }
             }
         }
 
-        return null;
+        // Si no hay key o la red falló, crear la estación con datos seguros de contingencia
+        return SpacecraftFactory.crearDesdeDatosN2YO(noradId, nombreFallback + " [Modo Local]", posDefecto);
     }
 
     public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
+        this.apiKey = (apiKey != null) ? apiKey.trim() : "";
+    }
+
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public boolean tieneClaveConfigurada() {
+        return ApiConfig.esClaveValida(apiKey);
     }
 }

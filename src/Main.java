@@ -13,10 +13,20 @@ public class Main {
         System.out.println("   (Integracion de Datos N2YO NORAD & Radar Terrestre)            ");
         System.out.println("==================================================================");
 
-        System.out.print("Ingresa tu API Key de N2YO (O presiona ENTER para usar tu clave guardada): ");
-        String apiKeyInput = scanner.nextLine().trim();
-        if (apiKeyInput.isEmpty()) {
-            apiKeyInput = api.N2YOApiClient.DEFAULT_KEY;
+        String keyDetectada = api.ApiConfig.obtenerApiKey();
+        String apiKeyInput = "";
+
+        if (api.ApiConfig.esClaveValida(keyDetectada)) {
+            System.out.println("[Sistema]: Se detectó API Key configurada (" + api.ApiConfig.enmascararKey(keyDetectada) + ").");
+            System.out.print("Presiona ENTER para usarla, o ingresa una distinta: ");
+            String input = scanner.nextLine().trim();
+            apiKeyInput = input.isEmpty() ? keyDetectada : input;
+        } else {
+            System.out.println("[AVISO]: No se detectó ninguna API Key de N2YO configurada.");
+            System.out.println("  -> Podés configurarla definiendo la variable de entorno N2YO_API_KEY");
+            System.out.println("  -> O creando el archivo config.properties con: n2yo.api.key=TU_CLAVE");
+            System.out.print("Ingresa tu API Key de N2YO ahora (o presiona ENTER para continuar en modo local/offline): ");
+            apiKeyInput = scanner.nextLine().trim();
         }
 
         SimulationEngine engine = new SimulationEngine(apiKeyInput, api.N2YOApiClient.NORAD_ISS); // ISS by default
@@ -24,7 +34,11 @@ public class Main {
         // Lanzar la segunda consola de monitoreo de nave
         TelemetryLogger.launchMonitorConsole();
 
-        System.out.println("\n[Sistema]: Inicializacion completa. Satelites cargados desde la API N2YO en vivo.");
+        if (engine.getApiClient().tieneClaveConfigurada()) {
+            System.out.println("\n[Sistema]: Inicializacion completa. Satelites sincronizados desde la API N2YO en vivo.");
+        } else {
+            System.out.println("\n[Sistema]: Inicializacion en modo local/contingencia. Ingrese una API Key para rastreo en vivo.");
+        }
         System.out.println("[Sistema]: Se abrio una segunda ventana para monitorear naves individualmente.");
 
         boolean running = true;
@@ -78,8 +92,12 @@ public class Main {
                     System.out.print("Ingresa la nueva API Key de N2YO: ");
                     String newKey = scanner.nextLine().trim();
                     engine.getApiClient().setApiKey(newKey);
-                    System.out.println("API Key actualizada. Sincronizando datos N2YO...");
-                    engine.syncWithN2YO();
+                    if (api.ApiConfig.esClaveValida(newKey)) {
+                        System.out.println("API Key actualizada (" + api.ApiConfig.enmascararKey(newKey) + "). Sincronizando datos N2YO...");
+                        engine.syncWithN2YO();
+                    } else {
+                        System.out.println("Clave borrada. El simulador continuará operando en modo local.");
+                    }
                     break;
 
                 case "8":

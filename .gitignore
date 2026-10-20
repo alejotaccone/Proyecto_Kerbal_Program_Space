@@ -2,3 +2,9 @@
 nave_monitor.txt
 monitor.ps1
 
+# Credenciales y configuracion local sensible
+config.properties
+
+# Archivos de entorno y propiedades locales
+*.properties.local
+.env

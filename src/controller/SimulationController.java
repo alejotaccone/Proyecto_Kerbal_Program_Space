@@ -114,14 +114,28 @@ public class SimulationController {
         String apiKey = vista.getControlPanel().getApiKey();
         vista.getControlPanel().getBtnIniciar().setEnabled(false);
 
-        vista.logConsola("[Sistema]: Conectando con API N2YO y contactando estación...");
-        vista.logConsola("[Sistema]: Por favor espera, esto puede tomar unos segundos...");
+        if (!api.ApiConfig.esClaveValida(apiKey)) {
+            apiKey = api.ApiConfig.obtenerApiKey();
+        }
+
+        if (!api.ApiConfig.esClaveValida(apiKey)) {
+            vista.logConsola("[AVISO]: No se ha detectado ninguna API Key de N2YO configurada.");
+            vista.logConsola("  -> Podés ingresarla arriba en el campo 'API Key N2YO'");
+            vista.logConsola("  -> O crear el archivo 'config.properties' con: n2yo.api.key=TU_CLAVE");
+            vista.logConsola("  -> O definir la variable de entorno N2YO_API_KEY");
+            vista.logConsola("[Sistema]: Iniciando simulación en modo local/contingencia...");
+        } else {
+            vista.logConsola("[Sistema]: Conectando con API N2YO (clave " + api.ApiConfig.enmascararKey(apiKey) + ")...");
+            vista.logConsola("[Sistema]: Por favor espera, esto puede tomar unos segundos...");
+        }
+
+        final String keyFinal = apiKey;
 
         // Usamos SwingWorker para no congelar la interfaz gráfica mientras hace la petición HTTP
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() {
-                engine = new SimulationEngine(apiKey, noradId);
+                engine = new SimulationEngine(keyFinal, noradId);
                 return null;
             }
 
@@ -141,7 +155,11 @@ public class SimulationController {
                     vista.getControlPanel().setEstadoOnline(true);
                     actualizarComboNaves();
 
-                    vista.logConsola("[Sistema]: ¡Conexión establecida con la estación!");
+                    if (engine.getApiClient().tieneClaveConfigurada()) {
+                        vista.logConsola("[Sistema]: ¡Conexión establecida con la estación vía N2YO en vivo!");
+                    } else {
+                        vista.logConsola("[Sistema]: Estación cargada en modo contingencia local (sin API Key).");
+                    }
                     vista.logConsola("──────────────────────────────────────────────────────────────");
                 } catch (Exception ex) {
                     vista.logConsola("[ERROR]: No se pudo conectar con la API: " + ex.getMessage());

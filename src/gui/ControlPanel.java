@@ -79,7 +79,8 @@ public class ControlPanel extends JPanel {
         panel.add(Box.createVerticalStrut(6));
 
         panel.add(crearEtiquetaCampo("API Key N2YO:"));
-        txtApiKey = crearCampoTexto(api.N2YOApiClient.DEFAULT_KEY);
+        txtApiKey = crearCampoTexto(api.ApiConfig.obtenerApiKey());
+        txtApiKey.setToolTipText("Ingresá tu API Key de N2YO o configurala en config.properties");
         txtApiKey.setFont(new Font("Consolas", Font.PLAIN, 10));
         panel.add(txtApiKey);
         panel.add(Box.createVerticalStrut(12));
