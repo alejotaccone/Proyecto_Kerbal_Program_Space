@@ -97,11 +97,7 @@ src/
 Para obtener datos orbitales en vivo desde N2YO.com se requiere una API Key gratuita. El sistema admite múltiples métodos de configuración (en orden de prioridad):
 
 1. **Archivo `config.properties` (Recomendado):**
-   Copia el archivo de ejemplo y coloca tu clave:
-   ```bash
-   cp config.properties.example config.properties
-   ```
-   Dentro de `config.properties`:
+   Crear el archivo `config.properties` en la raíz del proyecto con tu clave:
    ```properties
    n2yo.api.key=TU_API_KEY_AQUI
    ```
