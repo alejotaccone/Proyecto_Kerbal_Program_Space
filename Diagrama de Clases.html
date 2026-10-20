@@ -971,12 +971,12 @@
         }
 
         function zoomIn() {
-            scale = Math.min(scale * 1.35, 30.0);
+            scale = Math.min(scale * 1.20, 30.0);
             updateTransform();
         }
 
         function zoomOut() {
-            scale = Math.max(scale / 1.35, 0.05);
+            scale = Math.max(scale / 1.20, 0.05);
             updateTransform();
         }
 
@@ -1005,7 +1005,7 @@
 
         container.addEventListener('wheel', (e) => {
             e.preventDefault();
-            const delta = e.deltaY < 0 ? 1.25 : 0.80;
+            const delta = e.deltaY < 0 ? 1.08 : 0.93;
             scale = Math.min(Math.max(scale * delta, 0.05), 30.0);
             updateTransform();
         });
