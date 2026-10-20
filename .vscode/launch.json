@@ -6,6 +6,13 @@
       "name": "MainGUI",
       "request": "launch",
       "mainClass": "gui.MainGUI",
+      "projectName": "Proyecto_Kerbal_Program_Space_342aec27"
+    },
+    {
+      "type": "java",
+      "name": "MainGUI",
+      "request": "launch",
+      "mainClass": "gui.MainGUI",
       "projectName": "Proyecto_Kerbal_Program_Space_7d33cc59"
     },
     {

@@ -35,29 +35,49 @@
 src/
 ├── Main.java                          # Punto de entrada por consola interactiva (CLI)
 ├── Img/                               # Recursos gráficos de las naves (JPG / JFIF)
-├── api/
-│   └── N2YOApiClient.java             # Cliente HTTP y parseador JSON para la API N2YO
-├── engine/
-│   ├── SimulationEngine.java          # Motor central: ciclo de ticks, eventos y estado
-│   └── TelemetryLogger.java           # Registro de telemetría y monitor de segunda consola
-├── gui/
-│   └── MainGUI.java                   # Dashboard táctico Swing y canvas del RadarPanel
-├── model/
+├── api/                               # Integración externa REST
+│   ├── N2YOApiClient.java             # Cliente HTTP para la API N2YO
+│   └── N2YOJsonParser.java            # Parseador de respuestas JSON (SRP)
+├── controller/                        # Capa Controlador (Patrón MVC — Iteración 4)
+│   ├── SimulationController.java      # Controlador principal: timers, eventos de UI y orquestación
+│   └── CrisisController.java          # Controlador de crisis: lógica de colisiones y órdenes tácticas
+├── engine/                            # Lógica del motor y telemetría (Modelo)
+│   ├── SimulationEngine.java          # Motor central: ticks, estado de objetos y física
+│   ├── OrbitalEventSpawner.java       # Generador estocástico de eventos y basura espacial
+│   ├── TelemetryLogger.java           # Registro y formateo telemétrico
+│   └── ExternalMonitorLauncher.java   # Lanzador de la consola secundaria PowerShell
+├── gui/                               # Capa Vista (Patrón MVC)
+│   ├── MainGUI.java                   # Ventana principal JFrame (ensambla paneles especialistas)
+│   ├── ControlPanel.java              # Panel de controles, configuración y leyenda (WEST)
+│   ├── RadarPanel.java                # Pantalla animada del radar táctico 2D (CENTER)
+│   ├── ShipMonitorPanel.java          # Consola lateral de telemetría e imagen de nave (EAST)
+│   ├── HeaderBarPanel.java            # Barra superior con estado de tick y reloj (NORTH)
+│   ├── ConsolePanel.java              # Terminal de logs telemétricos en tiempo real (SOUTH)
+│   ├── CrisisDialogView.java          # Vista modal táctica para toma de decisiones y alertas
+│   ├── CrisisDialogHandler.java       # Fachada de compatibilidad hacia CrisisController
+│   └── ShipImageLoader.java           # Servicio de carga y caché de imágenes en memoria
+├── model/                             # Capa Modelo (Dominio y Entidades)
 │   ├── components/
 │   │   ├── FuelTank.java              # Tanque de combustible, consumo y recarga
-│   │   └── Kerbal.java                # Tripulante con rol y nivel de coraje
+│   │   ├── PercentageGauge.java       # Indicador porcentual acotado (0%-100%)
+│   │   ├── Kerbal.java                # Tripulante espacial con aptitudes
+│   │   └── KerbalRole.java            # Enumeración de roles especializados
 │   ├── geometry/
 │   │   └── GeoPosition.java           # Coordenadas 3D y cálculo de distancia Haversine
 │   └── spacecraft/
-│       ├── Spacecraft.java            # Clase base abstracta
-│       ├── SpaceStation.java          # Estación espacial base con soporte vital
-│       ├── InternationalSpaceStation.java # Estación Espacial Internacional (ISS)
-│       ├── ChinaSpaceStation.java     # Estación Espacial Tiangong (CSS)
+│       ├── OrbitalObject.java         # Clase abstracta base de objetos en órbita
+│       ├── Spacecraft.java            # Vehículos propulsados activos
+│       ├── SpaceStation.java          # Estación espacial con soporte vital
 │       ├── CrewShuttle.java           # Transbordador tripulado
-│       ├── CargoShip.java             # Nave de carga
-│       ├── ExplorationProbe.java      # Sonda de exploración solar
-│       ├── SpaceDebris.java           # Basura espacial inerte
-│       └── RogueDebris.java           # Basura hostil con vector de intercepción
+│       ├── CargoShip.java             # Nave de transporte de carga
+│       ├── ExplorationProbe.java      # Sonda de investigación solar
+│       ├── SpaceDebris.java           # Basura espacial pasiva inerte
+│       ├── RogueDebris.java           # Fragmento hostil con vector de persecución
+│       ├── SpacecraftFactory.java     # Factoría para instanciación polimórfica (OCP)
+│       ├── SpacecraftInfo.java        # Metadata e identificación de nave
+│       ├── FuelCarrier.java           # Interfaz para portadores de combustible (ISP)
+│       ├── EvasiveCapable.java        # Interfaz de capacidad evasiva (ISP)
+│       └── RadarRenderable.java       # Interfaz de dibujo en radar (ISP)
 └── radar/
     └── Radar.java                     # Cobertura de radar y detección de colisiones
 ```
@@ -82,8 +102,8 @@ Desde la raíz del proyecto, ejecuta en la terminal:
 # Crear la carpeta de binarios si no existe
 mkdir bin
 
-# Compilar todos los archivos fuente con codificación UTF-8
-javac -encoding UTF-8 -d bin src/model/geometry/*.java src/model/components/*.java src/model/spacecraft/*.java src/radar/*.java src/api/*.java src/engine/*.java src/gui/*.java src/Main.java
+# Compilar todos los archivos fuente con codificación UTF-8 (incluye controller/)
+javac -encoding UTF-8 -d bin src/model/geometry/*.java src/model/components/*.java src/model/spacecraft/*.java src/radar/*.java src/api/*.java src/engine/*.java src/controller/*.java src/gui/*.java src/Main.java
 ```
 
 ### 2. Ejecutar la Interfaz Gráfica (Recomendado)

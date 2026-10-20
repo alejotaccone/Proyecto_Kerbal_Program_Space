@@ -394,26 +394,71 @@
     TelemetryLogger ..> OrbitalObject : formatea datos
     TelemetryLogger ..> FuelCarrier : consulta tanque (ISP)`,
 
-            // Tab 2: Interfaz Gráfica
+            // Tab 2: Interfaz Gráfica (Patrón MVC - Iteración 4)
             `classDiagram
     class MainGUI {
+        <<Vista Principal - JFrame>>
         -HeaderBarPanel headerBarPanel
         -ControlPanel controlPanel
         -RadarPanel radarPanel
         -ShipMonitorPanel shipMonitorPanel
         -ConsolePanel consolePanel
+        -JSplitPane splitPane
+        -SimulationController controller
+        +MainGUI()
+        +logConsola(String mensaje)
+        +mostrarSenalPerdida(SpaceStation station)
+        +getHeaderBarPanel() HeaderBarPanel
+        +getControlPanel() ControlPanel
+        +getRadarPanel() RadarPanel
+        +getShipMonitorPanel() ShipMonitorPanel
+        +getConsolePanel() ConsolePanel
+        +getSplitPane() JSplitPane
+        +getController() SimulationController
+    }
+    class SimulationController {
+        <<Controlador Principal>>
+        -MainGUI vista
         -SimulationEngine engine
         -Timer simulationTimer
         -Timer radarSweepTimer
-        +MainGUI()
-        +mostrarSenalPerdida(SpaceStation station)
+        -boolean simulationRunning
+        -int tickCount
+        +SimulationController(MainGUI vista)
+        +iniciarSimulacion()
+        +detenerSimulacion()
+        +cambiarEstacion()
+        +ejecutarTickSimulacion()
+        +ejecutarManiobraEvasion()
+        +ejecutarHabilidadEspecial()
+        +ejecutarRecargaCombustible()
+        +generarCrisis()
+        +sincronizarDatosRadar()
+        +actualizarMonitorNave()
+        +actualizarComboNaves()
+    }
+    class CrisisController {
+        <<Controlador de Crisis>>
+        +evaluarEventosCrisis(Component parent, SimulationEngine engine, Runnable onPausar, Runnable onReanudar, Consumer log, Consumer onDestruida)$ boolean
+        -buscarAmenazaRogue(SimulationEngine engine)$ RogueDebris
+        -procesarDecisionCrisis(Component parent, int seleccion, OrbitalObject target, SimulationEngine engine, Consumer log, Consumer onDestruida)$
+        -manejarDestruccionObjeto(Component parent, OrbitalObject target, SimulationEngine engine, Consumer onDestruida)$
+        -finalizarCrisis(RogueDebris threat, SimulationEngine engine, Runnable onReanudar)$
+    }
+    class CrisisDialogView {
+        <<Vista de Diálogos Modales>>
+        +mostrarDialogoDecisionCrisis(Component parent, String amenaza, double dist, String objetivo)$ int
+        +mostrarDialogoEstacionDestruida(Component parent, String img, String texto)$ void
+        -crearBotonTactico(String texto, Color col)$ JButton
     }
     class HeaderBarPanel {
+        <<Componente Vista>>
         -JLabel lblTitulo
         -JLabel lblTickCount
         +actualizarEstadoTick(int tick, String estado, String hora)
     }
     class ControlPanel {
+        <<Componente Vista>>
         -JComboBox cmbEstacion
         -JTextField txtApiKey
         -JButton btnIniciar
@@ -428,8 +473,11 @@
         +setEstadoOnline(boolean online)
         +getSelectedNoradId() int
         +getSelectedShipIndex() int
+        +addIniciarListener(ActionListener l)
+        +addDetenerListener(ActionListener l)
     }
     class RadarPanel {
+        <<Componente Vista>>
         -List~OrbitalObject~ naves
         -GeoPosition centroPos
         -double radioKm
@@ -437,109 +485,92 @@
         +setNaves(List~OrbitalObject~ naves)
         +setCentro(GeoPosition pos, double radioKm)
         +avanzarBarrido()
-        -determinarEstiloVisual(RadarRenderable renderable) EstiloVisual
-        -dibujarIconoNave(Graphics2D g2, RadarRenderable renderable, int x, int y, EstiloVisual est)
+        +getShipIndexAt(int x, int y) int
     }
     class ShipMonitorPanel {
+        <<Componente Vista>>
         -JLabel lblImagenNave
         -JTextArea txtMonitorNave
         +actualizar(OrbitalObject nave)
         +mostrarSenalPerdida(SpaceStation station)
     }
     class ConsolePanel {
+        <<Componente Vista>>
         -JTextArea txtConsola
         +log(String mensaje)
         +clear()
     }
     class ShipImageLoader {
+        <<Servicio UI>>
         +cargarImagenNave(JLabel lbl, String nombreImagen)$
         +obtenerImageIconEscalado(String nombreImagen, int w, int h)$ ImageIcon
     }
-    class CrisisDialogHandler {
-        +evaluarEventosCrisis(...)$ boolean
-        -procesarDecisionCrisis(...)$
+    class SimulationEngine {
+        <<Modelo de Simulación>>
     }
     class RadarRenderable {
-        <<interface>>
-        +getColorRadar() Color
-        +getTamanoIconoRadar() int
-        +esIconoTriangular() boolean
-        +tieneAnilloRadar() boolean
-    }
-    class EvasiveCapable {
-        <<interface>>
-        +evade(double deltaLat, double deltaLng) boolean
-    }
-    class SimulationEngine {
-        <<Controlador>>
+        <<interface Vista/Modelo>>
     }
 
-    MainGUI *-- "1" HeaderBarPanel : ensambla
-    MainGUI *-- "1" ControlPanel : ensambla
-    MainGUI *-- "1" RadarPanel : ensambla
-    MainGUI *-- "1" ShipMonitorPanel : ensambla
-    MainGUI *-- "1" ConsolePanel : ensambla
-    MainGUI o-- "1" SimulationEngine : coordina
-    RadarPanel ..> RadarRenderable : renderiza blips (ISP)
-    ShipMonitorPanel ..> ShipImageLoader : carga imagenes
-    CrisisDialogHandler ..> ShipImageLoader : carga ISS_Destruida
-    CrisisDialogHandler ..> EvasiveCapable : ordena evasion (ISP)
-    MainGUI ..> CrisisDialogHandler : gestiona dialogo`,
+    MainGUI *-- "1" HeaderBarPanel : compone
+    MainGUI *-- "1" ControlPanel : compone
+    MainGUI *-- "1" RadarPanel : compone
+    MainGUI *-- "1" ShipMonitorPanel : compone
+    MainGUI *-- "1" ConsolePanel : compone
+    MainGUI *-- "1" SimulationController : delega al controlador
+    SimulationController o-- "1" MainGUI : actualiza vista
+    SimulationController o-- "1" SimulationEngine : orquesta modelo
+    SimulationController ..> CrisisController : invoca evaluación
+    CrisisController ..> CrisisDialogView : solicita mostrar diálogo
+    CrisisController ..> SimulationEngine : aplica impacto/evasión
+    RadarPanel ..> RadarRenderable : renderiza blips
+    ShipMonitorPanel ..> ShipImageLoader : carga foto
+    CrisisDialogView ..> ShipImageLoader : carga imagen destruida`,
 
-            // Tab 3: Arquitectura General
+            // Tab 3: Arquitectura General (Tríada MVC - Iteración 4)
             `classDiagram
-    class MainGUI {
-        <<Capa Presentacion - Composite UI>>
+    class Vista_MainGUI {
+        <<Capa Vista - GUI>>
+    }
+    class Vista_Paneles {
+        <<Capa Vista - Componentes UI>>
+    }
+    class Vista_CrisisDialog {
+        <<Capa Vista - Modales Tácticos>>
+    }
+    class SimulationController {
+        <<Capa Controlador - Orquestador>>
+    }
+    class CrisisController {
+        <<Capa Controlador - Lógica Crisis>>
     }
     class SimulationEngine {
-        <<Controlador GRASP>>
-    }
-    class TelemetryLogger {
-        <<Servicio Telemetria>>
+        <<Capa Modelo - Motor de Negocio>>
     }
     class OrbitalObject {
-        <<Capa Dominio - Experto>>
-    }
-    class SpaceStation {
-        <<Entidad Abierta/Cerrada - SOLID OCP>>
-    }
-    class RadarRenderable {
-        <<interface SOLID ISP>>
-    }
-    class FuelCarrier {
-        <<interface SOLID ISP>>
-    }
-    class EvasiveCapable {
-        <<interface SOLID ISP>>
+        <<Capa Modelo - Entidad Dominio>>
     }
     class Radar {
-        <<Deteccion Fisica>>
+        <<Capa Modelo - Telemetría>>
     }
     class N2YOApiClient {
-        <<Cliente HTTP - SOLID SRP>>
+        <<Capa Modelo - Integración REST>>
     }
-    class N2YOJsonParser {
-        <<Parser JSON - SOLID SRP>>
-    }
-    class SpacecraftFactory {
-        <<Factoria - GRASP Creator y OCP>>
+    class TelemetryLogger {
+        <<Capa Modelo - Servicio Logging>>
     }
 
-    MainGUI o-- "1" SimulationEngine : delega acciones
-    MainGUI ..> RadarRenderable : renderiza en RadarPanel
-    MainGUI ..> EvasiveCapable : evade en CrisisDialogHandler
-    SimulationEngine *-- "0..*" OrbitalObject : rastrea
-    SimulationEngine ..> EvasiveCapable : ejecuta maniobra
-    SimulationEngine *-- "1" Radar : consulta proximidad
-    SimulationEngine ..> TelemetryLogger : registra eventos
-    TelemetryLogger ..> FuelCarrier : formatea tanque
-    SimulationEngine o-- "1" N2YOApiClient : actualiza coordenadas
-    N2YOApiClient *-- "1" N2YOJsonParser : delega parseo JSON
-    N2YOApiClient ..> SpacecraftFactory : solicita creacion
-    SpacecraftFactory ..> OrbitalObject : instancia
-    SpacecraftFactory ..> SpaceStation : inyecta config destruccion
-    RadarRenderable <|.. OrbitalObject : implements
-    FuelCarrier <|.. SpaceStation : implements`
+    Vista_MainGUI *-- Vista_Paneles : ensambla
+    Vista_MainGUI --> SimulationController : notifica eventos de usuario
+    SimulationController o-- "1" SimulationEngine : modifica estado de negocio
+    SimulationController --> Vista_MainGUI : actualiza datos en pantalla
+    SimulationController ..> CrisisController : delega chequeo de riesgo
+    CrisisController ..> Vista_CrisisDialog : solicita orden al usuario
+    CrisisController --> SimulationEngine : ejecuta evasión o impacto
+    SimulationEngine *-- "0..*" OrbitalObject : gestiona entidades
+    SimulationEngine *-- "1" Radar : calcula proximidad física
+    SimulationEngine o-- "1" N2YOApiClient : sincroniza satélites en vivo
+    SimulationEngine ..> TelemetryLogger : emite telemetría`
         ];
 
         let scale = 1;
