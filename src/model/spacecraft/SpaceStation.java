@@ -4,7 +4,7 @@ import model.components.FuelTank;
 import model.components.PercentageGauge;
 import model.geometry.GeoPosition;
 
-public class SpaceStation extends OrbitalObject implements FuelCarrier {
+public class SpaceStation extends OrbitalObject implements FuelCarrier, EvasiveCapable {
     private String stationType;
     private String imagenDestruida;
     private String textoDestruccion;
@@ -131,6 +131,19 @@ public class SpaceStation extends OrbitalObject implements FuelCarrier {
             getTemperature(),
             areSolarPanelsDeployed() ? "DESPLEGADOS (Cargando)" : "RETRAÍDOS (Consumo)"
         );
+    }
+
+    @Override
+    public boolean evade(double deltaLat, double deltaLng) {
+        if (fuelTank != null && fuelTank.getCurrentLevel() >= 15.0) {
+            fuelTank.consume(15.0); // Maniobra orbital de propulsores RCS (-15L de combustible)
+            if (getPosition() != null) {
+                getPosition().setLatitude(getPosition().getLatitude() + deltaLat);
+                getPosition().setLongitude(getPosition().getLongitude() + deltaLng);
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean refuelShip(Spacecraft ship) {
