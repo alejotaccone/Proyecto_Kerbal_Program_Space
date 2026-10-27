@@ -103,21 +103,18 @@ public class MissionController {
             CargoShip cargo = (CargoShip) craft;
             MissionState estado = cargo.getMissionState();
 
-            // A. Carguero en Rango de Acople: disparar el minijuego de precisión
+            // A. Carguero en Rango de Acople: disparar el minijuego de precisión interactivo
             if (estado == MissionState.EN_RANGO_DE_ACOPLE) {
                 cargo.setMissionState(MissionState.ACOPLE_EN_CURSO);
 
-                final int intentoActual = (CargoShip.MAX_DOCKING_ATTEMPTS - cargo.getDockingAttemptsRemaining() + 1);
                 final String nombreCarguero = cargo.getName();
                 final String nombreEstacion = (cargo.getTargetStation() != null) ? cargo.getTargetStation().getName() : "Estación";
 
                 alertQueue.encolarAlerta(() -> {
                     boolean acierto = DockingMinigameDialog.mostrarMinijuego(
                         parent,
-                        nombreCarguero,
-                        nombreEstacion,
-                        intentoActual,
-                        CargoShip.MAX_DOCKING_ATTEMPTS
+                        cargo,
+                        logConsola
                     );
 
                     if (acierto) {
@@ -128,19 +125,7 @@ public class MissionController {
                         ));
                         MissionDialogView.mostrarAcopleExitoso(parent, nombreCarguero, nombreEstacion);
                     } else {
-                        boolean puedeReintentar = cargo.procesarIntentoFallido();
-                        if (puedeReintentar) {
-                            logConsola.accept(String.format(
-                                "[MISIÓN]: Intento %d fallido para [%s]. Quedan %d intentos. Penalización de combustible aplicada.",
-                                intentoActual, nombreCarguero, cargo.getDockingAttemptsRemaining()
-                            ));
-                        } else {
-                            logConsola.accept(String.format(
-                                "[MISIÓN FATAL]: Se agotaron los 3 intentos de acople para [%s]. ¡Misión abortada!",
-                                nombreCarguero
-                            ));
-                            MissionDialogView.mostrarAcopleFallido(parent, nombreCarguero, nombreEstacion);
-                        }
+                        MissionDialogView.mostrarAcopleFallido(parent, nombreCarguero, nombreEstacion);
                     }
 
                     if (onRefreshUI != null) onRefreshUI.run();

@@ -1,6 +1,8 @@
 package test;
 
 import controller.AlertQueue;
+import java.util.ArrayList;
+import java.util.List;
 import controller.MissionController;
 import engine.SimulationEngine;
 import model.components.FuelTank;
@@ -202,6 +204,30 @@ public class ResupplyMissionCheck {
             System.out.println("[OK] Caso 5 - Validaciones de spawn: Rechazo si estación llena y límite estricto de máximo 3 cargueros activos simultáneos.");
         } else {
             System.err.println("[ERROR] Caso 5 - Error en validaciones de spawn: Llena=" + rechazoEstacionLlena + ", l1=" + l1 + ", l2=" + l2 + ", l3=" + l3 + ", Limite=" + rechazoLimite3);
+            fallos++;
+        }
+
+        // Caso 6: Radar no genera alerta de colisión para CargoShip
+        radar.Radar testRadar = new radar.Radar("TestCity", station3.getPosition(), 100.0);
+        List<model.spacecraft.OrbitalObject> listaConCarguero = new ArrayList<>();
+        listaConCarguero.add(station3);
+        listaConCarguero.add(cargo1);
+        List<String> alertasRadar = testRadar.detectCollisionRisks(listaConCarguero);
+        if (alertasRadar.isEmpty()) {
+            System.out.println("[OK] Caso 6 - Radar: CargoShip excluido exitosamente de alertas de colision.");
+        } else {
+            System.err.println("[ERROR] Caso 6 - Radar genero falsas alertas de colision para CargoShip: " + alertasRadar);
+            fallos++;
+        }
+
+        // Caso 7: Posicionamiento tactico en acople y tasa rapida de combustible
+        cargo1.posicionarEnAcople();
+        double dAcople = cargo1.distanceTo(station3);
+        boolean distanciaAcopleOk = (dAcople >= 5.0 && dAcople <= 15.0); // Cerca pero no superpuesto
+        if (distanciaAcopleOk && CargoShip.TRANSFER_RATE_FUEL_PER_TICK >= 100.0) {
+            System.out.println("[OK] Caso 7 - Posicionamiento de acople: Distancia tactica=" + String.format("%.2f", dAcople) + " km (no superpuesto) y tasa rapida (" + CargoShip.TRANSFER_RATE_FUEL_PER_TICK + " L/tick).");
+        } else {
+            System.err.println("[ERROR] Caso 7 - Distancia o tasa invalida: Distancia=" + dAcople + " km, Tasa=" + CargoShip.TRANSFER_RATE_FUEL_PER_TICK);
             fallos++;
         }
 

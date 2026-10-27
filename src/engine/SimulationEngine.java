@@ -9,6 +9,7 @@ import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceStation;
 import model.components.FuelTank;
 import model.spacecraft.CargoShip;
+import model.spacecraft.MissionState;
 import model.spacecraft.Spacecraft;
 import model.spacecraft.SpacecraftInfo;
 import radar.Radar;
@@ -111,14 +112,36 @@ public class SimulationEngine {
             // Regla de diseño: De la API N2YO SOLO se sincronizan las estaciones espaciales
             if (!(craft instanceof SpaceStation)) continue;
 
+            GeoPosition oldPos = new GeoPosition(craft.getPosition().getLatitude(), craft.getPosition().getLongitude(), craft.getPosition().getAltitude());
+
             GeoPosition updatedPos = apiClient.fetchRealSatellitePosition(
                     craft.getNoradId(), 
                     craft.getPosition()
             );
             if (updatedPos != null) {
+                double dLat = updatedPos.getLatitude() - oldPos.getLatitude();
+                double dLng = updatedPos.getLongitude() - oldPos.getLongitude();
+                double dAlt = updatedPos.getAltitude() - oldPos.getAltitude();
+
                 craft.getPosition().setLatitude(updatedPos.getLatitude());
                 craft.getPosition().setLongitude(updatedPos.getLongitude());
                 craft.getPosition().setAltitude(updatedPos.getAltitude());
+
+                // Sincronizar cargueros en el mismo marco orbital de la estación
+                for (OrbitalObject obj : trackedObjects) {
+                    if (obj instanceof CargoShip) {
+                        CargoShip cargo = (CargoShip) obj;
+                        if (cargo.getTargetStation() == craft) {
+                            if (cargo.getMissionState() != null && (cargo.getMissionState().isAcopladaOTransfiriendo() || cargo.getMissionState() == MissionState.COMPLETADA)) {
+                                cargo.posicionarEnAcople();
+                            } else if (cargo.getMissionState() == MissionState.EN_TRANSITO && cargo.getPosition() != null) {
+                                cargo.getPosition().setLatitude(cargo.getPosition().getLatitude() + dLat);
+                                cargo.getPosition().setLongitude(cargo.getPosition().getLongitude() + dLng);
+                                cargo.getPosition().setAltitude(cargo.getPosition().getAltitude() + dAlt);
+                            }
+                        }
+                    }
+                }
                 
                 actualizarPosicionRadar(craft);
             }
@@ -151,7 +174,6 @@ public class SimulationEngine {
 
     private void moverObjetos() {
         for (OrbitalObject craft : trackedObjects) {
-
             craft.move();
             actualizarPosicionRadar(craft);
         }
@@ -223,7 +245,6 @@ public class SimulationEngine {
 
         Spacecraft ship = (Spacecraft) targetObj;
         for (OrbitalObject craft : trackedObjects) {
-
             if (craft instanceof SpaceStation) {
                 SpaceStation station = (SpaceStation) craft;
                 if (station.refuelShip(ship)) {
@@ -312,7 +333,7 @@ public class SimulationEngine {
 
         GeoPosition posStation = station.getPosition();
         double angle = Math.random() * 2 * Math.PI;
-        double distKm = 90.0 + Math.random() * 70.0;
+        double distKm = 80.0 + Math.random() * 45.0;
         double degDist = distKm / 111.0;
         double spawnLat = posStation.getLatitude() + Math.cos(angle) * degDist;
         double spawnLng = posStation.getLongitude() + Math.sin(angle) * degDist;

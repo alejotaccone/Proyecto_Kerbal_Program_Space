@@ -90,11 +90,6 @@ public class SimulationController {
         // 4. Maniobra de Evasión Orbital
         vista.getControlPanel().addEvadeShipListener(e -> ejecutarManiobraEvasion());
 
-        // 5. Habilidad Especial de la Nave
-        vista.getControlPanel().addSpecialAbilityListener(e -> ejecutarHabilidadEspecial());
-
-        // 6. Recargar Combustible / Acople
-        vista.getControlPanel().addRefuelListener(e -> ejecutarRecargaCombustible());
 
         // 7. Generar Crisis (Inyectar Rogue Debris)
         vista.getControlPanel().addGenerarCrisisListener(e -> generarCrisis());

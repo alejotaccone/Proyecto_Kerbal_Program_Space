@@ -7,10 +7,10 @@ import javax.swing.*;
 import model.spacecraft.OrbitalObject;
 
 /**
- * Panel de configuración y acciones rápidas (WEST) del Dashboard Táctico.
- * Encapsula la selección de estación objetivo, API key, controles de simulación,
- * selector de naves, botones de maniobras y la leyenda del radar.
- * Diseñado con Alta Cohesión como componente independiente de UI.
+ * Panel de configuración y operaciones tácticas (WEST) del Dashboard.
+ * Permite seleccionar la estación objetivo, controlar la simulación,
+ * lanzar misiones de reabastecimiento, inyectar anomalías orbitales
+ * y ejecutar maniobras evasivas sobre naves individuales.
  */
 public class ControlPanel extends JPanel {
 
@@ -27,7 +27,6 @@ public class ControlPanel extends JPanel {
 
     // Controles de Configuración
     private JComboBox<String> cmbEstacion;
-    private JTextField txtApiKey;
     private JButton btnIniciar;
     private JButton btnDetener;
     private JButton btnCambiarEstacion;
@@ -36,13 +35,11 @@ public class ControlPanel extends JPanel {
     private JLabel lblEstado;
     private JLabel lblNavesDetectadas;
 
-    // Acciones sobre Naves
-    private JComboBox<String> cmbNaves;
-    private JButton btnEvadeShip;
-    private JButton btnSpecialAbility;
-    private JButton btnRefuel;
+    // Operaciones de Misión y Control de Flota
     private JButton btnLanzarCarguero;
     private JButton btnGenerarCrisis;
+    private JComboBox<String> cmbNaves;
+    private JButton btnEvadeShip;
 
     private boolean isUpdatingCombo = false;
 
@@ -59,8 +56,8 @@ public class ControlPanel extends JPanel {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(COLOR_PANEL_BG);
 
-        // ---- SECCIÓN: CONFIGURACIÓN DEL RADAR ----
-        panel.add(crearEtiquetaSeccion(">> OBJETIVO DEL CENTRO DE COMANDO"));
+        // ---- SECCIÓN: CONFIGURACIÓN DEL RADAR / ESTACIÓN OBJETIVO ----
+        panel.add(crearEtiquetaSeccion(">> CENTRO DE COMANDO ORBITAL"));
         panel.add(Box.createVerticalStrut(8));
 
         panel.add(crearEtiquetaCampo("Estación Espacial Objetivo:"));
@@ -77,14 +74,7 @@ public class ControlPanel extends JPanel {
         cmbEstacion.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         cmbEstacion.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(cmbEstacion);
-        panel.add(Box.createVerticalStrut(6));
-
-        panel.add(crearEtiquetaCampo("API Key N2YO:"));
-        txtApiKey = crearCampoTexto(api.ApiConfig.obtenerApiKey());
-        txtApiKey.setToolTipText("Ingresá tu API Key de N2YO o configurala en config.properties");
-        txtApiKey.setFont(new Font("Consolas", Font.PLAIN, 10));
-        panel.add(txtApiKey);
-        panel.add(Box.createVerticalStrut(12));
+        panel.add(Box.createVerticalStrut(10));
 
         btnIniciar = crearBoton(">> INICIAR SIMULACIÓN", COLOR_TEXT_PRIMARY);
         panel.add(btnIniciar);
@@ -100,7 +90,7 @@ public class ControlPanel extends JPanel {
         panel.add(btnCambiarEstacion);
         panel.add(Box.createVerticalStrut(15));
 
-        // ---- SECCIÓN: ESTADO ----
+        // ---- SECCIÓN: ESTADO DEL SISTEMA ----
         panel.add(crearEtiquetaSeccion(">> ESTADO DEL SISTEMA"));
         panel.add(Box.createVerticalStrut(6));
 
@@ -118,8 +108,24 @@ public class ControlPanel extends JPanel {
         panel.add(lblNavesDetectadas);
         panel.add(Box.createVerticalStrut(15));
 
-        // ---- SECCIÓN: ACCIONES RÁPIDAS ----
-        panel.add(crearEtiquetaSeccion(">> ACCIONES SOBRE NAVES"));
+        // ---- SECCIÓN: OPERACIONES DE MISIÓN ----
+        panel.add(crearEtiquetaSeccion(">> OPERACIONES DE MISIÓN"));
+        panel.add(Box.createVerticalStrut(8));
+
+        btnLanzarCarguero = crearBoton("[>] Lanzar Carguero", COLOR_ACCENT_ORANGE);
+        btnLanzarCarguero.setEnabled(false);
+        btnLanzarCarguero.setToolTipText("Despliega una nave de carga KPS para reabastecer de combustible y oxígeno a la estación.");
+        panel.add(btnLanzarCarguero);
+        panel.add(Box.createVerticalStrut(6));
+
+        btnGenerarCrisis = crearBoton("[!] Generar Anomalía", COLOR_ACCENT_RED);
+        btnGenerarCrisis.setEnabled(false);
+        btnGenerarCrisis.setToolTipText("Inyecta una anomalía cinética (Rogue Debris) en rumbo de impacto para probar defensas.");
+        panel.add(btnGenerarCrisis);
+        panel.add(Box.createVerticalStrut(15));
+
+        // ---- SECCIÓN: CONTROL DE FLOTA INDIVIDUAL ----
+        panel.add(crearEtiquetaSeccion(">> CONTROL DE FLOTA"));
         panel.add(Box.createVerticalStrut(8));
 
         panel.add(crearEtiquetaCampo("Seleccionar Nave:"));
@@ -134,27 +140,8 @@ public class ControlPanel extends JPanel {
 
         btnEvadeShip = crearBoton("[~] Maniobra Evasión", COLOR_ACCENT_YELLOW);
         btnEvadeShip.setEnabled(false);
+        btnEvadeShip.setToolTipText("Ordena una maniobra de propulsores de emergencia a la nave seleccionada.");
         panel.add(btnEvadeShip);
-        panel.add(Box.createVerticalStrut(4));
-
-        btnSpecialAbility = crearBoton("[*] Habilidad Especial", COLOR_ACCENT_CYAN);
-        btnSpecialAbility.setEnabled(false);
-        panel.add(btnSpecialAbility);
-        panel.add(Box.createVerticalStrut(4));
-
-        btnRefuel = crearBoton("[+] Acoplar y Recargar", COLOR_ACCENT_ORANGE);
-        btnRefuel.setEnabled(false);
-        panel.add(btnRefuel);
-        panel.add(Box.createVerticalStrut(6));
-        
-        btnLanzarCarguero = crearBoton("[>] Lanzar Carguero", COLOR_ACCENT_ORANGE);
-        btnLanzarCarguero.setEnabled(false);
-        panel.add(btnLanzarCarguero);
-        panel.add(Box.createVerticalStrut(4));
-
-        btnGenerarCrisis = crearBoton("[!] Generar Anomalía", COLOR_ACCENT_RED);
-        btnGenerarCrisis.setEnabled(false);
-        panel.add(btnGenerarCrisis);
         panel.add(Box.createVerticalStrut(15));
 
         // ---- SECCIÓN: LEYENDA DEL RADAR ----
@@ -193,21 +180,6 @@ public class ControlPanel extends JPanel {
         lbl.setForeground(COLOR_TEXT_DIM);
         lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
         return lbl;
-    }
-
-    private JTextField crearCampoTexto(String valorInicial) {
-        JTextField campo = new JTextField(valorInicial);
-        campo.setBackground(new Color(20, 28, 20));
-        campo.setForeground(COLOR_TEXT_PRIMARY);
-        campo.setCaretColor(COLOR_TEXT_PRIMARY);
-        campo.setFont(new Font("Consolas", Font.PLAIN, 13));
-        campo.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(COLOR_BORDER, 1),
-            BorderFactory.createEmptyBorder(5, 8, 5, 8)
-        ));
-        campo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
-        campo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        return campo;
     }
 
     private JButton crearBoton(String texto, Color colorTexto) {
@@ -308,11 +280,9 @@ public class ControlPanel extends JPanel {
     }
 
     public void habilitarAccionesNaves(boolean enabled) {
-        btnEvadeShip.setEnabled(enabled);
-        btnSpecialAbility.setEnabled(enabled);
-        btnRefuel.setEnabled(enabled);
         btnLanzarCarguero.setEnabled(enabled);
         btnGenerarCrisis.setEnabled(enabled);
+        btnEvadeShip.setEnabled(enabled);
     }
 
     public void setNavesRastreadasCount(int count) {
@@ -326,8 +296,12 @@ public class ControlPanel extends JPanel {
         return api.N2YOApiClient.NORAD_ISS;
     }
 
+    /**
+     * Resuelve la API Key de forma segura desde la configuración centralizada (ApiConfig).
+     * No expone la clave en texto plano en la interfaz visual.
+     */
     public String getApiKey() {
-        return txtApiKey.getText().trim();
+        return api.ApiConfig.obtenerApiKey();
     }
 
     public int getSelectedShipIndex() {
@@ -350,8 +324,6 @@ public class ControlPanel extends JPanel {
     public void addDetenerListener(ActionListener l) { btnDetener.addActionListener(l); }
     public void addCambiarEstacionListener(ActionListener l) { btnCambiarEstacion.addActionListener(l); }
     public void addEvadeShipListener(ActionListener l) { btnEvadeShip.addActionListener(l); }
-    public void addSpecialAbilityListener(ActionListener l) { btnSpecialAbility.addActionListener(l); }
-    public void addRefuelListener(ActionListener l) { btnRefuel.addActionListener(l); }
     public void addLanzarCargueroListener(ActionListener l) { btnLanzarCarguero.addActionListener(l); }
     public void addGenerarCrisisListener(ActionListener l) { btnGenerarCrisis.addActionListener(l); }
     public void addSeleccionarNaveListener(ActionListener l) { cmbNaves.addActionListener(l); }

@@ -11,13 +11,13 @@ import model.geometry.GeoPosition;
  */
 public class CargoShip extends Spacecraft {
 
-    public static final double DOCKING_DISTANCE_THRESHOLD_KM = 2.0;
+    public static final double DOCKING_DISTANCE_THRESHOLD_KM = 8.0;      // Umbral para maniobra de acople
     public static final int MAX_DOCKING_ATTEMPTS = 3;
     public static final double DEFAULT_PROPULSION_CONSUMPTION_PER_TICK = 0.8;
     public static final double FAILED_DOCKING_FUEL_PENALTY = 10.0;
-    public static final double TRANSFER_RATE_FUEL_PER_TICK = 45.0;     // Litros transferidos por tick
-    public static final double TRANSFER_RATE_OXYGEN_PER_TICK = 2.5;   // Porcentaje de oxígeno transferido por tick
-    public static final double FLIGHT_STEP_KM_PER_TICK = 18.0;          // Velocidad de aproximación por tick
+    public static final double TRANSFER_RATE_FUEL_PER_TICK = 120.0;     // Litros transferidos por tick
+    public static final double TRANSFER_RATE_OXYGEN_PER_TICK = 8.0;     // Porcentaje de oxígeno transferido por tick
+    public static final double FLIGHT_STEP_KM_PER_TICK = 35.0;          // Velocidad de aproximación táctica por tick
 
     private double cargoCapacityTons;
     private double currentCargoTons;
@@ -83,10 +83,26 @@ public class CargoShip extends Spacecraft {
         if (missionState == MissionState.EN_TRANSITO) {
             avanzarHaciaEstacion();
         } else if (missionState == MissionState.TRANSFIRIENDO) {
+            posicionarEnAcople();
             ejecutarPasoTransferencia();
         } else if (missionState == MissionState.ACOPLADA) {
-            // Manguera conectada; pasa automáticamente al flujo de suministros
+            posicionarEnAcople();
             iniciarTransferencia();
+        } else if (missionState == MissionState.COMPLETADA) {
+            posicionarEnAcople();
+        }
+    }
+
+    /**
+     * Fija la posición del carguero junto a la estación objetivo respetando un pequeño offset (~8 a 10 km)
+     * para que permanezca visiblemente acoplado, conectado por la manguera y clickeable en el radar sin superponerse.
+     */
+    public void posicionarEnAcople() {
+        if (targetStation != null && targetStation.getPosition() != null && getPosition() != null) {
+            GeoPosition stPos = targetStation.getPosition();
+            getPosition().setLatitude(stPos.getLatitude() - 0.06);
+            getPosition().setLongitude(stPos.getLongitude() - 0.06);
+            getPosition().setAltitude(stPos.getAltitude());
         }
     }
 
@@ -112,15 +128,16 @@ public class CargoShip extends Spacecraft {
         // 2. Calcular distancia 3D euclídea actual
         double distActualKm = distanceTo(targetStation);
 
-        // 3. Evaluar si ingresó al umbral de acople (< 2 km)
+        // 3. Evaluar si ingresó al umbral de acople (< 8 km)
         if (distActualKm <= DOCKING_DISTANCE_THRESHOLD_KM) {
             this.missionState = MissionState.EN_RANGO_DE_ACOPLE;
+            posicionarEnAcople();
             return;
         }
 
         // 4. Desplazamiento proporcional hacia la posición 3D de la estación
-        double paso = Math.min(FLIGHT_STEP_KM_PER_TICK, distActualKm - 1.0);
-        double factor = paso / distActualKm;
+        double paso = Math.min(FLIGHT_STEP_KM_PER_TICK, Math.max(1.0, distActualKm - (DOCKING_DISTANCE_THRESHOLD_KM * 0.5)));
+        double factor = Math.min(1.0, paso / distActualKm);
 
         double dLat = (targetStation.getPosition().getLatitude() - getPosition().getLatitude()) * factor;
         double dLng = (targetStation.getPosition().getLongitude() - getPosition().getLongitude()) * factor;
@@ -133,6 +150,7 @@ public class CargoShip extends Spacecraft {
         // Reevaluar proximidad post-movimiento
         if (distanceTo(targetStation) <= DOCKING_DISTANCE_THRESHOLD_KM) {
             this.missionState = MissionState.EN_RANGO_DE_ACOPLE;
+            posicionarEnAcople();
         }
     }
 
@@ -141,6 +159,7 @@ public class CargoShip extends Spacecraft {
      */
     public void registrarAcopleExitoso() {
         this.missionState = MissionState.ACOPLADA;
+        posicionarEnAcople();
     }
 
     /**
@@ -222,6 +241,7 @@ public class CargoShip extends Spacecraft {
             return false;
         } else {
             this.missionState = MissionState.EN_RANGO_DE_ACOPLE;
+            posicionarEnAcople();
             return true;
         }
     }

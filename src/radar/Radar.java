@@ -3,6 +3,7 @@ package radar;
 import java.util.ArrayList;
 import java.util.List;
 import model.geometry.GeoPosition;
+import model.spacecraft.CargoShip;
 import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceDebris;
 
@@ -19,6 +20,7 @@ public class Radar {
 
     /**
      * Evalúa potenciales riesgos de colisión o alertas entre objetos espaciales.
+     * Excluye deliberadamente los cargueros en maniobra de reabastecimiento hacia la estación.
      */
     public List<String> detectCollisionRisks(List<OrbitalObject> allObjects) {
         List<String> alerts = new ArrayList<>();
@@ -28,6 +30,11 @@ public class Radar {
             for (int j = i + 1; j < allObjects.size(); j++) {
                 OrbitalObject naveA = allObjects.get(i);
                 OrbitalObject naveB = allObjects.get(j);
+
+                // Excluir naves de carga: son maniobras controladas de acople, no colisiones hostiles
+                if (naveA instanceof CargoShip || naveB instanceof CargoShip) {
+                    continue;
+                }
 
                 double distance = naveA.distanceTo(naveB);
                 if (distance < 200.0) { // Menos de 200 km en órbita es alerta de colisión
