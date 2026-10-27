@@ -125,13 +125,20 @@ Desde la raíz del proyecto, ejecuta en la terminal:
 mkdir bin
 
 # Compilar todos los archivos fuente con codificación UTF-8 (incluye controller/)
-javac -encoding UTF-8 -d bin src/model/geometry/*.java src/model/components/*.java src/model/spacecraft/*.java src/radar/*.java src/api/*.java src/engine/*.java src/controller/*.java src/gui/*.java src/test/*.java src/Main.java
+javac -encoding UTF-8 -d bin src/model/geometry/*.java src/model/components/*.java src/model/spacecraft/*.java src/model/minigame/*.java src/radar/*.java src/api/*.java src/engine/*.java src/controller/*.java src/gui/*.java src/test/*.java src/Main.java
 ```
 
 ### 2. Ejecutar las Pruebas de Distancia 3D
 
 ```bash
+# Pruebas de distancia 3D ECEF
 java -cp bin test.GeoPositionCheck
+
+# Pruebas del minijuego de precisión
+java -cp bin test.PrecisionGaugeCheck
+
+# Pruebas de misiones de reabastecimiento y conservación de masa
+java -cp bin test.ResupplyMissionCheck
 ```
 
 ### 3. Ejecutar la Interfaz Gráfica (Recomendado)

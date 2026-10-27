@@ -40,6 +40,8 @@ public class SimulationController {
     private int tickCount = 0;
     private boolean estacionDestruida = false;
     private SpaceStation estacionDestruidaRef = null;
+    private AlertQueue alertQueue;
+    private MissionController missionController;
 
     public SimulationController(MainGUI vista) {
         this.vista = vista;
@@ -56,6 +58,19 @@ public class SimulationController {
             vista.getRadarPanel().avanzarBarrido();
             vista.getRadarPanel().repaint();
         });
+
+        alertQueue = new AlertQueue(
+            () -> {
+                simulationTimer.stop();
+                radarSweepTimer.stop();
+            },
+            () -> {
+                if (simulationRunning) {
+                    simulationTimer.start();
+                    radarSweepTimer.start();
+                }
+            }
+        );
     }
 
     // =========================================================================
@@ -83,6 +98,7 @@ public class SimulationController {
 
         // 7. Generar Crisis (Inyectar Rogue Debris)
         vista.getControlPanel().addGenerarCrisisListener(e -> generarCrisis());
+        vista.getControlPanel().addLanzarCargueroListener(e -> manejarLanzamientoCarguero());
 
         // 8. Selector de Nave en ComboBox
         vista.getControlPanel().addSeleccionarNaveListener(e -> {
@@ -153,6 +169,7 @@ public class SimulationController {
                     radarSweepTimer.start();
 
                     vista.getControlPanel().setEstadoOnline(true);
+                    missionController = new MissionController(engine, alertQueue, vista::logConsola);
                     actualizarComboNaves();
 
                     if (engine.getApiClient().tieneClaveConfigurada()) {
@@ -201,6 +218,7 @@ public class SimulationController {
                 actualizarComboNaves();
                 int navesCount = (engine.getTrackedObjects() != null) ? engine.getTrackedObjects().size() : 0;
                 vista.getControlPanel().setNavesRastreadasCount(navesCount);
+                missionController = new MissionController(engine, alertQueue, vista::logConsola);
                 vista.logConsola("[Sistema]: Radar reubicado a la nueva estación.");
             }
         };
@@ -342,6 +360,14 @@ public class SimulationController {
                         vista.getRadarPanel().repaint();
                     }
 
+                    if (missionController != null) {
+                        missionController.evaluarMisionesPorTick(vista, () -> {
+                            actualizarComboNaves();
+                            actualizarMonitorNave();
+                            vista.getRadarPanel().repaint();
+                        });
+                    }
+
                 } catch (Exception ex) {
                     vista.logConsola("[ERROR]: Fallo en tick #" + tickActual + ": " + ex.getMessage());
                 } finally {
@@ -414,6 +440,25 @@ public class SimulationController {
 
     public int getTickCount() {
         return tickCount;
+    }
+
+    public void manejarLanzamientoCarguero() {
+        if (!simulationRunning || engine == null) {
+            vista.logConsola("[AVISO DE MISIÓN]: Debes iniciar la simulación antes de lanzar un carguero.");
+            return;
+        }
+
+        if (missionController == null) {
+            missionController = new MissionController(engine, alertQueue, vista::logConsola);
+        }
+
+        int noradId = vista.getControlPanel().getSelectedNoradId();
+        boolean lanzado = missionController.lanzarCarguero(vista, noradId);
+        if (lanzado) {
+            actualizarComboNaves();
+            actualizarMonitorNave();
+            vista.getRadarPanel().repaint();
+        }
     }
 }
 
