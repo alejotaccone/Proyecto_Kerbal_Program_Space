@@ -7,7 +7,10 @@ import model.geometry.GeoPosition;
 import model.spacecraft.EvasiveCapable;
 import model.spacecraft.OrbitalObject;
 import model.spacecraft.SpaceStation;
+import model.components.FuelTank;
+import model.spacecraft.CargoShip;
 import model.spacecraft.Spacecraft;
+import model.spacecraft.SpacecraftInfo;
 import radar.Radar;
 
 public class SimulationEngine {
@@ -104,6 +107,10 @@ public class SimulationEngine {
     public void syncWithN2YO() {
         if (trackedObjects == null || trackedObjects.isEmpty()) return;
         for (OrbitalObject craft : trackedObjects) {
+
+            // Regla de diseño: De la API N2YO SOLO se sincronizan las estaciones espaciales
+            if (!(craft instanceof SpaceStation)) continue;
+
             GeoPosition updatedPos = apiClient.fetchRealSatellitePosition(
                     craft.getNoradId(), 
                     craft.getPosition()
@@ -144,6 +151,7 @@ public class SimulationEngine {
 
     private void moverObjetos() {
         for (OrbitalObject craft : trackedObjects) {
+
             craft.move();
             actualizarPosicionRadar(craft);
         }
@@ -215,6 +223,7 @@ public class SimulationEngine {
 
         Spacecraft ship = (Spacecraft) targetObj;
         for (OrbitalObject craft : trackedObjects) {
+
             if (craft instanceof SpaceStation) {
                 SpaceStation station = (SpaceStation) craft;
                 if (station.refuelShip(ship)) {
@@ -268,5 +277,56 @@ public class SimulationEngine {
 
     public int getMonitoredShipIndex() {
         return monitoredShipIndex;
+    }
+
+    private int cargoShipCounter = 0;
+
+    public SpaceStation getTargetStation() {
+        for (OrbitalObject craft : trackedObjects) {
+            if (craft instanceof SpaceStation) {
+                return (SpaceStation) craft;
+            }
+        }
+        return null;
+    }
+
+    public List<CargoShip> getActiveCargoShips() {
+        List<CargoShip> list = new ArrayList<>();
+        for (OrbitalObject craft : trackedObjects) {
+            if (craft instanceof CargoShip) {
+                CargoShip cargo = (CargoShip) craft;
+                if (!cargo.getMissionState().isFinalizada()) {
+                    list.add(cargo);
+                }
+            }
+        }
+        return list;
+    }
+
+    public CargoShip spawnCargoShip(SpaceStation station) {
+        if (station == null || station.getPosition() == null) return null;
+        cargoShipCounter++;
+        String idStr = String.format("%02d", cargoShipCounter);
+        String shipName = "KPS-Cargo-" + idStr;
+        SpacecraftInfo info = new SpacecraftInfo("CRG-" + idStr, shipName, 70000 + cargoShipCounter);
+
+        GeoPosition posStation = station.getPosition();
+        double angle = Math.random() * 2 * Math.PI;
+        double distKm = 90.0 + Math.random() * 70.0;
+        double degDist = distKm / 111.0;
+        double spawnLat = posStation.getLatitude() + Math.cos(angle) * degDist;
+        double spawnLng = posStation.getLongitude() + Math.sin(angle) * degDist;
+        double spawnAlt = posStation.getAltitude() + (Math.random() * 10.0 - 5.0);
+        GeoPosition spawnPos = new GeoPosition(spawnLat, spawnLng, spawnAlt);
+
+        FuelTank propulsionTank = new FuelTank(150.0, 120.0, 1.0);
+        double cargoFuel = 600.0;
+        double cargoOxygen = 35.0;
+        double cargoCapacityTons = 12.0;
+
+        CargoShip cargo = new CargoShip(info, spawnPos, propulsionTank, station, cargoFuel, cargoOxygen, cargoCapacityTons);
+        this.trackedObjects.add(cargo);
+        TelemetryLogger.printMessage("[MISIÓN]: Carguero [" + shipName + "] desplegado en órbita a " + String.format("%.1f", distKm) + " km de " + station.getName() + ".");
+        return cargo;
     }
 }

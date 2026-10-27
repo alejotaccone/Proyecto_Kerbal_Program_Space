@@ -36,6 +36,10 @@ public class FuelTank {
         return currentLevel <= 0;
     }
 
+    public boolean isFull() {
+        return currentLevel >= capacity;
+    }
+
     public double getCapacity() {
         return capacity;
     }
