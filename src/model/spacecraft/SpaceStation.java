@@ -78,7 +78,7 @@ public class SpaceStation extends OrbitalObject implements FuelCarrier, EvasiveC
      * Sistema de Soporte Vital y Control Ambiental (ECLSS / OGS).
      * Si los paneles solares están desplegados y la batería supera el 30%, se ejecuta la
      * electrólisis para regenerar oxígeno consumiendo un excedente leve de energía eléctrica.
-     * Si no hay energía, el oxígeno decae pasivamente por consumo de la tripulación.
+     * Si no hay energía o están replegados, el oxígeno decae pasivamente por consumo de la tripulación.
      */
     private void actualizarSoporteVital() {
         if (solarPanelsDeployed && batteryGauge.isAbove(30.0)) {
@@ -187,13 +187,20 @@ public class SpaceStation extends OrbitalObject implements FuelCarrier, EvasiveC
         return String.format("%.1f%% (Reserva Acople)", fuelTank != null ? fuelTank.getPercentage() : 0.0);
     }
     
-    // Getters de telemetría y subsistemas
+    // Getters y Setters de telemetría y subsistemas
     public double getOxygenLevel() { return oxygenGauge.getLevel(); }
     public double getBatteryLevel() { return batteryGauge.getLevel(); }
     public PercentageGauge getOxygenGauge() { return oxygenGauge; }
     public PercentageGauge getBatteryGauge() { return batteryGauge; }
     public double getTemperature() { return temperature; }
+
     public boolean areSolarPanelsDeployed() { return solarPanelsDeployed; }
+    public void setSolarPanelsDeployed(boolean solarPanelsDeployed) { this.solarPanelsDeployed = solarPanelsDeployed; }
+
+    public boolean toggleSolarPanels() {
+        this.solarPanelsDeployed = !this.solarPanelsDeployed;
+        return this.solarPanelsDeployed;
+    }
     
     public String getImagenDestruida() { return imagenDestruida; }
     public void setImagenDestruida(String imagenDestruida) { this.imagenDestruida = imagenDestruida; }

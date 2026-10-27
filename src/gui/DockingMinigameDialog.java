@@ -30,8 +30,8 @@ import model.spacecraft.CargoShip;
 
 /**
  * Diálogo modal interactivo para el minijuego de precisión de acople orbital.
- * Si el jugador falla un intento, presenta de inmediato el mensaje de error junto
- * con la imagen de acoplamiento fallido y transiciona fluidamente al siguiente intento.
+ * Si el jugador falla en los primeros intentos, se mantiene la imagen normal de aproximación
+ * y solo tras fallar el 3er intento se muestra la imagen de acoplamiento fallido.
  */
 public class DockingMinigameDialog {
 
@@ -90,7 +90,7 @@ public class DockingMinigameDialog {
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
         centerPanel.setOpaque(false);
 
-        // 1. Imagen de acoplamiento
+        // 1. Imagen de acoplamiento (normal)
         JLabel lblImagen = new JLabel();
         lblImagen.setAlignmentX(Component.CENTER_ALIGNMENT);
         lblImagen.setBorder(BorderFactory.createLineBorder(new Color(0, 80, 40), 1));
@@ -156,33 +156,25 @@ public class DockingMinigameDialog {
                 } else {
                     boolean puedeReintentar = cargo.procesarIntentoFallido();
 
-                    ImageIcon imgFallo = ShipImageLoader.obtenerImageIconEscalado("CargoShipProgress_AcoplamientoFallido.jpg", 400, 200);
-                    if (imgFallo != null) {
-                        lblImagen.setIcon(imgFallo);
-                    }
-
                     if (puedeReintentar) {
-                        lblFeedback.setText(String.format("¡ERROR! Fallo en intento %d (-10L Combustible). Preparando reintento...", intentoActual[0]));
+                        // En fallos 1 y 2, se mantiene la imagen normal y solo se notifica el fallo
+                        lblFeedback.setText(String.format("¡FALLO DE ALINEACIÓN! Intento %d fallido (-10L Combustible). Preparando reintento...", intentoActual[0]));
                         lblFeedback.setForeground(new Color(255, 80, 80));
 
                         if (logConsola != null) {
                             logConsola.accept(String.format(
-                                "[MISIÓN]: ¡Error de alineación en intento %d para [%s]! Penalización -10L aplicada. Quedan %d intentos.",
+                                "[MISIÓN]: ¡Fallo de alineación en intento %d para [%s]! Penalización -10L aplicada. Quedan %d intentos.",
                                 intentoActual[0], nombreCarguero, cargo.getDockingAttemptsRemaining()
                             ));
                         }
 
-                        // Pausa breve de 1.2 segundos para mostrar el error e iniciar el 2do intento de inmediato
+                        // Pausa breve de 1.2 segundos para mostrar el error e iniciar el 2do/3er intento de inmediato
                         Timer retryTimer = new Timer(1200, evt -> {
                             intentoActual[0] = CargoShip.MAX_DOCKING_ATTEMPTS - cargo.getDockingAttemptsRemaining() + 1;
                             lblSubtitle.setText(String.format(
                                 "Carguero: %s  |  Estación: %s  |  Intento: %d de %d",
                                 nombreCarguero, nombreEstacion, intentoActual[0], maxIntentos
                             ));
-                            ImageIcon imgAcop = ShipImageLoader.obtenerImageIconEscalado("CargoShipProgress_Acoplamiento.jpg", 400, 200);
-                            if (imgAcop != null) {
-                                lblImagen.setIcon(imgAcop);
-                            }
                             gauge.ajustarDificultadPorIntento(intentoActual[0]);
                             gauge.reiniciar();
                             lblFeedback.setText("Presiona [BARRA ESPACIADORA] para acoplar en la zona verde");
@@ -195,6 +187,13 @@ public class DockingMinigameDialog {
                         retryTimer.start();
                     } else {
                         resultado[0] = false;
+
+                        // Solo al fallar el 3er intento se muestra la imagen de acoplamiento fallido
+                        ImageIcon imgFallo = ShipImageLoader.obtenerImageIconEscalado("CargoShipProgress_AcoplamientoFallido.jpg", 400, 200);
+                        if (imgFallo != null) {
+                            lblImagen.setIcon(imgFallo);
+                        }
+
                         lblFeedback.setText("¡ERROR FATAL! Intentos de acople agotados. Misión abortada.");
                         lblFeedback.setForeground(new Color(255, 50, 50));
 
@@ -325,12 +324,17 @@ public class DockingMinigameDialog {
                     closeTimer.setRepeats(false);
                     closeTimer.start();
                 } else {
-                    ImageIcon imgFallo = ShipImageLoader.obtenerImageIconEscalado("CargoShipProgress_AcoplamientoFallido.jpg", 400, 200);
-                    if (imgFallo != null) {
-                        lblImagen.setIcon(imgFallo);
+                    if (intentoActual >= maxIntentos) {
+                        ImageIcon imgFallo = ShipImageLoader.obtenerImageIconEscalado("CargoShipProgress_AcoplamientoFallido.jpg", 400, 200);
+                        if (imgFallo != null) {
+                            lblImagen.setIcon(imgFallo);
+                        }
+                        lblFeedback.setText("¡ERROR FATAL! Intentos agotados.");
+                        lblFeedback.setForeground(new Color(255, 50, 50));
+                    } else {
+                        lblFeedback.setText(String.format("¡FALLO! Intento %d de %d", intentoActual, maxIntentos));
+                        lblFeedback.setForeground(new Color(255, 80, 80));
                     }
-                    lblFeedback.setText(String.format("¡ERROR! Fallo en intento %d de %d", intentoActual, maxIntentos));
-                    lblFeedback.setForeground(new Color(255, 80, 80));
                     Timer closeTimer = new Timer(1500, evt -> dialog.dispose());
                     closeTimer.setRepeats(false);
                     closeTimer.start();

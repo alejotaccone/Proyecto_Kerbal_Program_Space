@@ -9,6 +9,7 @@ import model.spacecraft.OrbitalObject;
 /**
  * Panel de configuración y operaciones tácticas (WEST) del Dashboard.
  * Permite seleccionar la estación objetivo, controlar la simulación,
+ * desplegar/replegar paneles solares para carga de batería y O2,
  * lanzar misiones de reabastecimiento, inyectar anomalías orbitales
  * y ejecutar maniobras evasivas sobre naves individuales.
  */
@@ -34,6 +35,9 @@ public class ControlPanel extends JPanel {
     // Estado del Sistema
     private JLabel lblEstado;
     private JLabel lblNavesDetectadas;
+
+    // Subsistemas de Estación
+    private JButton btnPanelesSolares;
 
     // Operaciones de Misión y Control de Flota
     private JButton btnLanzarCarguero;
@@ -108,13 +112,23 @@ public class ControlPanel extends JPanel {
         panel.add(lblNavesDetectadas);
         panel.add(Box.createVerticalStrut(15));
 
+        // ---- SECCIÓN: SUBSISTEMAS DE ESTACIÓN ----
+        panel.add(crearEtiquetaSeccion(">> SUBSISTEMAS DE ESTACIÓN"));
+        panel.add(Box.createVerticalStrut(8));
+
+        btnPanelesSolares = crearBoton("[☼] Paneles: DESPLEGADOS (Cargando)", COLOR_TEXT_PRIMARY);
+        btnPanelesSolares.setEnabled(false);
+        btnPanelesSolares.setToolTipText("Despliega o repliega los paneles solares para cargar la batería e impulsar el generador de O2 por electrólisis.");
+        panel.add(btnPanelesSolares);
+        panel.add(Box.createVerticalStrut(15));
+
         // ---- SECCIÓN: OPERACIONES DE MISIÓN ----
         panel.add(crearEtiquetaSeccion(">> OPERACIONES DE MISIÓN"));
         panel.add(Box.createVerticalStrut(8));
 
         btnLanzarCarguero = crearBoton("[>] Lanzar Carguero", COLOR_ACCENT_ORANGE);
         btnLanzarCarguero.setEnabled(false);
-        btnLanzarCarguero.setToolTipText("Despliega una nave de carga KPS para reabastecer de combustible y oxígeno a la estación.");
+        btnLanzarCarguero.setToolTipText("Despliega una nave de carga KPS para reabastecer de combustible a la estación.");
         panel.add(btnLanzarCarguero);
         panel.add(Box.createVerticalStrut(6));
 
@@ -280,9 +294,20 @@ public class ControlPanel extends JPanel {
     }
 
     public void habilitarAccionesNaves(boolean enabled) {
+        btnPanelesSolares.setEnabled(enabled);
         btnLanzarCarguero.setEnabled(enabled);
         btnGenerarCrisis.setEnabled(enabled);
         btnEvadeShip.setEnabled(enabled);
+    }
+
+    public void actualizarEstadoPaneles(boolean desplegados) {
+        if (desplegados) {
+            btnPanelesSolares.setText("[☼] Paneles: DESPLEGADOS (Cargando)");
+            btnPanelesSolares.setForeground(COLOR_TEXT_PRIMARY);
+        } else {
+            btnPanelesSolares.setText("[○] Paneles: REPLEGADOS (Consumo)");
+            btnPanelesSolares.setForeground(COLOR_ACCENT_YELLOW);
+        }
     }
 
     public void setNavesRastreadasCount(int count) {
@@ -323,6 +348,7 @@ public class ControlPanel extends JPanel {
     public void addIniciarListener(ActionListener l) { btnIniciar.addActionListener(l); }
     public void addDetenerListener(ActionListener l) { btnDetener.addActionListener(l); }
     public void addCambiarEstacionListener(ActionListener l) { btnCambiarEstacion.addActionListener(l); }
+    public void addPanelesSolaresListener(ActionListener l) { btnPanelesSolares.addActionListener(l); }
     public void addEvadeShipListener(ActionListener l) { btnEvadeShip.addActionListener(l); }
     public void addLanzarCargueroListener(ActionListener l) { btnLanzarCarguero.addActionListener(l); }
     public void addGenerarCrisisListener(ActionListener l) { btnGenerarCrisis.addActionListener(l); }
@@ -331,5 +357,6 @@ public class ControlPanel extends JPanel {
     public JButton getBtnIniciar() { return btnIniciar; }
     public JButton getBtnDetener() { return btnDetener; }
     public JButton getBtnCambiarEstacion() { return btnCambiarEstacion; }
+    public JButton getBtnPanelesSolares() { return btnPanelesSolares; }
     public JButton getBtnLanzarCarguero() { return btnLanzarCarguero; }
 }

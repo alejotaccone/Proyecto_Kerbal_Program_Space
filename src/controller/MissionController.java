@@ -124,6 +124,11 @@ public class MissionController {
                         ));
                         MissionDialogView.mostrarAcopleExitoso(parent, nombreCarguero, nombreEstacion);
                     } else {
+                        engine.removeShip(cargo);
+                        logConsola.accept(String.format(
+                            "[MISIÓN]: Carguero [%s] retirado de órbita tras fallar los 3 intentos de acople.",
+                            nombreCarguero
+                        ));
                         MissionDialogView.mostrarAcopleFallido(parent, nombreCarguero, nombreEstacion);
                     }
 

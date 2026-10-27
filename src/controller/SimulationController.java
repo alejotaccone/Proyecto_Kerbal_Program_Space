@@ -94,6 +94,7 @@ public class SimulationController {
         // 7. Generar Crisis (Inyectar Rogue Debris)
         vista.getControlPanel().addGenerarCrisisListener(e -> generarCrisis());
         vista.getControlPanel().addLanzarCargueroListener(e -> manejarLanzamientoCarguero());
+        vista.getControlPanel().addPanelesSolaresListener(e -> alternarPanelesSolares());
 
         // 8. Selector de Nave en ComboBox
         vista.getControlPanel().addSeleccionarNaveListener(e -> {
@@ -166,6 +167,10 @@ public class SimulationController {
                     vista.getControlPanel().setEstadoOnline(true);
                     missionController = new MissionController(engine, alertQueue, vista::logConsola);
                     actualizarComboNaves();
+                    SpaceStation station = engine.getTargetStation();
+                    if (station != null) {
+                        vista.getControlPanel().actualizarEstadoPaneles(station.areSolarPanelsDeployed());
+                    }
 
                     if (engine.getApiClient().tieneClaveConfigurada()) {
                         vista.logConsola("[Sistema]: ¡Conexión establecida con la estación vía N2YO en vivo!");
@@ -213,11 +218,31 @@ public class SimulationController {
                 actualizarComboNaves();
                 int navesCount = (engine.getTrackedObjects() != null) ? engine.getTrackedObjects().size() : 0;
                 vista.getControlPanel().setNavesRastreadasCount(navesCount);
+                SpaceStation station = engine.getTargetStation();
+                if (station != null) {
+                    vista.getControlPanel().actualizarEstadoPaneles(station.areSolarPanelsDeployed());
+                }
                 missionController = new MissionController(engine, alertQueue, vista::logConsola);
                 vista.logConsola("[Sistema]: Radar reubicado a la nueva estación.");
             }
         };
         worker.execute();
+    }
+
+    public void alternarPanelesSolares() {
+        if (engine == null) return;
+        SpaceStation station = engine.getTargetStation();
+        if (station != null) {
+            boolean desplegados = station.toggleSolarPanels();
+            vista.getControlPanel().actualizarEstadoPaneles(desplegados);
+            if (desplegados) {
+                vista.logConsola("[SISTEMA]: Paneles solares de [" + station.getName() + "] DESPLEGADOS. Carga fotovoltaica y electrólisis ECLSS activadas.");
+            } else {
+                vista.logConsola("[SISTEMA]: Paneles solares de [" + station.getName() + "] REPLEGADOS. Operando con reservas de batería (electrólisis pausada).");
+            }
+            actualizarMonitorNave();
+            vista.getRadarPanel().repaint();
+        }
     }
 
     public void ejecutarManiobraEvasion() {
