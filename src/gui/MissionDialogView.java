@@ -67,7 +67,7 @@ public class MissionDialogView {
             "<table style='margin: 0 auto; color: #FFFFFF; font-family: Consolas; font-size: 11px;'>" +
             "<tr><td align='right'>Combustible suministrado:</td><td align='left'><b style='color: #FFB400;'>+%.1f L</b></td></tr>" +
             "</table><br>" +
-            "El carguero <b style='color: #FFB400;'>[%s]</b> ha desacoplado de manera segura y completó su ciclo de misión." +
+            "El carguero <b style='color: #FFB400;'>[%s]</b> se ha desacoplado exitosamente de la estación y procedió a su desorbitado controlado (retirado del radar)." +
             "</div></html>",
             estacion, fuelTransferido, carguero
         );

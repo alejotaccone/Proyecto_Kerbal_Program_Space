@@ -50,7 +50,7 @@ public class ControlPanel extends JPanel {
     public ControlPanel() {
         super(new BorderLayout());
         setBackground(COLOR_PANEL_BG);
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 4));
 
         inicializarComponentes();
     }
@@ -116,7 +116,7 @@ public class ControlPanel extends JPanel {
         panel.add(crearEtiquetaSeccion(">> SUBSISTEMAS DE ESTACIÓN"));
         panel.add(Box.createVerticalStrut(8));
 
-        btnPanelesSolares = crearBoton("[☼] Paneles: DESPLEGADOS (Cargando)", COLOR_TEXT_PRIMARY);
+        btnPanelesSolares = crearBoton("[☼] Paneles: DESPLEGADOS", COLOR_TEXT_PRIMARY);
         btnPanelesSolares.setEnabled(false);
         btnPanelesSolares.setToolTipText("Despliega o repliega los paneles solares para cargar la batería e impulsar el generador de O2 por electrólisis.");
         panel.add(btnPanelesSolares);
@@ -175,6 +175,34 @@ public class ControlPanel extends JPanel {
         scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
+        // Barra de desplazamiento compacta y estilizada con temática espacial
+        JScrollBar vBar = scroll.getVerticalScrollBar();
+        vBar.setPreferredSize(new Dimension(8, 0));
+        vBar.setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                this.thumbColor = new Color(0, 100, 60);
+                this.thumbHighlightColor = new Color(0, 180, 100);
+                this.trackColor = new Color(10, 18, 12);
+            }
+            @Override
+            protected JButton createDecreaseButton(int orientation) {
+                return crearBotonInvisible();
+            }
+            @Override
+            protected JButton createIncreaseButton(int orientation) {
+                return crearBotonInvisible();
+            }
+            private JButton crearBotonInvisible() {
+                JButton b = new JButton();
+                b.setPreferredSize(new Dimension(0, 0));
+                b.setMinimumSize(new Dimension(0, 0));
+                b.setMaximumSize(new Dimension(0, 0));
+                b.setVisible(false);
+                return b;
+            }
+        });
+
         add(scroll, BorderLayout.CENTER);
     }
 
@@ -198,17 +226,17 @@ public class ControlPanel extends JPanel {
 
     private JButton crearBoton(String texto, Color colorTexto) {
         JButton btn = new JButton(texto);
-        btn.setFont(new Font("Consolas", Font.BOLD, 12));
+        btn.setFont(new Font("Consolas", Font.BOLD, 11));
         btn.setForeground(colorTexto);
         btn.setBackground(COLOR_BUTTON_BG);
         btn.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(COLOR_BORDER, 1),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            BorderFactory.createEmptyBorder(7, 8, 7, 8)
         ));
         btn.setFocusPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
 
         btn.addMouseListener(new MouseAdapter() {
             @Override
@@ -302,10 +330,10 @@ public class ControlPanel extends JPanel {
 
     public void actualizarEstadoPaneles(boolean desplegados) {
         if (desplegados) {
-            btnPanelesSolares.setText("[☼] Paneles: DESPLEGADOS (Cargando)");
+            btnPanelesSolares.setText("[☼] Paneles: DESPLEGADOS");
             btnPanelesSolares.setForeground(COLOR_TEXT_PRIMARY);
         } else {
-            btnPanelesSolares.setText("[○] Paneles: REPLEGADOS (Consumo)");
+            btnPanelesSolares.setText("[○] Paneles: REPLEGADOS");
             btnPanelesSolares.setForeground(COLOR_ACCENT_YELLOW);
         }
     }

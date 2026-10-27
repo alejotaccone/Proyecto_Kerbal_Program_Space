@@ -71,14 +71,14 @@ public class MainGUI extends JFrame {
         radarWrapper.add(radarPanel, BorderLayout.CENTER);
 
         splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controlPanel, radarWrapper);
-        splitPane.setDividerLocation(340);
+        splitPane.setDividerLocation(330);
         splitPane.setDividerSize(6);
         splitPane.setResizeWeight(0.0);
         splitPane.setContinuousLayout(true);
         splitPane.setBackground(COLOR_BG_DARK);
         splitPane.setBorder(null);
 
-        controlPanel.setMinimumSize(new Dimension(280, 0));
+        controlPanel.setMinimumSize(new Dimension(305, 0));
         radarWrapper.setMinimumSize(new Dimension(400, 0));
         estilizarSplitPane(splitPane);
 

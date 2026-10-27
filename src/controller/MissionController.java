@@ -156,11 +156,15 @@ public class MissionController {
                 final String nombreEstacion = (cargo.getTargetStation() != null) ? cargo.getTargetStation().getName() : "Estación";
                 final double fuel = cargo.getTotalFuelTransferred();
 
-                alertQueue.encolarAlerta(() -> MissionDialogView.mostrarMisionCompletada(
-                    parent, nombreCarguero, nombreEstacion, fuel
-                ));
+                alertQueue.encolarAlerta(() -> {
+                    MissionDialogView.mostrarMisionCompletada(
+                        parent, nombreCarguero, nombreEstacion, fuel
+                    );
+                    engine.removeShip(cargo);
+                    if (onRefreshUI != null) onRefreshUI.run();
+                });
                 logConsola.accept(String.format(
-                    "[MISIÓN EXITOSA]: Reabastecimiento completado por [%s]. Suministrados: %.1f L de combustible a [%s].",
+                    "[MISIÓN EXITOSA]: Reabastecimiento completado por [%s]. Suministrados: %.1f L a [%s]. Carguero desacoplado y desorbitado.",
                     nombreCarguero, fuel, nombreEstacion
                 ));
             }
