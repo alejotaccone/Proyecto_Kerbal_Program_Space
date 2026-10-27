@@ -4,9 +4,9 @@ import model.components.FuelTank;
 import model.geometry.GeoPosition;
 
 /**
- * Representa una nave de transporte y reabastecimiento espacial.
+ * Representa una nave de transporte y reabastecimiento de combustible orbital.
  * Aplica el patrón Máquina de Estados para controlar el ciclo de vida de la misión
- * (tránsito, aproximación, acople, transferencia de combustible/oxígeno y finalización).
+ * (tránsito, aproximación, acople, transferencia de combustible y finalización).
  * Cumple con el principio de Experto en Información encapsulando la navegación y la transferencia.
  */
 public class CargoShip extends Spacecraft {
@@ -16,7 +16,6 @@ public class CargoShip extends Spacecraft {
     public static final double DEFAULT_PROPULSION_CONSUMPTION_PER_TICK = 0.8;
     public static final double FAILED_DOCKING_FUEL_PENALTY = 10.0;
     public static final double TRANSFER_RATE_FUEL_PER_TICK = 120.0;     // Litros transferidos por tick
-    public static final double TRANSFER_RATE_OXYGEN_PER_TICK = 8.0;     // Porcentaje de oxígeno transferido por tick
     public static final double FLIGHT_STEP_KM_PER_TICK = 35.0;          // Velocidad de aproximación táctica por tick
 
     private double cargoCapacityTons;
@@ -28,25 +27,22 @@ public class CargoShip extends Spacecraft {
     private String abortReason;
     private int dockingAttemptsRemaining;
 
-    // Carga útil segregada para transferencia (Combustible y Oxígeno)
+    // Carga útil de combustible para transferencia
     private double cargoFuel;
     private double maxCargoFuel;
-    private double cargoOxygen;
-    private double maxCargoOxygen;
 
-    // Métricas de transferencia acumuladas (conservación de masa)
+    // Métrica de combustible entregado acumulado (conservación de masa)
     private double totalFuelTransferred;
-    private double totalOxygenTransferred;
 
     /**
      * Constructor estándar de compatibilidad.
      */
     public CargoShip(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank, double cargoCapacityTons) {
-        this(info, position, fuelTank, null, cargoCapacityTons * 40.0, 30.0, cargoCapacityTons);
+        this(info, position, fuelTank, null, cargoCapacityTons * 40.0, cargoCapacityTons);
     }
 
     /**
-     * Constructor completo para misiones de reabastecimiento guiadas hacia una estación.
+     * Constructor principal para misiones de reabastecimiento de combustible hacia una estación.
      */
     public CargoShip(
             SpacecraftInfo info,
@@ -54,7 +50,6 @@ public class CargoShip extends Spacecraft {
             FuelTank propulsionFuelTank,
             SpaceStation targetStation,
             double cargoFuel,
-            double cargoOxygen,
             double cargoCapacityTons) {
         super(info, position, propulsionFuelTank, 24000.0, "CargoShipProgress.jpg");
         this.targetStation = targetStation;
@@ -63,14 +58,25 @@ public class CargoShip extends Spacecraft {
 
         this.cargoFuel = Math.max(0.0, cargoFuel);
         this.maxCargoFuel = this.cargoFuel;
-        this.cargoOxygen = Math.max(0.0, cargoOxygen);
-        this.maxCargoOxygen = this.cargoOxygen;
 
         this.missionState = (targetStation != null) ? MissionState.EN_TRANSITO : MissionState.COMPLETADA;
         this.abortReason = "";
         this.dockingAttemptsRemaining = MAX_DOCKING_ATTEMPTS;
         this.totalFuelTransferred = 0.0;
-        this.totalOxygenTransferred = 0.0;
+    }
+
+    /**
+     * Constructor sobrecargado de compatibilidad anterior (ignora parámetro de oxígeno).
+     */
+    public CargoShip(
+            SpacecraftInfo info,
+            GeoPosition position,
+            FuelTank propulsionFuelTank,
+            SpaceStation targetStation,
+            double cargoFuel,
+            double cargoOxygenIgnored,
+            double cargoCapacityTons) {
+        this(info, position, propulsionFuelTank, targetStation, cargoFuel, cargoCapacityTons);
     }
 
     @Override
@@ -163,7 +169,7 @@ public class CargoShip extends Spacecraft {
     }
 
     /**
-     * Inicia el bombeo de suministros a la estación acoplada.
+     * Inicia el bombeo de combustible a la estación acoplada.
      */
     public void iniciarTransferencia() {
         if (missionState == MissionState.ACOPLADA) {
@@ -172,15 +178,14 @@ public class CargoShip extends Spacecraft {
     }
 
     /**
-     * Ejecuta una unidad de transferencia de suministros por tick conservando estrictamente la masa.
+     * Ejecuta una unidad de transferencia de combustible por tick conservando estrictamente la masa.
      */
     public void ejecutarPasoTransferencia() {
         if (targetStation == null || missionState != MissionState.TRANSFIRIENDO) return;
 
         boolean combustibleTransferido = false;
-        boolean oxigenoTransferido = false;
 
-        // ---- 1. Transferencia de Combustible ----
+        // ---- Transferencia de Combustible ----
         FuelTank tankEstacion = targetStation.getFuelTank();
         if (tankEstacion != null && cargoFuel > 0.0) {
             double espacioDisponible = Math.max(0.0, tankEstacion.getCapacity() - tankEstacion.getCurrentLevel());
@@ -194,31 +199,15 @@ public class CargoShip extends Spacecraft {
             }
         }
 
-        // ---- 2. Transferencia de Oxígeno ----
-        if (targetStation.getOxygenGauge() != null && cargoOxygen > 0.0) {
-            double nivelActual = targetStation.getOxygenLevel();
-            double espacioDisponibleO2 = Math.max(0.0, 100.0 - nivelActual);
-            double cantOxigeno = Math.min(cargoOxygen, Math.min(TRANSFER_RATE_OXYGEN_PER_TICK, espacioDisponibleO2));
-
-            if (cantOxigeno > 0.0) {
-                cargoOxygen -= cantOxigeno;
-                totalOxygenTransferred += cantOxigeno;
-                targetStation.getOxygenGauge().increase(cantOxigeno);
-                oxigenoTransferido = true;
-            }
-        }
-
         // Actualizar estimación de carga útil en toneladas
-        double porcentajeRestante = (maxCargoFuel > 0 || maxCargoOxygen > 0)
-                ? (cargoFuel + cargoOxygen * 10.0) / (maxCargoFuel + maxCargoOxygen * 10.0)
-                : 0.0;
+        double porcentajeRestante = (maxCargoFuel > 0) ? (cargoFuel / maxCargoFuel) : 0.0;
         this.currentCargoTons = this.cargoCapacityTons * Math.max(0.0, Math.min(1.0, porcentajeRestante));
 
-        // ---- 3. Evaluación de Finalización de la Misión ----
-        boolean cargoAgotada = (cargoFuel <= 0.001 && cargoOxygen <= 0.001);
-        boolean estacionLlena = (tankEstacion != null && tankEstacion.isFull()) && (targetStation.getOxygenLevel() >= 99.9);
+        // ---- Evaluación de Finalización de la Misión ----
+        boolean cargoAgotada = (cargoFuel <= 0.001);
+        boolean estacionLlena = (tankEstacion != null && tankEstacion.isFull());
 
-        if (cargoAgotada || estacionLlena || (!combustibleTransferido && !oxigenoTransferido && (cargoFuel <= 0.001 || tankEstacion.isFull()) && (cargoOxygen <= 0.001 || targetStation.getOxygenLevel() >= 99.9))) {
+        if (cargoAgotada || estacionLlena || (!combustibleTransferido && (cargoFuel <= 0.001 || tankEstacion.isFull()))) {
             completarMision();
         }
     }
@@ -267,7 +256,7 @@ public class CargoShip extends Spacecraft {
     @Override
     public String performSpecialAbility() {
         if (missionState.isAcopladaOTransfiriendo()) {
-            return "Nave [" + getName() + "] está acoplada a " + targetStation.getName() + " transfiriendo suministros vitales.";
+            return "Nave [" + getName() + "] está acoplada a " + targetStation.getName() + " transfiriendo combustible.";
         }
         if (currentCargoTons > 5.0) {
             currentCargoTons -= 5.0;
@@ -304,9 +293,8 @@ public class CargoShip extends Spacecraft {
 
         sb.append("\n--- CARGA TRANSFERIBLE ---\n");
         sb.append(String.format("Fuel Carga:  %.1f / %.1f L\n", cargoFuel, maxCargoFuel));
-        sb.append(String.format("O2 Carga:    %.1f / %.1f %%\n", cargoOxygen, maxCargoOxygen));
-        if (totalFuelTransferred > 0 || totalOxygenTransferred > 0) {
-            sb.append(String.format("Entregado:   %.1f L Fuel | %.1f %% O2\n", totalFuelTransferred, totalOxygenTransferred));
+        if (totalFuelTransferred > 0) {
+            sb.append(String.format("Entregado:   %.1f L Fuel\n", totalFuelTransferred));
         }
 
         sb.append("\n--- COMBUSTIBLE DE NAVEGACIÓN ---\n");
@@ -351,11 +339,11 @@ public class CargoShip extends Spacecraft {
     }
 
     public double getCargoOxygen() {
-        return cargoOxygen;
+        return 0.0;
     }
 
     public double getMaxCargoOxygen() {
-        return maxCargoOxygen;
+        return 0.0;
     }
 
     public double getTotalFuelTransferred() {
@@ -363,7 +351,7 @@ public class CargoShip extends Spacecraft {
     }
 
     public double getTotalOxygenTransferred() {
-        return totalOxygenTransferred;
+        return 0.0;
     }
 
     public double getCargoCapacityTons() {

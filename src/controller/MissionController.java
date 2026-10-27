@@ -65,12 +65,11 @@ public class MissionController {
             return false;
         }
 
-        // 3. Validación de suministros de la estación (no lanzar si ya está al 100%)
+        // 3. Validación de suministros de la estación (no lanzar si ya tiene el tanque lleno)
         boolean combustibleLleno = (station.getFuelTank() != null && station.getFuelTank().isFull());
-        boolean oxigenoLleno = (station.getOxygenLevel() >= 99.9);
-        if (combustibleLleno && oxigenoLleno) {
+        if (combustibleLleno) {
             logConsola.accept(String.format(
-                "[AVISO DE MISIÓN]: La estación [%s] ya tiene sus reservas al 100%% (no requiere reabastecimiento).",
+                "[AVISO DE MISIÓN]: La estación [%s] ya tiene sus tanques de combustible al 100%% (no requiere reabastecimiento).",
                 station.getName()
             ));
             return false;
@@ -151,14 +150,13 @@ public class MissionController {
                 final String nombreCarguero = cargo.getName();
                 final String nombreEstacion = (cargo.getTargetStation() != null) ? cargo.getTargetStation().getName() : "Estación";
                 final double fuel = cargo.getTotalFuelTransferred();
-                final double o2 = cargo.getTotalOxygenTransferred();
 
                 alertQueue.encolarAlerta(() -> MissionDialogView.mostrarMisionCompletada(
-                    parent, nombreCarguero, nombreEstacion, fuel, o2
+                    parent, nombreCarguero, nombreEstacion, fuel
                 ));
                 logConsola.accept(String.format(
-                    "[MISIÓN EXITOSA]: Reabastecimiento completado por [%s]. Suministrados: %.1f L de combustible y %.1f %% de oxígeno a [%s].",
-                    nombreCarguero, fuel, o2, nombreEstacion
+                    "[MISIÓN EXITOSA]: Reabastecimiento completado por [%s]. Suministrados: %.1f L de combustible a [%s].",
+                    nombreCarguero, fuel, nombreEstacion
                 ));
             }
         }

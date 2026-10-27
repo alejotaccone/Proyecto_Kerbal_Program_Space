@@ -1,10 +1,10 @@
 package test;
 
 import controller.AlertQueue;
-import java.util.ArrayList;
-import java.util.List;
 import controller.MissionController;
 import engine.SimulationEngine;
+import java.util.ArrayList;
+import java.util.List;
 import model.components.FuelTank;
 import model.geometry.GeoPosition;
 import model.spacecraft.CargoShip;
@@ -14,7 +14,7 @@ import model.spacecraft.SpacecraftInfo;
 
 /**
  * Suite de pruebas unitarias sin dependencias externas para misiones de reabastecimiento:
- * Conservación estricta de masa, límites de capacidad, fallos de combustible y validaciones de spawn.
+ * Conservación estricta de masa de combustible, límites de capacidad, fallos de combustible y validaciones de spawn.
  */
 public class ResupplyMissionCheck {
 
@@ -22,17 +22,15 @@ public class ResupplyMissionCheck {
         System.out.println("=== EJECUTANDO PRUEBAS DE MISIÓN DE REABASTECIMIENTO ===");
         int fallos = 0;
 
-        // Caso 1: Conservación estricta de masa durante la transferencia
+        // Caso 1: Conservación estricta de masa durante la transferencia de combustible
         SpaceStation station1 = new SpaceStation(
             new SpacecraftInfo("ISS", "ISS Test", 25544),
             new GeoPosition(-34.60, -58.38, 420.0)
         );
-        // Estación con 1800 L de combustible (capacidad 2500 L) y 80% de oxígeno
+        // Estación con 1800 L de combustible (capacidad 2500 L)
         station1.getFuelTank().consume(700.0);
-        station1.getOxygenGauge().decrease(20.0);
 
         double stationFuelInicial = station1.getFuelTank().getCurrentLevel();
-        double stationO2Inicial = station1.getOxygenLevel();
 
         CargoShip cargo1 = new CargoShip(
             new SpacecraftInfo("CRG-01", "KPS-Cargo-01", 70001),
@@ -40,14 +38,12 @@ public class ResupplyMissionCheck {
             new FuelTank(100.0, 100.0, 1.0),
             station1,
             200.0, // 200 L de fuel para entregar
-            15.0,  // 15% de O2 para entregar
             10.0
         );
         cargo1.registrarAcopleExitoso();
         cargo1.iniciarTransferencia();
 
         double cargoFuelInicial = cargo1.getCargoFuel();
-        double cargoO2Inicial = cargo1.getCargoOxygen();
 
         // Ejecutar pasos de transferencia hasta completar
         int safetyTicks = 0;
@@ -58,30 +54,25 @@ public class ResupplyMissionCheck {
 
         double deltaFuelEstacion = station1.getFuelTank().getCurrentLevel() - stationFuelInicial;
         double deltaFuelCargo = cargoFuelInicial - cargo1.getCargoFuel();
-        double deltaO2Estacion = station1.getOxygenLevel() - stationO2Inicial;
-        double deltaO2Cargo = cargoO2Inicial - cargo1.getCargoOxygen();
 
         boolean fuelConservaMasa = Math.abs(deltaFuelEstacion - deltaFuelCargo) < 0.001 && deltaFuelCargo > 199.0;
-        boolean o2ConservaMasa = Math.abs(deltaO2Estacion - deltaO2Cargo) < 0.001 && deltaO2Cargo > 14.9;
         boolean misionCompletada = (cargo1.getMissionState() == MissionState.COMPLETADA);
 
-        if (fuelConservaMasa && o2ConservaMasa && misionCompletada) {
-            System.out.println("[OK] Caso 1 - Conservación de masa: Fuel (" + deltaFuelCargo + " L) y O2 (" + deltaO2Cargo + " %) transferidos exactamente sin pérdida.");
+        if (fuelConservaMasa && misionCompletada) {
+            System.out.println("[OK] Caso 1 - Conservación de masa: Fuel (" + deltaFuelCargo + " L) transferido exactamente sin pérdida.");
         } else {
-            System.err.println("[ERROR] Caso 1 - Error en conservación de masa: FuelDelta=" + deltaFuelEstacion + " vs " + deltaFuelCargo + ", O2Delta=" + deltaO2Estacion + " vs " + deltaO2Cargo);
+            System.err.println("[ERROR] Caso 1 - Error en conservación de masa: FuelDelta=" + deltaFuelEstacion + " vs " + deltaFuelCargo);
             fallos++;
         }
 
-        // Caso 2: Estación casi llena (no sobrepasar capacidad máxima ni 100%)
+        // Caso 2: Estación casi llena (no sobrepasar capacidad máxima 2500 L)
         SpaceStation station2 = new SpaceStation(
             new SpacecraftInfo("ISS", "ISS Casi Llena", 25544),
             new GeoPosition(-34.60, -58.38, 420.0)
         );
-        // Llenar al tope y dejar solo 10 L de espacio de fuel (2490 / 2500) y 1.5% de O2 (98.5 / 100)
+        // Llenar al tope y dejar solo 10 L de espacio de fuel (2490 / 2500)
         station2.getFuelTank().refuel(2500.0);
-        station2.getOxygenGauge().increase(100.0);
         station2.getFuelTank().consume(10.0);
-        station2.getOxygenGauge().decrease(1.5);
 
         CargoShip cargo2 = new CargoShip(
             new SpacecraftInfo("CRG-02", "KPS-Cargo-02", 70002),
@@ -89,7 +80,6 @@ public class ResupplyMissionCheck {
             new FuelTank(100.0, 100.0, 1.0),
             station2,
             300.0, // El carguero tiene 300 L (mucho más de los 10 L que entran)
-            25.0,  // El carguero tiene 25% de O2 (mucho más del 1.5% que entra)
             10.0
         );
         cargo2.registrarAcopleExitoso();
@@ -102,31 +92,27 @@ public class ResupplyMissionCheck {
         }
 
         boolean fuelTopeExacto = (station2.getFuelTank().getCurrentLevel() == 2500.0) && station2.getFuelTank().isFull();
-        boolean o2TopeExacto = (station2.getOxygenLevel() == 100.0);
         boolean fuelTransferidoExacto = (Math.abs(cargo2.getTotalFuelTransferred() - 10.0) < 0.001);
-        boolean o2TransferidoExacto = (Math.abs(cargo2.getTotalOxygenTransferred() - 1.5) < 0.001);
         boolean completoPorEstacionLlena = (cargo2.getMissionState() == MissionState.COMPLETADA);
 
-        if (fuelTopeExacto && o2TopeExacto && fuelTransferidoExacto && o2TransferidoExacto && completoPorEstacionLlena) {
-            System.out.println("[OK] Caso 2 - Estación casi llena: Tanque topeado a 2500 L y O2 al 100.0% sin desbordes. Transferidos exactamente 10 L y 1.5%.");
+        if (fuelTopeExacto && fuelTransferidoExacto && completoPorEstacionLlena) {
+            System.out.println("[OK] Caso 2 - Estación casi llena: Tanque topeado a 2500 L sin desbordes. Transferidos exactamente 10 L.");
         } else {
-            System.err.println("[ERROR] Caso 2 - Desborde detectado: Fuel=" + station2.getFuelTank().getCurrentLevel() + ", O2=" + station2.getOxygenLevel());
+            System.err.println("[ERROR] Caso 2 - Desborde detectado: Fuel=" + station2.getFuelTank().getCurrentLevel());
             fallos++;
         }
 
         // Caso 3: Carguero sin combustible en tránsito
         SpaceStation station3 = new SpaceStation(
-            new SpacecraftInfo("ISS", "ISS Destino", 25544),
+            new SpacecraftInfo("ISS", "ISS Test", 25544),
             new GeoPosition(-34.60, -58.38, 420.0)
         );
-        // Posicionar carguero a 100 km de la estación con solo 0.2 L de combustible de maniobra
         CargoShip cargo3 = new CargoShip(
             new SpacecraftInfo("CRG-03", "KPS-Cargo-03", 70003),
             new GeoPosition(-33.70, -58.38, 420.0), // ~100 km
             new FuelTank(50.0, 0.2, 0.0),           // Combustible casi nulo
             station3,
             200.0,
-            20.0,
             10.0
         );
 
@@ -150,7 +136,6 @@ public class ResupplyMissionCheck {
             new FuelTank(100.0, 100.0, 0.0),
             station3,
             200.0,
-            20.0,
             10.0
         );
         cargo4.setMissionState(MissionState.EN_RANGO_DE_ACOPLE);
@@ -179,16 +164,14 @@ public class ResupplyMissionCheck {
         StringBuilder logMensajes = new StringBuilder();
         MissionController controller = new MissionController(engine, alertQueue, logMensajes::append);
 
-        // A. Lanzar con estación llena (rellenar al 100% para verificar la validación)
+        // A. Lanzar con tanque de combustible lleno (verificar rechazo)
         SpaceStation targetStation = engine.getTargetStation();
         targetStation.getFuelTank().refuel(2500.0);
-        targetStation.getOxygenGauge().increase(100.0);
         boolean lanzadoConEstacionLlena = controller.lanzarCarguero(null, 25544);
         boolean rechazoEstacionLlena = !lanzadoConEstacionLlena && logMensajes.toString().contains("100%");
 
-        // B. Consumir suministros de la estación para permitir lanzamientos
+        // B. Consumir combustible para permitir lanzamientos
         targetStation.getFuelTank().consume(500.0);
-        targetStation.getOxygenGauge().decrease(20.0);
 
         // C. Lanzar 3 cargueros (debe permitir hasta 3)
         boolean l1 = controller.lanzarCarguero(null, 25544);
@@ -201,7 +184,7 @@ public class ResupplyMissionCheck {
         boolean rechazoLimite3 = !l4 && logMensajes.toString().contains("Límite");
 
         if (rechazoEstacionLlena && l1 && l2 && l3 && rechazoLimite3) {
-            System.out.println("[OK] Caso 5 - Validaciones de spawn: Rechazo si estación llena y límite estricto de máximo 3 cargueros activos simultáneos.");
+            System.out.println("[OK] Caso 5 - Validaciones de spawn: Rechazo si tanques llenos y límite estricto de máximo 3 cargueros activos simultáneos.");
         } else {
             System.err.println("[ERROR] Caso 5 - Error en validaciones de spawn: Llena=" + rechazoEstacionLlena + ", l1=" + l1 + ", l2=" + l2 + ", l3=" + l3 + ", Limite=" + rechazoLimite3);
             fallos++;

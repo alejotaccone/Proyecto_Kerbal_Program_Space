@@ -30,7 +30,7 @@ public class MissionDialogView {
             "<html><div style='text-align: center; font-family: Consolas; font-size: 11px; color: #00FF66; width: 340px;'>" +
             "¡Maniobra de aproximación completada con éxito!<br><br>" +
             "La manguera de acople de <b style='color: #FFB400;'>[%s]</b> ha sido asegurada al puerto de <b style='color: #00FFFF;'>[%s]</b>.<br><br>" +
-            "<span style='color: #FFFFFF;'>Iniciando bombeo presurizado de combustible y oxígeno...</span>" +
+            "<span style='color: #FFFFFF;'>Iniciando bombeo presurizado de combustible...</span>" +
             "</div></html>",
             carguero, estacion
         );
@@ -60,19 +60,22 @@ public class MissionDialogView {
         mostrarAlerta(parent, "═══ [!] CARGUERO SIN COMBUSTIBLE: MISIÓN ABORTADA ═══", html, new Color(255, 140, 0), "[ REGISTRAR INCIDENCIA ]");
     }
 
-    public static void mostrarMisionCompletada(Component parent, String carguero, String estacion, double fuelTransferido, double o2Transferido) {
+    public static void mostrarMisionCompletada(Component parent, String carguero, String estacion, double fuelTransferido) {
         String html = String.format(
             "<html><div style='text-align: center; font-family: Consolas; font-size: 11px; color: #00FF88; width: 360px;'>" +
-            "La transferencia de suministros hacia <b style='color: #00FFFF;'>[%s]</b> ha concluido satisfactoriamente.<br><br>" +
+            "La transferencia de combustible hacia <b style='color: #00FFFF;'>[%s]</b> ha concluido satisfactoriamente.<br><br>" +
             "<table style='margin: 0 auto; color: #FFFFFF; font-family: Consolas; font-size: 11px;'>" +
             "<tr><td align='right'>Combustible suministrado:</td><td align='left'><b style='color: #FFB400;'>+%.1f L</b></td></tr>" +
-            "<tr><td align='right'>Soporte vital (O2):</td><td align='left'><b style='color: #00FF66;'>+%.1f %%</b></td></tr>" +
             "</table><br>" +
             "El carguero <b style='color: #FFB400;'>[%s]</b> ha desacoplado de manera segura y completó su ciclo de misión." +
             "</div></html>",
-            estacion, fuelTransferido, o2Transferido, carguero
+            estacion, fuelTransferido, carguero
         );
         mostrarAlerta(parent, "═══ [★] REABASTECIMIENTO COMPLETADO ═══", html, new Color(0, 240, 120), "[ CERRAR INFORME DE MISIÓN ]");
+    }
+
+    public static void mostrarMisionCompletada(Component parent, String carguero, String estacion, double fuelTransferido, double o2Ignorado) {
+        mostrarMisionCompletada(parent, carguero, estacion, fuelTransferido);
     }
 
     private static void mostrarAlerta(Component parent, String titulo, String cuerpoHtml, Color colorTema, String textoBoton) {
@@ -93,46 +96,42 @@ public class MissionDialogView {
         lblHeader.setHorizontalAlignment(SwingConstants.CENTER);
         mainPanel.add(lblHeader, BorderLayout.NORTH);
 
-        JLabel lblBody = new JLabel(cuerpoHtml);
-        lblBody.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(lblBody, BorderLayout.CENTER);
+        JLabel lblCuerpo = new JLabel(cuerpoHtml);
+        lblCuerpo.setHorizontalAlignment(SwingConstants.CENTER);
+        mainPanel.add(lblCuerpo, BorderLayout.CENTER);
 
-        JButton btnOk = crearBotonTactico(textoBoton, colorTema);
-        btnOk.addActionListener(e -> dialog.dispose());
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setOpaque(false);
 
-        JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        southPanel.setOpaque(false);
-        southPanel.add(btnOk);
-        mainPanel.add(southPanel, BorderLayout.SOUTH);
+        JButton btnCerrar = new JButton(textoBoton);
+        btnCerrar.setFont(new Font("Consolas", Font.BOLD, 12));
+        btnCerrar.setForeground(colorTema);
+        btnCerrar.setBackground(new Color(15, 30, 15));
+        btnCerrar.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(colorTema, 1),
+            BorderFactory.createEmptyBorder(8, 20, 8, 20)
+        ));
+        btnCerrar.setFocusPainted(false);
+        btnCerrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        btnCerrar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btnCerrar.setBackground(new Color(25, 55, 25));
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btnCerrar.setBackground(new Color(15, 30, 15));
+            }
+        });
+
+        btnCerrar.addActionListener(e -> dialog.dispose());
+        buttonPanel.add(btnCerrar);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         dialog.setContentPane(mainPanel);
         dialog.pack();
         dialog.setLocationRelativeTo(parent);
         dialog.setVisible(true);
-    }
-
-    private static JButton crearBotonTactico(String texto, Color colorTexto) {
-        JButton btn = new JButton(texto);
-        btn.setFont(new Font("Consolas", Font.BOLD, 12));
-        btn.setForeground(colorTexto);
-        btn.setBackground(new Color(15, 25, 15));
-        btn.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(colorTexto, 1),
-            BorderFactory.createEmptyBorder(8, 18, 8, 18)
-        ));
-        btn.setFocusPainted(false);
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        btn.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                btn.setBackground(new Color(30, 50, 30));
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-                btn.setBackground(new Color(15, 25, 15));
-            }
-        });
-        return btn;
     }
 }

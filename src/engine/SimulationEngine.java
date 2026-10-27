@@ -342,10 +342,9 @@ public class SimulationEngine {
 
         FuelTank propulsionTank = new FuelTank(150.0, 120.0, 1.0);
         double cargoFuel = 600.0;
-        double cargoOxygen = 35.0;
         double cargoCapacityTons = 12.0;
 
-        CargoShip cargo = new CargoShip(info, spawnPos, propulsionTank, station, cargoFuel, cargoOxygen, cargoCapacityTons);
+        CargoShip cargo = new CargoShip(info, spawnPos, propulsionTank, station, cargoFuel, cargoCapacityTons);
         this.trackedObjects.add(cargo);
         TelemetryLogger.printMessage("[MISIÓN]: Carguero [" + shipName + "] desplegado en órbita a " + String.format("%.1f", distKm) + " km de " + station.getName() + ".");
         return cargo;
