@@ -41,6 +41,7 @@ public class ControlPanel extends JPanel {
     private JButton btnEvadeShip;
     private JButton btnSpecialAbility;
     private JButton btnRefuel;
+    private JButton btnLanzarCarguero;
     private JButton btnGenerarCrisis;
 
     private boolean isUpdatingCombo = false;
@@ -146,6 +147,11 @@ public class ControlPanel extends JPanel {
         panel.add(btnRefuel);
         panel.add(Box.createVerticalStrut(6));
         
+        btnLanzarCarguero = crearBoton("[>] Lanzar Carguero", COLOR_ACCENT_ORANGE);
+        btnLanzarCarguero.setEnabled(false);
+        panel.add(btnLanzarCarguero);
+        panel.add(Box.createVerticalStrut(4));
+
         btnGenerarCrisis = crearBoton("[!] Generar Anomalía", COLOR_ACCENT_RED);
         btnGenerarCrisis.setEnabled(false);
         panel.add(btnGenerarCrisis);
@@ -305,6 +311,7 @@ public class ControlPanel extends JPanel {
         btnEvadeShip.setEnabled(enabled);
         btnSpecialAbility.setEnabled(enabled);
         btnRefuel.setEnabled(enabled);
+        btnLanzarCarguero.setEnabled(enabled);
         btnGenerarCrisis.setEnabled(enabled);
     }
 
@@ -345,10 +352,12 @@ public class ControlPanel extends JPanel {
     public void addEvadeShipListener(ActionListener l) { btnEvadeShip.addActionListener(l); }
     public void addSpecialAbilityListener(ActionListener l) { btnSpecialAbility.addActionListener(l); }
     public void addRefuelListener(ActionListener l) { btnRefuel.addActionListener(l); }
+    public void addLanzarCargueroListener(ActionListener l) { btnLanzarCarguero.addActionListener(l); }
     public void addGenerarCrisisListener(ActionListener l) { btnGenerarCrisis.addActionListener(l); }
     public void addSeleccionarNaveListener(ActionListener l) { cmbNaves.addActionListener(l); }
 
     public JButton getBtnIniciar() { return btnIniciar; }
     public JButton getBtnDetener() { return btnDetener; }
     public JButton getBtnCambiarEstacion() { return btnCambiarEstacion; }
+    public JButton getBtnLanzarCarguero() { return btnLanzarCarguero; }
 }

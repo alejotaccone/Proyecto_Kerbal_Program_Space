@@ -239,6 +239,10 @@ public class RadarPanel extends JPanel {
             Point screenPos = calcularPosicionPantalla(craft, centroX, centroY, radio);
             EstiloVisual estilo = determinarEstiloVisual(craft);
 
+            if (craft instanceof model.spacecraft.CargoShip) {
+                dibujarTrayectoriaCarguero(g2, (model.spacecraft.CargoShip) craft, screenPos, centroX, centroY, radio);
+            }
+
             dibujarIluminacionBarrido(g2, screenPos.x, screenPos.y, centroX, centroY, estilo);
             dibujarIconoNave(g2, craft, screenPos.x, screenPos.y, estilo);
 
@@ -261,7 +265,38 @@ public class RadarPanel extends JPanel {
         }
     }
 
+    private void dibujarTrayectoriaCarguero(Graphics2D g2, model.spacecraft.CargoShip cargo, Point cargoPos, int centroX, int centroY, int radio) {
+        if (cargo.getTargetStation() == null || cargo.getTargetStation().getPosition() == null) return;
+        Point stationPos = calcularPosicionPantalla(cargo.getTargetStation(), centroX, centroY, radio);
+        Stroke strokeOriginal = g2.getStroke();
+        Color colorOriginal = g2.getColor();
+        boolean acoplada = (cargo.getMissionState() != null && cargo.getMissionState().isAcopladaOTransfiriendo());
+        if (acoplada) {
+            g2.setColor(new Color(0, 255, 120, 220));
+            g2.setStroke(new BasicStroke(2.2f));
+            g2.drawLine(cargoPos.x, cargoPos.y, stationPos.x, stationPos.y);
+        } else if (cargo.getMissionState() != null && !cargo.getMissionState().isFinalizada()) {
+            g2.setColor(new Color(255, 140, 0, 180));
+            Stroke dashed = new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, new float[]{6.0f, 6.0f}, 0.0f);
+            g2.setStroke(dashed);
+            g2.drawLine(cargoPos.x, cargoPos.y, stationPos.x, stationPos.y);
+        }
+        g2.setStroke(strokeOriginal);
+        g2.setColor(colorOriginal);
+    }
+
     private void dibujarIconoNave(Graphics2D g2, RadarRenderable renderable, int pixelX, int pixelY, EstiloVisual estilo) {
+        if (renderable instanceof model.spacecraft.CargoShip) {
+            int s = estilo.tamano + 1;
+            int[] xPoints = {pixelX, pixelX + s, pixelX, pixelX - s};
+            int[] yPoints = {pixelY - s, pixelY, pixelY + s, pixelY};
+            g2.setColor(estilo.color);
+            g2.fillPolygon(xPoints, yPoints, 4);
+            g2.setColor(new Color(255, 230, 160));
+            g2.setStroke(new BasicStroke(1.2f));
+            g2.drawPolygon(xPoints, yPoints, 4);
+            return;
+        }
         g2.setColor(estilo.color);
         if (estilo.esTriangulo) {
             int[] xPoints = {pixelX, pixelX - estilo.tamano, pixelX + estilo.tamano};
