@@ -8,3 +8,6 @@ config.properties
 # Archivos de entorno y propiedades locales
 *.properties.local
 .env
+
+# Reportes tecnicos y analisis internos
+REPORTE*.md

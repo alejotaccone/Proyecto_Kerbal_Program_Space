@@ -69,20 +69,34 @@ public class SpaceStation extends OrbitalObject implements FuelCarrier, EvasiveC
     @Override
     public void move() {
         // Simulación de subsistemas internos de soporte vital por tick
-        consumirOxigeno();
+        actualizarSoporteVital();
         actualizarBaterias();
         regularTemperatura();
     }
 
-    private void consumirOxigeno() {
-        oxygenGauge.decrease(0.05);
+    /**
+     * Sistema de Soporte Vital y Control Ambiental (ECLSS / OGS).
+     * Si los paneles solares están desplegados y la batería supera el 30%, se ejecuta la
+     * electrólisis para regenerar oxígeno consumiendo un excedente leve de energía eléctrica.
+     * Si no hay energía, el oxígeno decae pasivamente por consumo de la tripulación.
+     */
+    private void actualizarSoporteVital() {
+        if (solarPanelsDeployed && batteryGauge.isAbove(30.0)) {
+            if (oxygenGauge.getLevel() < 100.0) {
+                batteryGauge.decrease(0.10); // Consumo eléctrico del generador de electrólisis
+                oxygenGauge.increase(0.15);  // Regeneración gradual de oxígeno
+            }
+        } else {
+            // Sin energía o paneles replegados: decae por respiración de la tripulación
+            oxygenGauge.decrease(0.05);
+        }
     }
 
     private void actualizarBaterias() {
         if (solarPanelsDeployed) {
-            batteryGauge.increase(0.2); // Recarga solar
+            batteryGauge.increase(0.25); // Recarga solar activa de paneles
         } else {
-            batteryGauge.decrease(0.8); // Consumo
+            batteryGauge.decrease(0.8);  // Consumo pasivo sin recarga
         }
     }
 
@@ -124,9 +138,15 @@ public class SpaceStation extends OrbitalObject implements FuelCarrier, EvasiveC
 
     @Override
     public String getDetalleTelemetria() {
+        boolean eclssActivo = solarPanelsDeployed && batteryGauge.isAbove(30.0);
+        String estadoO2 = eclssActivo
+                ? (oxygenGauge.getLevel() >= 99.9 ? "ÓPTIMO (100%)" : "ECLSS ELECTRÓLISIS (Cargando)")
+                : "CONSUMO TRIPULACIÓN (Sin energía)";
+
         return String.format(
-            "\n--- SISTEMAS VITALES ---\nOxígeno:   %.1f%%\nBatería:   %.1f%%\nTemp:      %.1f °C\nPaneles:   %s\n",
+            "\n--- SISTEMAS VITALES ---\nOxígeno:   %.1f%% [%s]\nBatería:   %.1f%%\nTemp:      %.1f °C\nPaneles:   %s\n",
             getOxygenLevel(),
+            estadoO2,
             getBatteryLevel(),
             getTemperature(),
             areSolarPanelsDeployed() ? "DESPLEGADOS (Cargando)" : "RETRAÍDOS (Consumo)"
