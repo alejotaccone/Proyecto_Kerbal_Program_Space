@@ -59,8 +59,8 @@ public class SpaceStation extends OrbitalObject implements FuelCarrier {
                 : "La Estación Espacial quedó totalmente inoperativa";
         
         // Inicializar componentes de subsistemas y reserva de combustible
-        this.fuelTank = new FuelTank(2500.0, 2500.0, 0.0);
-        this.oxygenGauge = new PercentageGauge(100.0);
+        this.fuelTank = new FuelTank(2500.0, 1800.0, 0.0);
+        this.oxygenGauge = new PercentageGauge(80.0);
         this.batteryGauge = new PercentageGauge(100.0);
         this.temperature = 22.0;
         this.solarPanelsDeployed = true;

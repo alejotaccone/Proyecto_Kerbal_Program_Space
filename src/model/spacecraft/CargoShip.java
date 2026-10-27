@@ -17,7 +17,7 @@ public class CargoShip extends Spacecraft {
     public static final double FAILED_DOCKING_FUEL_PENALTY = 10.0;
     public static final double TRANSFER_RATE_FUEL_PER_TICK = 45.0;     // Litros transferidos por tick
     public static final double TRANSFER_RATE_OXYGEN_PER_TICK = 2.5;   // Porcentaje de oxígeno transferido por tick
-    public static final double FLIGHT_STEP_KM_PER_TICK = 5.5;          // Velocidad de aproximación por tick
+    public static final double FLIGHT_STEP_KM_PER_TICK = 18.0;          // Velocidad de aproximación por tick
 
     private double cargoCapacityTons;
     private double currentCargoTons;

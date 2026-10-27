@@ -75,7 +75,9 @@ public class ResupplyMissionCheck {
             new SpacecraftInfo("ISS", "ISS Casi Llena", 25544),
             new GeoPosition(-34.60, -58.38, 420.0)
         );
-        // Dejar solo 10 L de espacio de fuel (2490 / 2500) y 1.5% de O2 (98.5 / 100)
+        // Llenar al tope y dejar solo 10 L de espacio de fuel (2490 / 2500) y 1.5% de O2 (98.5 / 100)
+        station2.getFuelTank().refuel(2500.0);
+        station2.getOxygenGauge().increase(100.0);
         station2.getFuelTank().consume(10.0);
         station2.getOxygenGauge().decrease(1.5);
 
@@ -175,12 +177,14 @@ public class ResupplyMissionCheck {
         StringBuilder logMensajes = new StringBuilder();
         MissionController controller = new MissionController(engine, alertQueue, logMensajes::append);
 
-        // A. Lanzar con estación llena (debe ser rechazado porque ISS nace al 100%)
+        // A. Lanzar con estación llena (rellenar al 100% para verificar la validación)
+        SpaceStation targetStation = engine.getTargetStation();
+        targetStation.getFuelTank().refuel(2500.0);
+        targetStation.getOxygenGauge().increase(100.0);
         boolean lanzadoConEstacionLlena = controller.lanzarCarguero(null, 25544);
         boolean rechazoEstacionLlena = !lanzadoConEstacionLlena && logMensajes.toString().contains("100%");
 
         // B. Consumir suministros de la estación para permitir lanzamientos
-        SpaceStation targetStation = engine.getTargetStation();
         targetStation.getFuelTank().consume(500.0);
         targetStation.getOxygenGauge().decrease(20.0);
 
