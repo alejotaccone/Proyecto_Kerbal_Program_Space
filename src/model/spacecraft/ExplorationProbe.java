@@ -17,6 +17,11 @@ public class ExplorationProbe extends Spacecraft {
     }
 
     @Override
+    public double getConsumoEvasion() {
+        return 10.0; // Sonda ultraligera: requiere menor impulso para maniobrar
+    }
+
+    @Override
     public String performSpecialAbility() {
         if (getFuelTank() != null) {
             double rechargedAmount = 10.0 * solarEfficiency;

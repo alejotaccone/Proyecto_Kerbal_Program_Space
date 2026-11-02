@@ -169,6 +169,9 @@
     class EvasiveCapable {
         <<interface>>
         +evade(double deltaLat, double deltaLng) boolean
+        +evade(double deltaLat, double deltaLng, double consumo) boolean
+        +getConsumoEvasion() double
+        +getConsumoEvasionCrisis() double
     }
     class OrbitalObject {
         <<abstract>>
@@ -221,6 +224,9 @@
         -double currentCargoTons
         +performSpecialAbility() String
         +getDetalleTelemetria() String
+        +iniciarDesorbitado() void
+        +avanzarDesorbitado() void
+        +isDesorbitando() boolean
         +getColorRadar() Color
     }
     class CrewShuttle {
@@ -229,17 +235,26 @@
         +agregarTripulante(String name, KerbalRole role, int courage)
         +performSpecialAbility() String
         +getDetalleTelemetria() String
+        +iniciarDesorbitado() void
+        +avanzarDesorbitado() void
+        +isDesorbitando() boolean
     }
     class ExplorationProbe {
         -double solarEfficiency
         +performSpecialAbility() String
         +getDetalleTelemetria() String
+        +iniciarDesorbitado() void
+        +avanzarDesorbitado() void
+        +isDesorbitando() boolean
     }
     class SpaceDebris {
         -double hazardLevel
         +move()
         +performSpecialAbility() String
         +getDetalleTelemetria() String
+        +iniciarDesorbitado() void
+        +avanzarDesorbitado() void
+        +isDesorbitando() boolean
         +esIconoTriangular() boolean
     }
     class RogueDebris {
@@ -284,6 +299,7 @@
     FuelCarrier <|.. Spacecraft : implements (ISP)
     EvasiveCapable <|.. Spacecraft : implements (ISP)
     FuelCarrier <|.. SpaceStation : implements (ISP)
+    EvasiveCapable <|.. SpaceStation : implements (ISP)
 
     OrbitalObject <|-- Spacecraft
     OrbitalObject <|-- SpaceStation
@@ -319,6 +335,8 @@
         +syncWithN2YO()
         +setTargetStation(int noradId)
         +evadeShip(int index) boolean
+        +forzarEvasionCrisis(OrbitalObject target) boolean
+        +sincronizarCarguerosConEstacion(OrbitalObject st, double dLat, double dLng, double dAlt) void
         +refuelShipAtStation(int shipIndex) boolean
         +useSpecialAbility(int shipIndex) String
         +triggerCrisisEvent() boolean
@@ -380,6 +398,9 @@
     class EvasiveCapable {
         <<interface>>
         +evade(double deltaLat, double deltaLng) boolean
+        +evade(double deltaLat, double deltaLng, double consumo) boolean
+        +getConsumoEvasion() double
+        +getConsumoEvasionCrisis() double
     }
 
     SimulationEngine *-- "0..*" OrbitalObject : trackedObjects
@@ -470,7 +491,11 @@
         -JButton btnEvadeShip
         -JButton btnSpecialAbility
         -JButton btnRefuel
+        -JButton btnLanzarCarguero
         -JButton btnGenerarCrisis
+        -int cargueroCooldownTicks
+        +setCargueroCooldown(int ticksRestantes)
+        +getCargueroCooldownTicks() int
         +actualizarComboNaves(List~OrbitalObject~ naves, JSplitPane sp)
         +setEstadoOnline(boolean online)
         +getSelectedNoradId() int
@@ -635,6 +660,9 @@
     class EvasiveCapable {
         <<interface>>
         +evade(double deltaLat, double deltaLng) boolean
+        +evade(double deltaLat, double deltaLng, double consumo) boolean
+        +getConsumoEvasion() double
+        +getConsumoEvasionCrisis() double
     }
 
     %% ================= CAPA MODELO: JERARQUIA ORBITAL =================
@@ -688,6 +716,9 @@
         -double currentCargoTons
         +performSpecialAbility() String
         +getDetalleTelemetria() String
+        +iniciarDesorbitado() void
+        +avanzarDesorbitado() void
+        +isDesorbitando() boolean
     }
 
     class CrewShuttle {
@@ -771,6 +802,8 @@
         +setTargetStation(int noradId) void
         +syncWithN2YO() void
         +evadeShip(int index) boolean
+        +forzarEvasionCrisis(OrbitalObject target) boolean
+        +sincronizarCarguerosConEstacion(OrbitalObject st, double dLat, double dLng, double dAlt) void
         +refuelShipAtStation(int idx) boolean
         +useSpecialAbility(int idx) String
         +triggerCrisisEvent() boolean
@@ -819,7 +852,11 @@
         -JButton btnEvadeShip
         -JButton btnSpecialAbility
         -JButton btnRefuel
+        -JButton btnLanzarCarguero
         -JButton btnGenerarCrisis
+        -int cargueroCooldownTicks
+        +setCargueroCooldown(int ticksRestantes)
+        +getCargueroCooldownTicks() int
         +actualizarComboNaves(List~OrbitalObject~ naves, JSplitPane sp) void
         +setEstadoOnline(boolean online) void
     }
@@ -877,6 +914,7 @@
     FuelCarrier <|.. Spacecraft
     EvasiveCapable <|.. Spacecraft
     FuelCarrier <|.. SpaceStation
+    EvasiveCapable <|.. SpaceStation
     OrbitalObject <|-- Spacecraft
     OrbitalObject <|-- SpaceStation
     OrbitalObject <|-- SpaceDebris

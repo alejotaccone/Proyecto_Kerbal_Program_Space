@@ -45,6 +45,7 @@ public class ControlPanel extends JPanel {
     private JComboBox<String> cmbNaves;
     private JButton btnEvadeShip;
 
+    private int cargueroCooldownTicks = 0;
     private boolean isUpdatingCombo = false;
 
     public ControlPanel() {
@@ -323,9 +324,24 @@ public class ControlPanel extends JPanel {
 
     public void habilitarAccionesNaves(boolean enabled) {
         btnPanelesSolares.setEnabled(enabled);
-        btnLanzarCarguero.setEnabled(enabled);
+        btnLanzarCarguero.setEnabled(enabled && cargueroCooldownTicks == 0);
         btnGenerarCrisis.setEnabled(enabled);
         btnEvadeShip.setEnabled(enabled);
+    }
+
+    public void setCargueroCooldown(int ticksRestantes) {
+        this.cargueroCooldownTicks = ticksRestantes;
+        if (ticksRestantes > 0) {
+            btnLanzarCarguero.setText(String.format("[>] Carguero (Espera: %dt)", ticksRestantes));
+            btnLanzarCarguero.setEnabled(false);
+        } else {
+            btnLanzarCarguero.setText("[>] Lanzar Carguero");
+            btnLanzarCarguero.setEnabled(lblEstado.getText().contains("Línea"));
+        }
+    }
+
+    public int getCargueroCooldownTicks() {
+        return cargueroCooldownTicks;
     }
 
     public void actualizarEstadoPaneles(boolean desplegados) {

@@ -38,6 +38,10 @@ public class CrisisDialogView {
      * Retorna 0 si el usuario eligió "Forzar Evasión", o 1 si eligió "Ignorar".
      */
     public static int mostrarDialogoDecisionCrisis(Component parent, String nombreAmenaza, double distanciaKm, String nombreObjetivo) {
+        return mostrarDialogoDecisionCrisis(parent, nombreAmenaza, distanciaKm, nombreObjetivo, 15.0);
+    }
+
+    public static int mostrarDialogoDecisionCrisis(Component parent, String nombreAmenaza, double distanciaKm, String nombreObjetivo, double consumoEvasion) {
         Window owner = SwingUtilities.getWindowAncestor(parent);
         JDialog dialog = (owner instanceof Frame) ? new JDialog((Frame) owner, true) : new JDialog((Dialog) owner, true);
         dialog.setUndecorated(true);
@@ -73,7 +77,8 @@ public class CrisisDialogView {
         JPanel btnPanel = new JPanel(new GridLayout(2, 1, 0, 8));
         btnPanel.setOpaque(false);
 
-        JButton btnEvade = crearBotonTactico("[1] FORZAR EVASIÓN (-15L Combustible)", new Color(255, 180, 0));
+        String textoBotonEvasion = String.format(java.util.Locale.US, "[1] FORZAR EVASIÓN (-%.0fL Combustible)", consumoEvasion);
+        JButton btnEvade = crearBotonTactico(textoBotonEvasion, new Color(255, 180, 0));
         JButton btnIgnore = crearBotonTactico("[2] IGNORAR (Aceptar Impacto Crítico)", new Color(255, 60, 60));
 
         final int[] result = new int[]{1}; // Por defecto ignorar si se cierra la ventana

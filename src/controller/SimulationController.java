@@ -38,6 +38,7 @@ public class SimulationController {
     private boolean simulationRunning = false;
     private volatile boolean tickEnProceso = false;
     private int tickCount = 0;
+    private int cargueroCooldownTicks = 0;
     private boolean estacionDestruida = false;
     private SpaceStation estacionDestruidaRef = null;
     private AlertQueue alertQueue;
@@ -157,6 +158,8 @@ public class SimulationController {
                     get();
                     simulationRunning = true;
                     tickCount = 0;
+                    cargueroCooldownTicks = 0;
+                    vista.getControlPanel().setCargueroCooldown(0);
                     estacionDestruida = false;
                     estacionDestruidaRef = null;
 
@@ -191,6 +194,8 @@ public class SimulationController {
         simulationRunning = false;
         simulationTimer.stop();
         radarSweepTimer.stop();
+        cargueroCooldownTicks = 0;
+        vista.getControlPanel().setCargueroCooldown(0);
 
         vista.getControlPanel().setEstadoOnline(false);
         vista.getHeaderBarPanel().setTextoEstado("TICK: " + tickCount + " | ESTADO: DETENIDO");
@@ -222,6 +227,8 @@ public class SimulationController {
                 if (station != null) {
                     vista.getControlPanel().actualizarEstadoPaneles(station.areSolarPanelsDeployed());
                 }
+                cargueroCooldownTicks = 0;
+                vista.getControlPanel().setCargueroCooldown(0);
                 missionController = new MissionController(engine, alertQueue, vista::logConsola);
                 vista.logConsola("[Sistema]: Radar reubicado a la nueva estación.");
             }
@@ -254,6 +261,7 @@ public class SimulationController {
             } else {
                 vista.logConsola("[FALLO]: Maniobra de evasión fallida (sin motor o combustible insuficiente).");
             }
+            sincronizarDatosRadar();
             actualizarComboNaves();
             actualizarMonitorNave();
             vista.getRadarPanel().repaint();
@@ -375,9 +383,15 @@ public class SimulationController {
                     );
 
                     if (crisisOcurrio) {
+                        sincronizarDatosRadar();
                         actualizarComboNaves();
                         actualizarMonitorNave();
                         vista.getRadarPanel().repaint();
+                    }
+
+                    if (cargueroCooldownTicks > 0) {
+                        cargueroCooldownTicks--;
+                        vista.getControlPanel().setCargueroCooldown(cargueroCooldownTicks);
                     }
 
                     if (missionController != null) {
@@ -468,6 +482,11 @@ public class SimulationController {
             return;
         }
 
+        if (cargueroCooldownTicks > 0) {
+            vista.logConsola(String.format("[AVISO DE MISIÓN]: Plataforma de lanzamiento en preparación. Espera requerida: %d ticks.", cargueroCooldownTicks));
+            return;
+        }
+
         if (missionController == null) {
             missionController = new MissionController(engine, alertQueue, vista::logConsola);
         }
@@ -475,10 +494,16 @@ public class SimulationController {
         int noradId = vista.getControlPanel().getSelectedNoradId();
         boolean lanzado = missionController.lanzarCarguero(vista, noradId);
         if (lanzado) {
+            cargueroCooldownTicks = 15;
+            vista.getControlPanel().setCargueroCooldown(cargueroCooldownTicks);
             actualizarComboNaves();
             actualizarMonitorNave();
             vista.getRadarPanel().repaint();
         }
+    }
+
+    public int getCargueroCooldownTicks() {
+        return cargueroCooldownTicks;
     }
 }
 

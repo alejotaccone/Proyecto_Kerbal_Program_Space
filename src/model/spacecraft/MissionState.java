@@ -10,6 +10,8 @@ public enum MissionState {
     ACOPLE_EN_CURSO("Acople en Curso (Minijuego)"),
     ACOPLADA("Acoplada (Manguera Conectada)"),
     TRANSFIRIENDO("Transfiriendo Suministros"),
+    DESORBITANDO("Desorbitando (Reingreso Atmosférico)"),
+    REINGRESO_CONCLUIDO("Reingreso Atmosférico Concluido"),
     COMPLETADA("Misión Completada"),
     ABORTADA("Misión Abortada");
 
@@ -24,10 +26,14 @@ public enum MissionState {
     }
 
     public boolean isFinalizada() {
-        return this == COMPLETADA || this == ABORTADA;
+        return this == COMPLETADA || this == ABORTADA || this == DESORBITANDO || this == REINGRESO_CONCLUIDO;
     }
 
     public boolean isAcopladaOTransfiriendo() {
         return this == ACOPLADA || this == TRANSFIRIENDO;
+    }
+
+    public boolean isDesorbitando() {
+        return this == DESORBITANDO;
     }
 }

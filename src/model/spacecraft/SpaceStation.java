@@ -154,9 +154,24 @@ public class SpaceStation extends OrbitalObject implements FuelCarrier, EvasiveC
     }
 
     @Override
+    public double getConsumoEvasion() {
+        return 100.0; // Maniobra orbital normal de estación (-100L)
+    }
+
+    @Override
+    public double getConsumoEvasionCrisis() {
+        return 200.0; // Maniobra forzada ante impacto crítico de anomalía (el doble: -200L)
+    }
+
+    @Override
     public boolean evade(double deltaLat, double deltaLng) {
-        if (fuelTank != null && fuelTank.getCurrentLevel() >= 15.0) {
-            fuelTank.consume(15.0); // Maniobra orbital de propulsores RCS (-15L de combustible)
+        return evade(deltaLat, deltaLng, getConsumoEvasion());
+    }
+
+    @Override
+    public boolean evade(double deltaLat, double deltaLng, double consumo) {
+        if (fuelTank != null && fuelTank.getCurrentLevel() >= consumo) {
+            boolean success = fuelTank.consume(consumo);
             if (getPosition() != null) {
                 getPosition().setLatitude(getPosition().getLatitude() + deltaLat);
                 getPosition().setLongitude(getPosition().getLongitude() + deltaLng);

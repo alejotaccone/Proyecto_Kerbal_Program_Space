@@ -127,22 +127,7 @@ public class SimulationEngine {
                 craft.getPosition().setLongitude(updatedPos.getLongitude());
                 craft.getPosition().setAltitude(updatedPos.getAltitude());
 
-                // Sincronizar cargueros en el mismo marco orbital de la estación
-                for (OrbitalObject obj : trackedObjects) {
-                    if (obj instanceof CargoShip) {
-                        CargoShip cargo = (CargoShip) obj;
-                        if (cargo.getTargetStation() == craft) {
-                            if (cargo.getMissionState() != null && (cargo.getMissionState().isAcopladaOTransfiriendo() || cargo.getMissionState() == MissionState.COMPLETADA)) {
-                                cargo.posicionarEnAcople();
-                            } else if (cargo.getMissionState() == MissionState.EN_TRANSITO && cargo.getPosition() != null) {
-                                cargo.getPosition().setLatitude(cargo.getPosition().getLatitude() + dLat);
-                                cargo.getPosition().setLongitude(cargo.getPosition().getLongitude() + dLng);
-                                cargo.getPosition().setAltitude(cargo.getPosition().getAltitude() + dAlt);
-                            }
-                        }
-                    }
-                }
-                
+                sincronizarCarguerosConEstacion(craft, dLat, dLng, dAlt);
                 actualizarPosicionRadar(craft);
             }
         }
@@ -154,6 +139,30 @@ public class SimulationEngine {
     private void actualizarPosicionRadar(OrbitalObject craft) {
         if (craft != null && craft.getNoradId() == targetStationNoradId && radar != null) {
             radar.actualizarUbicacion(craft.getPosition());
+        }
+    }
+
+    /**
+     * Sincroniza la posición de todos los cargueros vinculados a la estación dada.
+     * Mantiene a las naves acopladas o transfiriendo inmediatamente ancladas a la estación
+     * y desplaza a las que están en tránsito en el mismo marco orbital de referencia.
+     */
+    public void sincronizarCarguerosConEstacion(OrbitalObject station, double dLat, double dLng, double dAlt) {
+        if (station == null || trackedObjects == null) return;
+
+        for (OrbitalObject obj : trackedObjects) {
+            if (obj instanceof CargoShip) {
+                CargoShip cargo = (CargoShip) obj;
+                if (cargo.getTargetStation() == station) {
+                    if (cargo.getMissionState() != null && (cargo.getMissionState().isAcopladaOTransfiriendo() || cargo.getMissionState() == MissionState.COMPLETADA)) {
+                        cargo.posicionarEnAcople();
+                    } else if (cargo.getMissionState() == MissionState.EN_TRANSITO && cargo.getPosition() != null) {
+                        cargo.getPosition().setLatitude(cargo.getPosition().getLatitude() + dLat);
+                        cargo.getPosition().setLongitude(cargo.getPosition().getLongitude() + dLng);
+                        cargo.getPosition().setAltitude(cargo.getPosition().getAltitude() + dAlt);
+                    }
+                }
+            }
         }
     }
 
@@ -226,11 +235,41 @@ public class SimulationEngine {
         }
 
         EvasiveCapable evasiveShip = (EvasiveCapable) craft;
-        boolean success = evasiveShip.evade(0.5, 0.5);
+        double consumo = evasiveShip.getConsumoEvasion();
+        double dLat = 0.5;
+        double dLng = 0.5;
+        boolean success = evasiveShip.evade(dLat, dLng, consumo);
+        if (success) {
+            sincronizarCarguerosConEstacion(craft, dLat, dLng, 0.0);
+            actualizarPosicionRadar(craft);
+        }
         String msg = success 
-                ? "MANIOBRA EXITOSA! La nave [" + craft.getName() + "] cambio su orbita para evitar impacto."
+                ? String.format(java.util.Locale.US, "MANIOBRA EXITOSA! La nave [%s] cambio su orbita para evitar impacto (-%.0fL combustible).", craft.getName(), consumo)
                 : "MANIOBRA FALLIDA! La nave [" + craft.getName() + "] no tiene suficiente combustible.";
         notificarYActualizarMonitor(index, msg);
+        return success;
+    }
+
+    /**
+     * Ejecuta una evasión forzada de emergencia ante colisión inminente (evento de crisis).
+     * Aplica el consumo de crisis correspondiente, sincroniza instantáneamente los cargueros
+     * vinculados y actualiza la posición del radar para evitar desfasajes visuales.
+     *
+     * @param target el objeto orbital que esquiva la amenaza
+     * @return true si la maniobra fue exitosa; false si no pudo evadir
+     */
+    public boolean forzarEvasionCrisis(OrbitalObject target) {
+        if (!(target instanceof EvasiveCapable)) return false;
+
+        EvasiveCapable evasive = (EvasiveCapable) target;
+        double consumo = evasive.getConsumoEvasionCrisis();
+        double dLat = 0.8;
+        double dLng = 0.8;
+        boolean success = evasive.evade(dLat, dLng, consumo);
+        if (success) {
+            sincronizarCarguerosConEstacion(target, dLat, dLng, 0.0);
+            actualizarPosicionRadar(target);
+        }
         return success;
     }
 

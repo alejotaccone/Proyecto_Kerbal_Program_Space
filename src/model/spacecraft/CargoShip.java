@@ -33,6 +33,7 @@ public class CargoShip extends Spacecraft {
 
     // Métrica de combustible entregado acumulado (conservación de masa)
     private double totalFuelTransferred;
+    private int desorbitadoTicksRestantes = 2;
 
     /**
      * Constructor estándar de compatibilidad.
@@ -94,6 +95,8 @@ public class CargoShip extends Spacecraft {
         } else if (missionState == MissionState.ACOPLADA) {
             posicionarEnAcople();
             iniciarTransferencia();
+        } else if (missionState == MissionState.DESORBITANDO) {
+            avanzarDesorbitado();
         } else if (missionState == MissionState.COMPLETADA) {
             posicionarEnAcople();
         }
@@ -239,18 +242,54 @@ public class CargoShip extends Spacecraft {
         this.missionState = MissionState.COMPLETADA;
     }
 
+    public void iniciarDesorbitado() {
+        this.missionState = MissionState.DESORBITANDO;
+        this.desorbitadoTicksRestantes = 2;
+        setNombreImagen("CargoShipProgress_Desorbitando.jpg");
+    }
+
+    public void avanzarDesorbitado() {
+        if (getPosition() != null) {
+            getPosition().setAltitude(Math.max(120.0, getPosition().getAltitude() - 40.0));
+            getPosition().setLatitude(getPosition().getLatitude() - 0.10);
+            getPosition().setLongitude(getPosition().getLongitude() - 0.10);
+        }
+        desorbitadoTicksRestantes--;
+        if (desorbitadoTicksRestantes <= 0) {
+            this.missionState = MissionState.REINGRESO_CONCLUIDO;
+        }
+    }
+
+    public boolean isDesorbitando() {
+        return this.missionState == MissionState.DESORBITANDO;
+    }
+
+    public int getDesorbitadoTicksRestantes() {
+        return desorbitadoTicksRestantes;
+    }
+
     public void abortMission(String razon) {
         this.missionState = MissionState.ABORTADA;
         this.abortReason = (razon != null) ? razon : "Misión cancelada.";
     }
 
     @Override
+    public double getConsumoEvasion() {
+        return Math.round(15.0 + (currentCargoTons * 0.5));
+    }
+
+    @Override
     public boolean evade(double deltaLat, double deltaLng) {
+        return evade(deltaLat, deltaLng, getConsumoEvasion());
+    }
+
+    @Override
+    public boolean evade(double deltaLat, double deltaLng, double consumo) {
         // Si la nave estaba en acople o transferencia, la maniobra fuerza el desacople de emergencia
-        if (missionState.isAcopladaOTransfiriendo()) {
+        if (missionState != null && missionState.isAcopladaOTransfiriendo()) {
             abortMission("Desacople de emergencia por maniobra evasiva ante colisión inminente.");
         }
-        return super.evade(deltaLat, deltaLng);
+        return super.evade(deltaLat, deltaLng, consumo);
     }
 
     @Override
@@ -267,7 +306,18 @@ public class CargoShip extends Spacecraft {
 
     @Override
     public java.awt.Color getColorRadar() {
+        if (missionState == MissionState.DESORBITANDO || missionState == MissionState.REINGRESO_CONCLUIDO) {
+            return new java.awt.Color(255, 60, 20); // Fuego y fricción térmica de reingreso
+        }
         return new java.awt.Color(255, 140, 0); // Naranja táctico
+    }
+
+    @Override
+    public String getNombreImagen() {
+        if (missionState == MissionState.DESORBITANDO || missionState == MissionState.REINGRESO_CONCLUIDO) {
+            return "CargoShipProgress_Desorbitando.jpg";
+        }
+        return super.getNombreImagen();
     }
 
     @Override
@@ -280,6 +330,10 @@ public class CargoShip extends Spacecraft {
         StringBuilder sb = new StringBuilder();
         sb.append("\n--- MISIÓN DE REABASTECIMIENTO ---\n");
         sb.append(String.format("Estado:      %s\n", (missionState != null ? missionState.getDescripcion() : "Desconocido")));
+        if (missionState == MissionState.DESORBITANDO) {
+            sb.append(String.format("Reingreso:   Descendiendo a atmósfera (Alt: %.1f km, Ticks: %d)\n",
+                    getPosition() != null ? getPosition().getAltitude() : 0.0, desorbitadoTicksRestantes));
+        }
         if (targetStation != null) {
             sb.append(String.format("Destino:     %s\n", targetStation.getName()));
             sb.append(String.format("Distancia:   %.2f km\n", distanceTo(targetStation)));

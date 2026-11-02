@@ -3,6 +3,7 @@ package controller;
 import engine.SimulationEngine;
 import gui.CrisisDialogView;
 import java.awt.Component;
+import java.util.Locale;
 import java.util.function.Consumer;
 import model.spacecraft.EvasiveCapable;
 import model.spacecraft.OrbitalObject;
@@ -51,12 +52,17 @@ public class CrisisController {
         if (dist < 100.0) {
             if (onPausarSimulacion != null) onPausarSimulacion.run();
 
+            double consumoEvasion = (target instanceof EvasiveCapable)
+                    ? ((EvasiveCapable) target).getConsumoEvasionCrisis()
+                    : 200.0;
+
             // 1. Delegar a la Vista la presentación del diálogo y obtención de la orden
             int seleccion = CrisisDialogView.mostrarDialogoDecisionCrisis(
                     parent, 
                     threat.getName(), 
                     dist, 
-                    target.getName()
+                    target.getName(),
+                    consumoEvasion
             );
 
             // 2. Procesar la decisión sobre el Modelo
@@ -89,11 +95,22 @@ public class CrisisController {
 
         if (seleccion == 0) { // Opción 0: Forzar evasión
             boolean success = false;
+            double consumo = 200.0;
             if (target instanceof EvasiveCapable) {
-                success = ((EvasiveCapable) target).evade(0.5, 0.5);
+                EvasiveCapable evasive = (EvasiveCapable) target;
+                consumo = evasive.getConsumoEvasionCrisis();
+                if (engine != null) {
+                    success = engine.forzarEvasionCrisis(target);
+                } else {
+                    success = evasive.evade(0.8, 0.8, consumo);
+                }
             }
             if (success) {
-                if (logConsola != null) logConsola.accept("[CRISIS]: ¡Evasión exitosa! [" + target.getName() + "] maniobró a tiempo.");
+                if (logConsola != null) {
+                    logConsola.accept(String.format(Locale.US,
+                            "[CRISIS]: ¡Evasión crítica forzada exitosa! [%s] maniobró de emergencia (-%.0fL Combustible).",
+                            target.getName(), consumo));
+                }
             } else {
                 if (logConsola != null) logConsola.accept("[CRISIS FATAL]: [" + target.getName() + "] no pudo evadir el impacto (sin propulsión/combustible). OBJETO DESTRUIDO.");
                 manejarDestruccionObjeto(parent, target, engine, onEstacionDestruida);
@@ -112,6 +129,18 @@ public class CrisisController {
 
         if (target instanceof SpaceStation) {
             SpaceStation station = (SpaceStation) target;
+
+            // Desacoplar y abortar misiones de cargueros vinculados si la estación fue destruida
+            if (engine != null && engine.getTrackedObjects() != null) {
+                for (OrbitalObject obj : engine.getTrackedObjects()) {
+                    if (obj instanceof model.spacecraft.CargoShip) {
+                        model.spacecraft.CargoShip cargo = (model.spacecraft.CargoShip) obj;
+                        if (cargo.getTargetStation() == station) {
+                            cargo.abortMission("Estación espacial destruida en colisión orbital.");
+                        }
+                    }
+                }
+            }
 
             // Delegar a la Vista la presentación del cartel de destrucción
             CrisisDialogView.mostrarDialogoEstacionDestruida(
@@ -143,4 +172,3 @@ public class CrisisController {
         }
     }
 }
-

@@ -29,9 +29,19 @@ public abstract class Spacecraft extends OrbitalObject implements FuelCarrier, E
     }
 
     @Override
+    public double getConsumoEvasion() {
+        return 15.0;
+    }
+
+    @Override
     public boolean evade(double deltaLat, double deltaLng) {
-        if (fuelTank != null && !fuelTank.isEmpty()) {
-            boolean success = fuelTank.consume(15.0); // Consumo de energía/combustible por maniobra
+        return evade(deltaLat, deltaLng, getConsumoEvasion());
+    }
+
+    @Override
+    public boolean evade(double deltaLat, double deltaLng, double consumo) {
+        if (fuelTank != null && fuelTank.getCurrentLevel() >= consumo) {
+            boolean success = fuelTank.consume(consumo); // Consumo proporcional de combustible por maniobra
             if (success && getPosition() != null) {
                 getPosition().setLatitude(getPosition().getLatitude() + deltaLat);
                 getPosition().setLongitude(getPosition().getLongitude() + deltaLng);

@@ -241,6 +241,10 @@ public class RadarPanel extends JPanel {
 
             if (craft instanceof model.spacecraft.CargoShip) {
                 dibujarTrayectoriaCarguero(g2, (model.spacecraft.CargoShip) craft, screenPos, centroX, centroY, radio);
+            } else if (craft instanceof model.spacecraft.RogueDebris) {
+                dibujarVectorPredictivoAmenaza(g2, (model.spacecraft.RogueDebris) craft, screenPos, centroX, centroY, radio);
+            } else if (craft instanceof model.spacecraft.SpaceDebris) {
+                dibujarVectorProximidadBasura(g2, (model.spacecraft.SpaceDebris) craft, screenPos, centroX, centroY, radio);
             }
 
             dibujarIluminacionBarrido(g2, screenPos.x, screenPos.y, centroX, centroY, estilo);
@@ -267,6 +271,30 @@ public class RadarPanel extends JPanel {
 
     private void dibujarTrayectoriaCarguero(Graphics2D g2, model.spacecraft.CargoShip cargo, Point cargoPos, int centroX, int centroY, int radio) {
         if (cargo.getTargetStation() == null || cargo.getTargetStation().getPosition() == null) return;
+
+        if (cargo.getMissionState() == model.spacecraft.MissionState.DESORBITANDO) {
+            Stroke strokeOrig = g2.getStroke();
+            Color colorOrig = g2.getColor();
+            int dx = (cargoPos.x - centroX);
+            int dy = (cargoPos.y - centroY);
+            double distC = Math.sqrt(dx * dx + dy * dy);
+            if (distC > 0) {
+                int tailLength = 26;
+                int tx = cargoPos.x + (int)(dx / distC * tailLength);
+                int ty = cargoPos.y + (int)(dy / distC * tailLength);
+
+                g2.setStroke(new BasicStroke(4.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.setColor(new Color(255, 60, 0, 160));
+                g2.drawLine(cargoPos.x, cargoPos.y, tx, ty);
+
+                g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.setColor(new Color(255, 210, 40, 230));
+                g2.drawLine(cargoPos.x, cargoPos.y, tx - (int)(dx / distC * 8), ty - (int)(dy / distC * 8));
+            }
+            g2.setStroke(strokeOrig);
+            g2.setColor(colorOrig);
+            return;
+        }
         Point stationPos = calcularPosicionPantalla(cargo.getTargetStation(), centroX, centroY, radio);
         Stroke strokeOriginal = g2.getStroke();
         Color colorOriginal = g2.getColor();
@@ -283,6 +311,84 @@ public class RadarPanel extends JPanel {
         }
         g2.setStroke(strokeOriginal);
         g2.setColor(colorOriginal);
+    }
+
+    private void dibujarVectorPredictivoAmenaza(Graphics2D g2, model.spacecraft.RogueDebris threat, Point threatPos, int centroX, int centroY, int radio) {
+        if (threat.getTarget() == null || threat.getTarget().getPosition() == null) return;
+        Point targetPos = calcularPosicionPantalla(threat.getTarget(), centroX, centroY, radio);
+
+        double distKm = threat.distanceTo(threat.getTarget());
+        int ticksEst = (int) Math.max(1, Math.ceil(distKm / 33.0));
+
+        Stroke strokeOriginal = g2.getStroke();
+        Color colorOriginal = g2.getColor();
+
+        boolean zonaCritica = (distKm < 100.0);
+
+        if (zonaCritica) {
+            int alphaPulso = (int)(180 + 75 * Math.sin(sweepAngle * 6));
+            alphaPulso = Math.max(80, Math.min(255, alphaPulso));
+            g2.setColor(new Color(255, 40, 40, alphaPulso));
+            g2.setStroke(new BasicStroke(2.6f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, new float[]{8.0f, 5.0f}, 0.0f));
+        } else {
+            g2.setColor(new Color(255, 120, 30, 200));
+            g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, new float[]{6.0f, 6.0f}, 0.0f));
+        }
+
+        g2.drawLine(threatPos.x, threatPos.y, targetPos.x, targetPos.y);
+
+        int rImpacto = zonaCritica ? (14 + (int)(4 * Math.sin(sweepAngle * 4))) : 10;
+        g2.setColor(zonaCritica ? new Color(255, 40, 40, 220) : new Color(255, 140, 40, 180));
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.drawOval(targetPos.x - rImpacto, targetPos.y - rImpacto, rImpacto * 2, rImpacto * 2);
+        g2.drawLine(targetPos.x - rImpacto - 3, targetPos.y, targetPos.x + rImpacto + 3, targetPos.y);
+        g2.drawLine(targetPos.x, targetPos.y - rImpacto - 3, targetPos.x, targetPos.y + rImpacto + 3);
+
+        int midX = (threatPos.x + targetPos.x) / 2;
+        int midY = (threatPos.y + targetPos.y) / 2;
+        double anguloVector = Math.atan2(targetPos.y - threatPos.y, targetPos.x - threatPos.x);
+        int arrowSize = 6;
+        int[] xArrow = {
+            midX,
+            (int) (midX - arrowSize * Math.cos(anguloVector - Math.PI / 6)),
+            (int) (midX - arrowSize * Math.cos(anguloVector + Math.PI / 6))
+        };
+        int[] yArrow = {
+            midY,
+            (int) (midY - arrowSize * Math.sin(anguloVector - Math.PI / 6)),
+            (int) (midY - arrowSize * Math.sin(anguloVector + Math.PI / 6))
+        };
+        g2.fillPolygon(xArrow, yArrow, 3);
+
+        g2.setFont(new Font("Consolas", Font.BOLD, 9));
+        String textoHUD = zonaCritica 
+            ? String.format(java.util.Locale.US, "⚠ IMPACTO INMINENTE (%.1fkm | ~%dt)", distKm, ticksEst)
+            : String.format(java.util.Locale.US, "RUMBO COLISIÓN: %.1fkm (~%dt)", distKm, ticksEst);
+        g2.setColor(zonaCritica ? new Color(255, 60, 60, 240) : new Color(255, 180, 50, 220));
+        g2.drawString(textoHUD, midX + 8, midY - 4);
+
+        g2.setStroke(strokeOriginal);
+        g2.setColor(colorOriginal);
+    }
+
+    private void dibujarVectorProximidadBasura(Graphics2D g2, model.spacecraft.SpaceDebris debris, Point debrisPos, int centroX, int centroY, int radio) {
+        if (centroPos == null) return;
+        double distKm = (debris.getPosition() != null) ? debris.getPosition().distance3DTo(centroPos) : Double.MAX_VALUE;
+        if (distKm <= 180.0) {
+            Stroke strokeOrig = g2.getStroke();
+            Color colorOrig = g2.getColor();
+
+            g2.setColor(new Color(255, 200, 0, 90));
+            g2.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, new float[]{4.0f, 6.0f}, 0.0f));
+            g2.drawLine(debrisPos.x, debrisPos.y, centroX, centroY);
+
+            g2.setFont(new Font("Consolas", Font.PLAIN, 8));
+            g2.setColor(new Color(255, 200, 0, 150));
+            g2.drawString(String.format(java.util.Locale.US, "Δ %.0fkm", distKm), (debrisPos.x + centroX) / 2 + 4, (debrisPos.y + centroY) / 2);
+
+            g2.setStroke(strokeOrig);
+            g2.setColor(colorOrig);
+        }
     }
 
     private void dibujarIconoNave(Graphics2D g2, RadarRenderable renderable, int pixelX, int pixelY, EstiloVisual estilo) {
@@ -329,8 +435,14 @@ public class RadarPanel extends JPanel {
         g2.setColor(new Color(estilo.color.getRed(), estilo.color.getGreen(), estilo.color.getBlue(), 180));
 
         String labelNombre = craft.getName();
-        if (labelNombre.length() > 20) {
-            labelNombre = labelNombre.substring(0, 18) + "…";
+        if (craft instanceof model.spacecraft.CargoShip) {
+            model.spacecraft.CargoShip cargo = (model.spacecraft.CargoShip) craft;
+            if (cargo.getMissionState() == model.spacecraft.MissionState.DESORBITANDO) {
+                labelNombre += String.format(java.util.Locale.US, " [REINGRESO: %.0fkm]", cargo.getPosition().getAltitude());
+            }
+        }
+        if (labelNombre.length() > 24) {
+            labelNombre = labelNombre.substring(0, 22) + "…";
         }
         g2.drawString(labelNombre, pixelX + estilo.tamano + 3, pixelY + 3);
     }

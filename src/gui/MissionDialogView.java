@@ -12,6 +12,7 @@ import java.awt.Window;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -61,17 +62,22 @@ public class MissionDialogView {
     }
 
     public static void mostrarMisionCompletada(Component parent, String carguero, String estacion, double fuelTransferido) {
+        ImageIcon iconDesorbitado = ShipImageLoader.obtenerImageIconEscalado("CargoShipProgress_Desorbitando.jpg", 360, 190);
+        if (iconDesorbitado == null) {
+            iconDesorbitado = ShipImageLoader.obtenerImageIconEscalado("CargoShipProgress_Desorbitando.jfif", 360, 190);
+        }
+
         String html = String.format(
             "<html><div style='text-align: center; font-family: Consolas; font-size: 11px; color: #00FF88; width: 360px;'>" +
             "La transferencia de combustible hacia <b style='color: #00FFFF;'>[%s]</b> ha concluido satisfactoriamente.<br><br>" +
             "<table style='margin: 0 auto; color: #FFFFFF; font-family: Consolas; font-size: 11px;'>" +
             "<tr><td align='right'>Combustible suministrado:</td><td align='left'><b style='color: #FFB400;'>+%.1f L</b></td></tr>" +
             "</table><br>" +
-            "El carguero <b style='color: #FFB400;'>[%s]</b> se ha desacoplado exitosamente de la estación y procedió a su desorbitado controlado (retirado del radar)." +
+            "El carguero <b style='color: #FFB400;'>[%s]</b> ejecutó su desacople de separación y completó con honores su <b style='color: #FF7722;'>desorbitado e incineración atmosférica controlada</b> sobre el océano." +
             "</div></html>",
             estacion, fuelTransferido, carguero
         );
-        mostrarAlerta(parent, "═══ [★] REABASTECIMIENTO COMPLETADO ═══", html, new Color(0, 240, 120), "[ CERRAR INFORME DE MISIÓN ]");
+        mostrarAlertaConImagen(parent, "═══ [★] REABASTECIMIENTO Y DESORBITADO CONCLUIDO ═══", html, iconDesorbitado, new Color(0, 240, 120), "[ CERRAR INFORME DE MISIÓN ]");
     }
 
     public static void mostrarMisionCompletada(Component parent, String carguero, String estacion, double fuelTransferido, double o2Ignorado) {
@@ -79,15 +85,19 @@ public class MissionDialogView {
     }
 
     private static void mostrarAlerta(Component parent, String titulo, String cuerpoHtml, Color colorTema, String textoBoton) {
+        mostrarAlertaConImagen(parent, titulo, cuerpoHtml, null, colorTema, textoBoton);
+    }
+
+    private static void mostrarAlertaConImagen(Component parent, String titulo, String cuerpoHtml, ImageIcon imagen, Color colorTema, String textoBoton) {
         Window owner = SwingUtilities.getWindowAncestor(parent);
         JDialog dialog = (owner instanceof Frame) ? new JDialog((Frame) owner, true) : new JDialog((Dialog) owner, true);
         dialog.setUndecorated(true);
 
-        JPanel mainPanel = new JPanel(new BorderLayout(0, 14));
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 12));
         mainPanel.setBackground(new Color(8, 14, 8));
         mainPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(colorTema, 2),
-            BorderFactory.createEmptyBorder(18, 20, 18, 20)
+            BorderFactory.createEmptyBorder(16, 18, 16, 18)
         ));
 
         JLabel lblHeader = new JLabel(titulo);
@@ -96,9 +106,21 @@ public class MissionDialogView {
         lblHeader.setHorizontalAlignment(SwingConstants.CENTER);
         mainPanel.add(lblHeader, BorderLayout.NORTH);
 
+        JPanel centerPanel = new JPanel(new BorderLayout(0, 8));
+        centerPanel.setOpaque(false);
+
+        if (imagen != null) {
+            JLabel lblImg = new JLabel(imagen);
+            lblImg.setHorizontalAlignment(SwingConstants.CENTER);
+            lblImg.setBorder(BorderFactory.createLineBorder(new Color(30, 80, 40), 1));
+            centerPanel.add(lblImg, BorderLayout.NORTH);
+        }
+
         JLabel lblCuerpo = new JLabel(cuerpoHtml);
         lblCuerpo.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(lblCuerpo, BorderLayout.CENTER);
+        centerPanel.add(lblCuerpo, BorderLayout.CENTER);
+
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.setOpaque(false);

@@ -28,6 +28,7 @@ public class MissionController {
 
     private final Set<CargoShip> misionesCompletadasNotificadas;
     private final Set<CargoShip> misionesAbortadasNotificadas;
+    private final Set<CargoShip> misionesDesorbitandoNotificadas;
 
     public MissionController(SimulationEngine engine, AlertQueue alertQueue, Consumer<String> logConsola) {
         this.engine = engine;
@@ -35,6 +36,7 @@ public class MissionController {
         this.logConsola = (logConsola != null) ? logConsola : s -> {};
         this.misionesCompletadasNotificadas = new HashSet<>();
         this.misionesAbortadasNotificadas = new HashSet<>();
+        this.misionesDesorbitandoNotificadas = new HashSet<>();
     }
 
     /**
@@ -149,9 +151,20 @@ public class MissionController {
                 }
             }
 
-            // C. Misión de Reabastecimiento Completada
+            // C. Misión de Reabastecimiento Completada -> Iniciar Desorbitado Cinemático
             else if (estado == MissionState.COMPLETADA && !misionesCompletadasNotificadas.contains(cargo)) {
                 misionesCompletadasNotificadas.add(cargo);
+                cargo.iniciarDesorbitado();
+                logConsola.accept(String.format(
+                    "[DESORBITADO]: Suministros entregados por [%s] (+%.1f L). Desacoplando e iniciando ignición de retropropulsión para reingreso atmosférico.",
+                    cargo.getName(), cargo.getTotalFuelTransferred()
+                ));
+                if (onRefreshUI != null) onRefreshUI.run();
+            }
+
+            // D. Desorbitado Concluido -> Modal de Reingreso y Remoción de Nave
+            else if (estado == MissionState.REINGRESO_CONCLUIDO && !misionesDesorbitandoNotificadas.contains(cargo)) {
+                misionesDesorbitandoNotificadas.add(cargo);
                 final String nombreCarguero = cargo.getName();
                 final String nombreEstacion = (cargo.getTargetStation() != null) ? cargo.getTargetStation().getName() : "Estación";
                 final double fuel = cargo.getTotalFuelTransferred();
@@ -164,8 +177,8 @@ public class MissionController {
                     if (onRefreshUI != null) onRefreshUI.run();
                 });
                 logConsola.accept(String.format(
-                    "[MISIÓN EXITOSA]: Reabastecimiento completado por [%s]. Suministrados: %.1f L a [%s]. Carguero desacoplado y desorbitado.",
-                    nombreCarguero, fuel, nombreEstacion
+                    "[REINGRESO CONCLUIDO]: Carguero [%s] completó su desorbitado e incineración atmosférica controlada sobre el océano. Misión cerrada con honores.",
+                    nombreCarguero
                 ));
             }
         }
