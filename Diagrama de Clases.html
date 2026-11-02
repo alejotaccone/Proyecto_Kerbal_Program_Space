@@ -152,8 +152,12 @@
 
     <script>
         const diagrams = [
-            // Tab 0: Dominio Espacial
+            // =========================================================================
+            // TAB 0: DOMINIO ESPACIAL, COMPONENTES Y MINIJUEGO
+            // =========================================================================
             `classDiagram
+    direction TB
+
     class RadarRenderable {
         <<interface>>
         +getColorRadar() Color
@@ -161,47 +165,99 @@
         +esIconoTriangular() boolean
         +tieneAnilloRadar() boolean
     }
-    class FuelCarrier {
-        <<interface>>
-        +getFuelTank() FuelTank
-        +getEtiquetaCombustible() String
-    }
-    class EvasiveCapable {
-        <<interface>>
-        +evade(double deltaLat, double deltaLng) boolean
-        +evade(double deltaLat, double deltaLng, double consumo) boolean
-        +getConsumoEvasion() double
-        +getConsumoEvasionCrisis() double
-    }
+
     class OrbitalObject {
         <<abstract>>
         -SpacecraftInfo info
         -GeoPosition position
         -double velocityKmH
         -String nombreImagen
-        +move()*
+        +OrbitalObject(SpacecraftInfo info, GeoPosition position, double velocityKmH, String nombreImagen)
+        +move()* void
         +getType()* String
         +performSpecialAbility()* String
         +getDetalleTelemetria()* String
         +distanceTo(OrbitalObject other) double
+        +getColorRadar() Color
+        +getTamanoIconoRadar() int
+        +esIconoTriangular() boolean
+        +tieneAnilloRadar() boolean
+        +getInfo() SpacecraftInfo
+        +getId() String
+        +getName() String
+        +getNoradId() int
+        +getPosition() GeoPosition
+        +setPosition(GeoPosition position) void
+        +getVelocityKmH() double
+        +setVelocityKmH(double velocityKmH) void
+        +getNombreImagen() String
+        +setNombreImagen(String nombreImagen) void
     }
+
     class SpacecraftInfo {
         -String id
         -String name
         -int noradId
+        +SpacecraftInfo(String id, String name, int noradId)
         +getId() String
+        +setId(String id) void
         +getName() String
+        +setName(String name) void
         +getNoradId() int
+        +setNoradId(int noradId) void
     }
-    class Spacecraft {
-        <<abstract>>
-        -FuelTank fuelTank
-        +move()
-        +evade(double deltaLat, double deltaLng) boolean
-        +refuel(double amount) boolean
-        +getFuelTank() FuelTank
+
+    class GeoPosition {
+        +double EARTH_RADIUS_KM
+        -double latitude
+        -double longitude
+        -double altitude
+        +GeoPosition(double latitude, double longitude, double altitude)
+        +distanceTo(GeoPosition other) double
+        +distance3DTo(GeoPosition other) double
+        +surfaceDistanceTo(GeoPosition other) double
+        +getLatitude() double
+        +setLatitude(double latitude) void
+        +getLongitude() double
+        +setLongitude(double longitude) void
+        +getAltitude() double
+        +setAltitude(double altitude) void
     }
+
+    class SpaceDebris {
+        -double hazardLevel
+        -double driftLat
+        -double driftLng
+        +SpaceDebris(SpacecraftInfo info, GeoPosition position, double hazardLevel)
+        +move() void
+        +getType() String
+        +performSpecialAbility() String
+        +getDetalleTelemetria() String
+        +getColorRadar() Color
+        +getTamanoIconoRadar() int
+        +getHazardLevel() double
+        +setHazardLevel(double hazardLevel) void
+    }
+
+    class RogueDebris {
+        +double INTERCEPT_STEP_KM_PER_TICK
+        -OrbitalObject target
+        +RogueDebris(SpacecraftInfo info, GeoPosition position, double hazardLevel, OrbitalObject target)
+        +move() void
+        +getType() String
+        +performSpecialAbility() String
+        +getDetalleTelemetria() String
+        +getColorRadar() Color
+        +getTamanoIconoRadar() int
+        +esIconoTriangular() boolean
+        +getTarget() OrbitalObject
+        +setTarget(OrbitalObject target) void
+    }
+
     class SpaceStation {
+        +double EVASION_FUEL_COST
+        +double CRISIS_EVASION_FUEL_COST
+        +double SOLAR_RECHARGE_PER_TICK
         -String stationType
         -String imagenDestruida
         -String textoDestruccion
@@ -210,160 +266,389 @@
         -PercentageGauge batteryGauge
         -double temperature
         -boolean solarPanelsDeployed
-        +SpaceStation(info, pos, img, type, imgDest, txtDest)
-        +move()
+        +SpaceStation(SpacecraftInfo info, GeoPosition pos, String img, String type, String imgDest, String txtDest)
+        +move() void
+        +toggleSolarPanels() String
+        +evade(double deltaLat, double deltaLng) boolean
+        +evade(double deltaLat, double deltaLng, double consumoLitros) boolean
         +refuelShip(Spacecraft ship) boolean
+        +getType() String
+        +performSpecialAbility() String
+        +getDetalleTelemetria() String
         +getFuelTank() FuelTank
         +getEtiquetaCombustible() String
-        +getDetalleTelemetria() String
-        +getColorRadar() Color
-        +tieneAnilloRadar() boolean
+        +getOxygenLevel() double
+        +getBatteryLevel() double
+        +isSolarPanelsDeployed() boolean
+        +getImagenDestruida() String
+        +getTextoDestruccion() String
     }
-    class CargoShip {
-        -double cargoCapacityTons
-        -double currentCargoTons
-        +performSpecialAbility() String
-        +getDetalleTelemetria() String
-        +iniciarDesorbitado() void
-        +avanzarDesorbitado() void
-        +isDesorbitando() boolean
-        +getColorRadar() Color
+
+    class PercentageGauge {
+        -double level
+        +PercentageGauge(double initialLevel)
+        +increase(double amount) void
+        +decrease(double amount) void
+        +isDepleted() boolean
+        +isAbove(double threshold) boolean
+        +getLevel() double
+        +setLevel(double level) void
     }
-    class CrewShuttle {
-        -List~Kerbal~ crew
-        +addCrewMember(Kerbal kerbal)
-        +agregarTripulante(String name, KerbalRole role, int courage)
-        +performSpecialAbility() String
-        +getDetalleTelemetria() String
-        +iniciarDesorbitado() void
-        +avanzarDesorbitado() void
-        +isDesorbitando() boolean
+
+    class EvasiveCapable {
+        <<interface>>
+        +evade(double deltaLat, double deltaLng) boolean
+        +evade(double deltaLat, double deltaLng, double consumoLitros) boolean
+        +getConsumoEvasion() double
+        +getConsumoEvasionCrisis() double
     }
-    class ExplorationProbe {
-        -double solarEfficiency
-        +performSpecialAbility() String
-        +getDetalleTelemetria() String
-        +iniciarDesorbitado() void
-        +avanzarDesorbitado() void
-        +isDesorbitando() boolean
+
+    class Spacecraft {
+        <<abstract>>
+        +double DEFAULT_EVASION_FUEL_COST
+        +double DEFAULT_CRISIS_EVASION_FUEL_COST
+        -FuelTank fuelTank
+        +Spacecraft(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank, double velocityKmH, String nombreImagen)
+        +move() void
+        +evade(double deltaLat, double deltaLng) boolean
+        +evade(double deltaLat, double deltaLng, double consumoLitros) boolean
+        +refuel(double amount) boolean
+        +getFuelTank() FuelTank
+        +getConsumoEvasion() double
+        +getConsumoEvasionCrisis() double
     }
-    class SpaceDebris {
-        -double hazardLevel
-        +move()
-        +performSpecialAbility() String
-        +getDetalleTelemetria() String
-        +iniciarDesorbitado() void
-        +avanzarDesorbitado() void
-        +isDesorbitando() boolean
-        +esIconoTriangular() boolean
+
+    class FuelCarrier {
+        <<interface>>
+        +getFuelTank() FuelTank
+        +getEtiquetaCombustible() String
     }
-    class RogueDebris {
-        -OrbitalObject target
-        +move()
-        +getTarget() OrbitalObject
-    }
-    class GeoPosition {
-        -double latitude
-        -double longitude
-        -double altitude
-        +distanceTo(GeoPosition other) double
-    }
+
     class FuelTank {
         -double capacity
         -double currentLevel
         -double consumptionRate
+        +FuelTank(double capacity, double initialLevel, double consumptionRate)
+        +consume() boolean
         +consume(double amount) boolean
         +refuel(double amount) void
+        +isEmpty() boolean
+        +isFull() boolean
         +getPercentage() double
+        +getCapacity() double
+        +getCurrentLevel() double
+        +getConsumptionRate() double
     }
-    class PercentageGauge {
-        -double level
-        +increase(double amount)
-        +decrease(double amount)
-        +isAbove(double threshold) boolean
+
+    class ExplorationProbe {
+        -double solarEfficiency
+        +ExplorationProbe(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank, double solarEfficiency)
+        +getType() String
+        +performSpecialAbility() String
+        +getDetalleTelemetria() String
+        +getColorRadar() Color
+        +getSolarEfficiency() double
+        +setSolarEfficiency(double solarEfficiency) void
     }
+
+    class CrewShuttle {
+        -List~Kerbal~ crew
+        +CrewShuttle(SpacecraftInfo info, GeoPosition position, FuelTank fuelTank)
+        +addCrewMember(Kerbal k) void
+        +agregarTripulante(String nombre, KerbalRole rol, int valentia) void
+        +getType() String
+        +performSpecialAbility() String
+        +getDetalleTelemetria() String
+        +getColorRadar() Color
+        +getCrew() List~Kerbal~
+    }
+
     class Kerbal {
         -String name
         -KerbalRole role
         -int courage
+        +Kerbal(String name, KerbalRole role, int courage)
         +ejecutarManiobraPilotaje() String
+        +esAptoParaPilotar() boolean
+        +getName() String
+        +setName(String name) void
+        +getRole() KerbalRole
+        +setRole(KerbalRole role) void
+        +getCourage() int
+        +setCourage(int courage) void
     }
+
     class KerbalRole {
         <<enumeration>>
         PILOT
         ENGINEER
         SCIENTIST
+        -String descripcion
+        +esAptoParaPilotar(int valentia) boolean
+        +ejecutarAccionEspecial(String nombre, int valentia) String
+        +getDescripcion() String
     }
 
-    RadarRenderable <|.. OrbitalObject : implements (ISP)
-    FuelCarrier <|.. Spacecraft : implements (ISP)
-    EvasiveCapable <|.. Spacecraft : implements (ISP)
-    FuelCarrier <|.. SpaceStation : implements (ISP)
-    EvasiveCapable <|.. SpaceStation : implements (ISP)
+    class CargoShip {
+        +double INTERCEPT_STEP_KM_PER_TICK
+        +double DOCKING_RANGE_KM
+        +double FUEL_TRANSFER_RATE_PER_TICK
+        +double PROPULSION_RESERVE
+        +int MAX_DOCKING_ATTEMPTS
+        +int DEORBIT_DURATION_TICKS
+        -double cargoCapacityTons
+        -double currentCargoTons
+        -SpaceStation targetStation
+        -MissionState missionState
+        -int dockingAttemptsRemaining
+        -double cargoFuel
+        -double totalFuelTransferred
+        -int desorbitadoTicksRestantes
+        +CargoShip(SpacecraftInfo info, GeoPosition pos, FuelTank tank, SpaceStation target, double cargoFuel, double capTons)
+        +move() void
+        +avanzarHaciaEstacion() void
+        +ejecutarPasoTransferencia() void
+        +procesarIntentoFallido() boolean
+        +iniciarDesorbitado() void
+        +avanzarDesorbitado() void
+        +abortMission(String razon) void
+        +loadCargo(double tons) boolean
+        +getType() String
+        +performSpecialAbility() String
+        +getDetalleTelemetria() String
+        +getMissionState() MissionState
+        +setMissionState(MissionState state) void
+        +getTargetStation() SpaceStation
+        +getTotalFuelTransferred() double
+    }
 
-    OrbitalObject <|-- Spacecraft
-    OrbitalObject <|-- SpaceStation
-    OrbitalObject <|-- SpaceDebris
-    Spacecraft <|-- CargoShip
-    Spacecraft <|-- CrewShuttle
-    Spacecraft <|-- ExplorationProbe
-    SpaceDebris <|-- RogueDebris
+    class MissionState {
+        <<enumeration>>
+        EN_TRANSITO
+        EN_RANGO_DE_ACOPLE
+        ACOPLE_EN_CURSO
+        ACOPLADA
+        TRANSFIRIENDO
+        DESORBITANDO
+        REINGRESO_CONCLUIDO
+        COMPLETADA
+        ABORTADA
+        -String descripcion
+        +getDescripcion() String
+        +isFinalizada() boolean
+        +isAcopladaOTransfiriendo() boolean
+    }
 
-    OrbitalObject *-- "1" SpacecraftInfo : contiene
-    OrbitalObject *-- "1" GeoPosition : ubicado en
-    Spacecraft *-- "1" FuelTank : posee tanque
-    SpaceStation *-- "1" FuelTank : reserva acople
-    SpaceStation *-- "1" PercentageGauge : oxigeno
-    SpaceStation *-- "1" PercentageGauge : bateria
-    CrewShuttle *-- "0..*" Kerbal : tripulacion
-    Kerbal --> "1" KerbalRole : rol
-    RogueDebris --> "1" OrbitalObject : persigue`,
+    class PrecisionGauge {
+        +double MIN_POS
+        +double MAX_POS
+        +double BASE_SPEED
+        +double BASE_GREEN_START
+        +double BASE_GREEN_END
+        -double currentPosition
+        -double direction
+        -double speed
+        -double greenZoneStart
+        -double greenZoneEnd
+        -boolean stopped
+        -boolean lastHitResult
+        +PrecisionGauge()
+        +ajustarDificultadPorIntento(int attemptNumber) void
+        +update() void
+        +frenar() boolean
+        +evaluarAcierto() boolean
+        +reiniciar() void
+        +getCurrentPosition() double
+        +getGreenZoneStart() double
+        +getGreenZoneEnd() double
+    }
 
-            // Tab 1: Motor & Radar
+    %% Relaciones jerárquicas normalizadas
+    RadarRenderable <|.. OrbitalObject : Implementación
+    OrbitalObject "1" *-- "1" SpacecraftInfo : Composición (1..1) contiene identidad
+    OrbitalObject "1" *-- "1" GeoPosition : Composición (1..1) posee coordenadas
+
+    OrbitalObject <|-- SpaceDebris : Herencia
+    SpaceDebris <|-- RogueDebris : Herencia
+
+    OrbitalObject <|-- SpaceStation : Herencia
+    SpaceStation "1" *-- "2" PercentageGauge : Composición (1..2) O2 y batería
+    SpaceStation ..|> EvasiveCapable : Implementación
+
+    OrbitalObject <|-- Spacecraft : Herencia
+    Spacecraft "1" *-- "1" FuelTank : Composición (1..1) tanque propulsión
+    Spacecraft ..|> FuelCarrier : Implementación
+
+    Spacecraft <|-- ExplorationProbe : Herencia
+    Spacecraft <|-- CrewShuttle : Herencia
+    CrewShuttle "1" *-- "0..*" Kerbal : Composición (1..N) tripulación
+    Kerbal "0..*" --> "1" KerbalRole : Asociación (N..1) rol asignado
+
+    Spacecraft <|-- CargoShip : Herencia
+    CargoShip "0..*" --> "1" MissionState : Asociación (N..1) estado misión
+    CargoShip ..> PrecisionGauge : Dependencia (1..1) minijuego acople`,
+
+            // =========================================================================
+            // TAB 1: MOTOR, BITÁCORA, RADAR, TELEMETRÍA Y API N2YO
+            // =========================================================================
             `classDiagram
+    direction TB
+
     class SimulationEngine {
+        +int ISS_NORAD_ID
+        +int TIANGONG_NORAD_ID
+        +int DEFAULT_STATION_ID
+        +double RADAR_COVERAGE_KM
+        +double PASSIVE_DEBRIS_CLEANUP_KM
+        +int N2YO_SYNC_INTERVAL_TICKS
         -int currentTick
         -List~OrbitalObject~ trackedObjects
         -Radar radar
         -N2YOApiClient apiClient
         -OrbitalEventSpawner eventSpawner
-        -int monitoredShipIndex
-        -int targetStationNoradId
+        -FlightLogbook flightLogbook
+        -int targetStationId
+        +SimulationEngine(String apiKey)
         +SimulationEngine(String apiKey, int targetNoradId)
-        +SimulationEngine(N2YOApiClient api, OrbitalEventSpawner spawner, int noradId)
-        +tick()
-        +syncWithN2YO()
-        +setTargetStation(int noradId)
-        +evadeShip(int index) boolean
-        +forzarEvasionCrisis(OrbitalObject target) boolean
-        +sincronizarCarguerosConEstacion(OrbitalObject st, double dLat, double dLng, double dAlt) void
-        +refuelShipAtStation(int shipIndex) boolean
-        +useSpecialAbility(int shipIndex) String
+        -initializeDefaultSpacecraft() void
+        +setTargetStation(int noradId) void
+        +tick() void
+        +syncWithN2YO() void
+        +limpiarBasuraPasivaLejana() void
+        +spawnSpaceDebris() boolean
         +triggerCrisisEvent() boolean
+        +spawnCargoShip(SpaceStation targetStation) CargoShip
+        +sincronizarCarguerosConEstacion(OrbitalObject station, double dLat, double dLng, double dAlt) void
+        +evadeShip(int shipIndex) boolean
+        +forzarEvasionCrisis(OrbitalObject target) boolean
+        +removeShip(OrbitalObject ship) void
+        +getTrackedObjects() List~OrbitalObject~
+        +getRadar() Radar
+        +getFlightLogbook() FlightLogbook
     }
+
+    class FlightLogbook {
+        -String estacionActiva
+        -int ticksOperados
+        -double totalCombustibleReabastecido
+        -int misionesReabastecimientoCompletadas
+        -int misionesReabastecimientoAbortadas
+        -int carguerosLanzados
+        -int intentosAcopleTotales
+        -int acoplesExitosos
+        -int intentosAcopleFallidos
+        -int evasionesNormalesExitosas
+        -int evasionesCrisisExitosas
+        -int impactosRecibidos
+        -double combustibleConsumidoEvasiones
+        +FlightLogbook()
+        +setEstacionActiva(String nombreEstacion) void
+        +registrarTick() void
+        +registrarLanzamientoCarguero() void
+        +registrarIntentoAcople(boolean exitoso) void
+        +registrarMisionCompletada(double litrosTransferidos) void
+        +registrarMisionAbortada() void
+        +registrarEvasionNormal(double combustibleConsumido) void
+        +registrarEvasionCrisis(double combustibleConsumido) void
+        +registrarImpactoRecibido() void
+        +getPorcentajePrecisionAcople() double
+        +getTotalEvasionesExitosas() int
+        +getCalificacionOperador() String
+        +generarReporteTxt() String
+        +generarReporteJson() String
+        -escaparJson(String s) String
+        +getTicksOperados() int
+        +getTotalCombustibleReabastecido() double
+    }
+
     class Radar {
         -String observerCity
-        -GeoPosition location
+        -GeoPosition observerPosition
         -double coverageRadiusKm
+        +Radar(String observerCity, GeoPosition observerPosition, double coverageRadiusKm)
         +detectCollisionRisks(List~OrbitalObject~ allObjects) List~String~
-        +actualizarUbicacion(GeoPosition nuevaPos)
+        +actualizarUbicacion(GeoPosition nuevaPosicion) void
+        +getObserverCity() String
+        +getObserverPosition() GeoPosition
+        +getCoverageRadiusKm() double
     }
+
+    class GeoPosition {
+        +double EARTH_RADIUS_KM
+        -double latitude
+        -double longitude
+        -double altitude
+        +GeoPosition(double latitude, double longitude, double altitude)
+        +distanceTo(GeoPosition other) double
+    }
+
     class OrbitalEventSpawner {
-        +evaluarEventosAleatoriosPorTick(List~OrbitalObject~ trackedObjects)
+        +evaluarEventosAleatoriosPorTick(List~OrbitalObject~ trackedObjects) void
+        +buscarEstacionObjetivo(List~OrbitalObject~ trackedObjects) OrbitalObject
+        +generarPosicionCercana(GeoPosition centro, double minDistDeg, double maxDistDeg) GeoPosition
+        +generarPosicionPorDistanciaKm(GeoPosition centro, double minDistKm, double maxDistKm) GeoPosition
         +spawnSpaceDebris(List~OrbitalObject~ trackedObjects) boolean
         +triggerCrisisEvent(List~OrbitalObject~ trackedObjects) boolean
+        -fabricarBasuraPasiva(GeoPosition spawnPos) SpaceDebris
+        -fabricarAnomaliaHostil(GeoPosition spawnPos, OrbitalObject target) RogueDebris
     }
-    class SpacecraftFactory {
-        +crearDesdeDatosN2YO(int noradId, String satName, GeoPosition pos)$ OrbitalObject
+
+    class OrbitalObject {
+        <<abstract>>
+        -SpacecraftInfo info
+        -GeoPosition position
+        +move()* void
+        +distanceTo(OrbitalObject other) double
     }
+
+    class EvasiveCapable {
+        <<interface>>
+        +evade(double deltaLat, double deltaLng, double consumo) boolean
+    }
+
+    class TelemetryLogger {
+        -String MONITOR_FILE
+        +printHeader(int tick, String observerCity)$ void
+        +printSpacecraftStatus(List~OrbitalObject~ ships)$ void
+        +printAlerts(List~String~ alerts)$ void
+        +printMessage(String message)$ void
+        +launchMonitorConsole()$ void
+        +writeShipMonitorFile(OrbitalObject ship, String lastAction)$ void
+        +generarResumenNave(OrbitalObject ship)$ String
+        -formatearEncabezadoIdentidad(StringBuilder sb, OrbitalObject ship)$ void
+        -formatearPosicionYCinematica(StringBuilder sb, OrbitalObject ship)$ void
+        -formatearCombustible(StringBuilder sb, OrbitalObject ship)$ void
+        -buildProgressBar(double percentage, int totalBars)$ String
+    }
+
+    class ExternalMonitorLauncher {
+        +lanzarConsolaPowerShell(String archivoMonitor)$ void
+    }
+
+    class FuelCarrier {
+        <<interface>>
+        +getFuelTank() FuelTank
+        +getEtiquetaCombustible() String
+    }
+
     class N2YOApiClient {
+        -String BASE_URL
+        +String DEFAULT_KEY
+        +int NORAD_ISS
+        +int NORAD_TIANGONG
         -String apiKey
         -HttpClient httpClient
         -N2YOJsonParser jsonParser
-        +fetchRealSatellite(int noradId) OrbitalObject
-        +fetchRealSatellitePosition(int noradId, GeoPosition fallback) GeoPosition
+        +N2YOApiClient(String apiKey)
+        +N2YOApiClient(String apiKey, N2YOJsonParser jsonParser)
         -sendGet(String url, Duration timeout) String
+        +fetchRealSatellitePosition(int noradId, GeoPosition fallbackPos) GeoPosition
+        +fetchRealSatellite(int noradId) OrbitalObject
+        +setApiKey(String apiKey) void
+        +getApiKey() String
+        +tieneClaveConfigurada() boolean
     }
+
     class N2YOJsonParser {
         +contienePosiciones(String json) boolean
         +parseSatelliteName(String json, int noradId) String
@@ -371,54 +656,50 @@
         -extractJsonDouble(String json, String key) double
         -extractJsonString(String json, String key) String
     }
-    class TelemetryLogger {
-        +printHeader(int tick, String observerCity)$
-        +printSpacecraftStatus(List~OrbitalObject~ ships)$
-        +printAlerts(List~String~ alerts)$
-        +generarResumenNave(OrbitalObject ship)$ String
-        -formatearCombustible(StringBuilder sb, OrbitalObject ship)$
-        +launchMonitorConsole()$
-    }
-    class ExternalMonitorLauncher {
-        +lanzarConsolaPowerShell(String archivoMonitor)$
-    }
-    class GeoPosition {
-        -double latitude
-        -double longitude
-        -double altitude
-    }
-    class OrbitalObject {
-        <<abstract>>
-    }
-    class FuelCarrier {
-        <<interface>>
-        +getFuelTank() FuelTank
-        +getEtiquetaCombustible() String
-    }
-    class EvasiveCapable {
-        <<interface>>
-        +evade(double deltaLat, double deltaLng) boolean
-        +evade(double deltaLat, double deltaLng, double consumo) boolean
-        +getConsumoEvasion() double
-        +getConsumoEvasionCrisis() double
+
+    class ApiConfig {
+        +String ENV_VAR_NAME
+        +String CONFIG_FILE_NAME
+        +String PROPERTY_KEY
+        +obtenerApiKey()$ String
+        +esClaveValida(String key)$ boolean
+        +enmascararKey(String key)$ String
     }
 
-    SimulationEngine *-- "0..*" OrbitalObject : trackedObjects
-    SimulationEngine *-- "1" Radar : radar
-    SimulationEngine *-- "1" OrbitalEventSpawner : eventSpawner
-    SimulationEngine o-- "1" N2YOApiClient : apiClient
-    SimulationEngine ..> EvasiveCapable : ejecuta maniobra (ISP)
-    Radar *-- "1" GeoPosition : location
-    N2YOApiClient *-- "1" N2YOJsonParser : delega parseo JSON (SRP)
-    N2YOApiClient ..> SpacecraftFactory : usa para crear
-    SpacecraftFactory ..> OrbitalObject : instancia e inyecta config (OCP)
-    OrbitalEventSpawner ..> OrbitalObject : instancia eventos
-    TelemetryLogger ..> ExternalMonitorLauncher : lanza proceso
-    TelemetryLogger ..> OrbitalObject : formatea datos
-    TelemetryLogger ..> FuelCarrier : consulta tanque (ISP)`,
+    class SpacecraftFactory {
+        <<Factory / Creator>>
+        +crearDesdeDatosN2YO(int noradId, String satName, GeoPosition pos)$ OrbitalObject
+    }
 
-            // Tab 2: Interfaz Gráfica (Patrón MVC - Iteración 4)
+    %% Relaciones con Tipo y Multiplicidad
+    SimulationEngine "1" *-- "1" FlightLogbook : Composición (1..1) registra bitácora
+    SimulationEngine "1" *-- "1" Radar : Composición (1..1) administra radar
+    Radar "1" *-- "1" GeoPosition : Composición (1..1) centro radar
+
+    SimulationEngine "1" *-- "1" OrbitalEventSpawner : Composición (1..1) spawner eventos
+    SimulationEngine "1" *-- "0..*" OrbitalObject : Composición (1..N) rastrea objetos
+    OrbitalObject ..|> EvasiveCapable : Implementación (maniobra evasiva)
+
+    SimulationEngine ..> TelemetryLogger : Dependencia (emite logs)
+    TelemetryLogger ..> ExternalMonitorLauncher : Dependencia (abre terminal PS1)
+    TelemetryLogger ..> FuelCarrier : Dependencia (formatea tanque)
+
+    SimulationEngine "1" o-- "1" N2YOApiClient : Agregación (1..1) cliente REST
+    N2YOApiClient "1" *-- "1" N2YOJsonParser : Composición (1..1) delega parseo JSON
+    N2YOApiClient ..> ApiConfig : Dependencia (resuelve API Key)
+    N2YOApiClient ..> SpacecraftFactory : Dependencia (solicita creación)`,
+
+            // =========================================================================
+            // TAB 2: CONTROLADORES Y VISTA (ARQUITECTURA MVC)
+            // =========================================================================
             `classDiagram
+    direction TB
+
+    class Main {
+        +main(String[] args)$ void
+        -runSimulatorCLI(Scanner scanner)$ void
+    }
+
     class MainGUI {
         <<Vista Principal - JFrame>>
         -HeaderBarPanel headerBarPanel
@@ -429,8 +710,9 @@
         -JSplitPane splitPane
         -SimulationController controller
         +MainGUI()
-        +logConsola(String mensaje)
-        +mostrarSenalPerdida(SpaceStation station)
+        -configurarVentana() void
+        +logConsola(String mensaje) void
+        +mostrarSenalPerdida(SpaceStation station) void
         +getHeaderBarPanel() HeaderBarPanel
         +getControlPanel() ControlPanel
         +getRadarPanel() RadarPanel
@@ -438,7 +720,92 @@
         +getConsolePanel() ConsolePanel
         +getSplitPane() JSplitPane
         +getController() SimulationController
+        +main(String[] args)$ void
     }
+
+    class HeaderBarPanel {
+        <<Componente Vista>>
+        -JLabel lblTitulo
+        -JLabel lblTickCount
+        +HeaderBarPanel()
+        +actualizarEstadoTick(int tick, String estado, String hora) void
+    }
+
+    class ControlPanel {
+        <<Componente Vista>>
+        -JComboBox~String~ cmbEstacion
+        -JTextField txtApiKey
+        -JButton btnIniciar
+        -JButton btnDetener
+        -JButton btnCambiarEstacion
+        -JButton btnBitacoraMision
+        -JButton btnPanelesSolares
+        -JComboBox~String~ cmbNaves
+        -JButton btnEvadeShip
+        -JButton btnLanzarCarguero
+        -JButton btnGenerarCrisis
+        -boolean isUpdatingCombo
+        -int cargueroCooldownTicks
+        +ControlPanel()
+        +setCargueroCooldown(int ticksRestantes) void
+        +getCargueroCooldownTicks() int
+        +actualizarEstadoPanelesSolares(boolean desplegados, boolean habilitado) void
+        +actualizarComboNaves(List~OrbitalObject~ naves, JSplitPane splitPane) void
+        +setEstadoOnline(boolean online) void
+        +getSelectedNoradId() int
+        +getSelectedShipIndex() int
+        +addIniciarListener(ActionListener l) void
+        +addDetenerListener(ActionListener l) void
+        +addCambiarEstacionListener(ActionListener l) void
+        +addEvadeShipListener(ActionListener l) void
+        +addLanzarCargueroListener(ActionListener l) void
+        +addGenerarCrisisListener(ActionListener l) void
+        +addPanelesSolaresListener(ActionListener l) void
+        +addBitacoraMisionListener(ActionListener l) void
+        +addSeleccionarNaveListener(ActionListener l) void
+    }
+
+    class RadarPanel {
+        <<Componente Vista>>
+        -List~OrbitalObject~ naves
+        -GeoPosition centroPos
+        -double radioKm
+        -double sweepAngleRad
+        -int selectedIndex
+        +RadarPanel()
+        +setNaves(List~OrbitalObject~ naves) void
+        +setCentro(GeoPosition pos, double radioKm) void
+        +avanzarBarrido() void
+        +getShipIndexAt(int mouseX, int mouseY) int
+        -calcularPosicionPantalla(GeoPosition pos, int cx, int cy, int radio) Point
+        #paintComponent(Graphics g) void
+    }
+
+    class ConsolePanel {
+        <<Componente Vista>>
+        -JTextArea txtConsola
+        +ConsolePanel()
+        +log(String mensaje) void
+        +clear() void
+    }
+
+    class ShipMonitorPanel {
+        <<Componente Vista>>
+        -JLabel lblImagenNave
+        -JTextArea txtMonitorNave
+        +ShipMonitorPanel()
+        +actualizar(OrbitalObject nave) void
+        +mostrarSenalPerdida(SpaceStation station) void
+    }
+
+    class ShipImageLoader {
+        <<Servicio Utilitario UI>>
+        -Map~String_ImageIcon~ CACHE_ICONOS
+        +cargarImagenNave(JLabel labelDestino, String nombreImagen)$ void
+        +obtenerImageIconEscalado(String nombreImagen, int maxAncho, int maxAlto)$ ImageIcon
+        -resolverArchivoImagen(String nombreImagen)$ File
+    }
+
     class SimulationController {
         <<Controlador Principal>>
         -MainGUI vista
@@ -446,203 +813,544 @@
         -Timer simulationTimer
         -Timer radarSweepTimer
         -boolean simulationRunning
+        -boolean tickEnProceso
         -int tickCount
+        -int cargueroCooldownTicks
+        -boolean estacionDestruida
+        -SpaceStation estacionDestruidaRef
+        -AlertQueue alertQueue
+        -MissionController missionController
         +SimulationController(MainGUI vista)
-        +iniciarSimulacion()
-        +detenerSimulacion()
-        +cambiarEstacion()
-        +ejecutarTickSimulacion()
-        +ejecutarManiobraEvasion()
-        +ejecutarHabilidadEspecial()
-        +ejecutarRecargaCombustible()
-        +generarCrisis()
-        +sincronizarDatosRadar()
-        +actualizarMonitorNave()
-        +actualizarComboNaves()
+        -configurarTimers() void
+        -registrarEventos() void
+        +iniciarSimulacion() void
+        +detenerSimulacion() void
+        +cambiarEstacion() void
+        +ejecutarTickSimulacion() void
+        +ejecutarManiobraEvasion() void
+        +generarCrisis() void
+        -manejarLanzamientoCarguero() void
+        -alternarPanelesSolares() void
+        -mostrarBitacoraMision() void
+        +sincronizarDatosRadar() void
+        +actualizarMonitorNave() void
+        +actualizarComboNaves() void
+        -actualizarEstadoBotonPaneles() void
     }
+
+    class SimulationEngine {
+        <<Modelo de Simulación>>
+        +tick() void
+        +spawnCargoShip(SpaceStation st) CargoShip
+        +evadeShip(int shipIndex) boolean
+    }
+
+    class AlertQueue {
+        <<Coordinador FIFO de Modales>>
+        -Queue~Runnable~ colaAlertas
+        -Runnable onPausarSimulacion
+        -Runnable onReanudarSimulacion
+        -boolean modalEnPantalla
+        +AlertQueue(Runnable onPausarSimulacion, Runnable onReanudarSimulacion)
+        +encolarAlerta(Runnable tareaModal) void
+        +encolarAlertaPrioritaria(Runnable tareaModal) void
+        -procesarSiguienteSiCorresponde() void
+        -cerrarModalYContinuar() void
+        +hayModalActivo() boolean
+        +limpiarCola() void
+    }
+
+    class FlightLogbookDialogView {
+        <<Vista Modal Bitácora>>
+        +mostrarBitacora(Component parent, FlightLogbook logbook, Consumer~String~ logConsola)$ void
+        -exportarArchivo(Component parent, String contenido, String nombreSug, String desc, String ext, JLabel lblFeed, Consumer~String~ log)$ void
+        -construirHtmlEstadisticas(FlightLogbook b)$ String
+        -crearBotonNaval(String texto, Color colorTema)$ JButton
+    }
+
     class CrisisController {
         <<Controlador de Crisis>>
-        +evaluarEventosCrisis(Component parent, SimulationEngine engine, Runnable onPausar, Runnable onReanudar, Consumer log, Consumer onDestruida)$ boolean
+        +evaluarEventosCrisis(Component parent, SimulationEngine engine, Runnable onPausar, Runnable onReanudar, Consumer~String~ log, Consumer~SpaceStation~ onDestruida)$ boolean
         -buscarAmenazaRogue(SimulationEngine engine)$ RogueDebris
-        -procesarDecisionCrisis(Component parent, int seleccion, OrbitalObject target, SimulationEngine engine, Consumer log, Consumer onDestruida)$
-        -manejarDestruccionObjeto(Component parent, OrbitalObject target, SimulationEngine engine, Consumer onDestruida)$
-        -finalizarCrisis(RogueDebris threat, SimulationEngine engine, Runnable onReanudar)$
+        -procesarDecisionCrisis(Component parent, int seleccion, OrbitalObject target, SimulationEngine engine, Consumer~String~ log, Consumer~SpaceStation~ onDestruida)$ void
+        -manejarDestruccionObjeto(Component parent, OrbitalObject target, SimulationEngine engine, Consumer~SpaceStation~ onDestruida)$ void
+        -finalizarCrisis(RogueDebris threat, SimulationEngine engine, Runnable onReanudar)$ void
     }
+
     class CrisisDialogView {
-        <<Vista de Diálogos Modales>>
-        +mostrarDialogoDecisionCrisis(Component parent, String amenaza, double dist, String objetivo)$ int
-        +mostrarDialogoEstacionDestruida(Component parent, String img, String texto)$ void
-        -crearBotonTactico(String texto, Color col)$ JButton
+        <<Vista Modal de Crisis>>
+        +mostrarDialogoDecisionCrisis(Component parent, String amenaza, double distKm, String objetivo, double consumo)$ int
+        +mostrarDialogoEstacionDestruida(Component parent, String imgDestruida, String txtDestruccion)$ void
+        +mostrarDialogoSimulacionFinalizada(Component parent, String nombreEstacion, String imgDestruida, String txtDestruccion)$ void
+        -crearBotonTactico(String texto, Color colorBorde)$ JButton
     }
+
+    class MissionController {
+        <<Controlador de Misión>>
+        +int MAX_ACTIVE_CARGO_SHIPS
+        -SimulationEngine engine
+        -AlertQueue alertQueue
+        -Consumer~String~ logConsola
+        -Set~CargoShip~ misionesCompletadasNotificadas
+        -Set~CargoShip~ misionesAbortadasNotificadas
+        -Set~CargoShip~ misionesDesorbitandoNotificadas
+        +MissionController(SimulationEngine engine, AlertQueue queue, Consumer~String~ log)
+        +lanzarCarguero(Component parent, int noradEstacion) boolean
+        +evaluarMisionesPorTick(Component parent, Runnable onRefreshUI) void
+        -buscarEstacion(int noradId) SpaceStation
+    }
+
+    class MissionDialogView {
+        <<Vista Modal de Misión>>
+        +mostrarAcopleExitoso(Component parent, String carguero, String estacion)$ void
+        +mostrarAcopleFallido(Component parent, String carguero, String estacion)$ void
+        +mostrarSinCombustible(Component parent, String carguero)$ void
+        +mostrarMisionCompletada(Component parent, String carguero, String estacion, double fuelTransferido)$ void
+        -mostrarAlerta(Component parent, String titulo, String html, Color color, String btn)$ void
+        -mostrarAlertaConImagen(Component parent, String titulo, String html, ImageIcon img, Color color, String btn)$ void
+    }
+
+    class DockingMinigameDialog {
+        <<Vista Modal Minijuego>>
+        +mostrarMinijuego(Component parent, CargoShip cargo, Consumer~String~ logConsola)$ boolean
+        -procesarFrenado(PrecisionGauge gauge, Timer timer, CargoShip cargo, int[] intento, int max, JLabel lblSub, JLabel lblFeed, JLabel lblImg, JPanel panel, JDialog dlg, boolean[] res, Consumer~String~ log)$ void
+    }
+
+    class PrecisionGauge {
+        <<Modelo Minijuego>>
+        +ajustarDificultadPorIntento(int attempt) void
+        +update() void
+        +frenar() boolean
+    }
+
+    %% Relaciones MVC con Tipo y Multiplicidad
+    Main ..> MainGUI : Dependencia (1..1) inicia interfaz
+    MainGUI "1" *-- "1" HeaderBarPanel : Composición (1..1) panel norte
+    MainGUI "1" *-- "1" ControlPanel : Composición (1..1) panel oeste
+    MainGUI "1" *-- "1" RadarPanel : Composición (1..1) panel central
+    MainGUI "1" *-- "1" ConsolePanel : Composición (1..1) panel sur
+    MainGUI "1" *-- "1" ShipMonitorPanel : Composición (1..1) panel este
+    ShipMonitorPanel ..> ShipImageLoader : Dependencia (carga foto nave)
+
+    MainGUI "1" *-- "1" SimulationController : Composición (1..1) delega eventos
+    SimulationController "1" *-- "0..1" SimulationEngine : Composición (1..1) administra motor
+    SimulationController "1" *-- "1" AlertQueue : Composición (1..1) gestiona cola modales
+    SimulationController ..> FlightLogbookDialogView : Dependencia (abre bitácora)
+
+    SimulationController ..> CrisisController : Dependencia (evalúa amenazas)
+    CrisisController ..> CrisisDialogView : Dependencia (muestra alerta/destrucción)
+
+    SimulationController "1" *-- "0..1" MissionController : Composición (1..1) delega misiones
+    MissionController ..> MissionDialogView : Dependencia (muestra reportes)
+    MissionController ..> DockingMinigameDialog : Dependencia (abre minijuego)
+    DockingMinigameDialog "1" *-- "1" PrecisionGauge : Composición (1..1) oscila barra`,
+
+            // =========================================================================
+            // TAB 3: ARQUITECTURA GENERAL EN CAPAS (TRÍADA MVC)
+            // =========================================================================
+            `classDiagram
+    direction TB
+
+    class MainGUI_y_Paneles {
+        <<Capa Vista - Swing UI>>
+        +MainGUI()
+        +HeaderBarPanel()
+        +ControlPanel()
+        +RadarPanel()
+        +ShipMonitorPanel()
+        +ConsolePanel()
+    }
+
+    class SimulationController {
+        <<Capa Controlador - Orquestador General>>
+        +iniciarSimulacion() void
+        +ejecutarTickSimulacion() void
+        +ejecutarManiobraEvasion() void
+    }
+
+    class AlertQueue {
+        <<Capa Controlador - Cola Prioritaria FIFO>>
+        +encolarAlerta(Runnable tareaModal) void
+        +encolarAlertaPrioritaria(Runnable tareaModal) void
+    }
+
+    class MissionController {
+        <<Capa Controlador - Logística y Acople>>
+        +lanzarCarguero(Component parent, int norad) boolean
+        +evaluarMisionesPorTick(Component parent, Runnable refresh) void
+    }
+
+    class CrisisController {
+        <<Capa Controlador - Gestión de Colisiones>>
+        +evaluarEventosCrisis(Component p, SimulationEngine e, Runnable pause, Runnable resume, Consumer log, Consumer onDest)$ boolean
+    }
+
+    class Dialogos_Modales_Vista {
+        <<Capa Vista - Modales Tácticos>>
+        +CrisisDialogView
+        +MissionDialogView
+        +DockingMinigameDialog
+        +FlightLogbookDialogView
+    }
+
+    class SimulationEngine {
+        <<Capa Modelo - Motor y Fachada de Dominio>>
+        +tick() void
+        +spawnCargoShip(SpaceStation st) CargoShip
+        +evadeShip(int shipIndex) boolean
+    }
+
+    class Entidades_Dominio_Orbital {
+        <<Capa Modelo - Jerarquía OrbitalObject>>
+        +SpaceStation
+        +CargoShip
+        +CrewShuttle
+        +ExplorationProbe
+        +SpaceDebris
+        +RogueDebris
+    }
+
+    class Servicios_Dominio_y_API {
+        <<Capa Modelo - Red, Radar y Bitácora>>
+        +N2YOApiClient
+        +N2YOJsonParser
+        +SpacecraftFactory
+        +OrbitalEventSpawner
+        +Radar
+        +FlightLogbook
+    }
+
+    MainGUI_y_Paneles "1" *-- "1" SimulationController : Composición (1..1) delega eventos de usuario
+    SimulationController "1" *-- "1" AlertQueue : Composición (1..1) sincroniza pausas modales
+    SimulationController "1" *-- "1" MissionController : Composición (1..1) delega misiones de carga
+    MissionController ..> Dialogos_Modales_Vista : Dependencia (despliega acople, bitácora y reportes)
+    SimulationController ..> CrisisController : Dependencia (delega evaluación de impacto)
+    SimulationController "1" *-- "1" SimulationEngine : Composición (1..1) ejecuta reglas de negocio
+    SimulationEngine "1" *-- "0..*" Entidades_Dominio_Orbital : Composición (1..N) actualiza estado físico
+    SimulationEngine "1" *-- "1..*" Servicios_Dominio_y_API : Composición (1..N) coordina radar, red y bitácora`,
+
+            // =========================================================================
+            // TAB 4: DIAGRAMA COMPLETO UNIFICADO DE TODO EL SISTEMA
+            // =========================================================================
+            `classDiagram
+    direction TB
+
+    %% ================= NIVEL 1: ENTRADA Y VISTA PRINCIPAL (SWING) =================
+    class Main {
+        +main(String[] args)$ void
+        -runSimulatorCLI(Scanner scanner)$ void
+    }
+
+    class MainGUI {
+        <<Vista Principal - JFrame>>
+        -HeaderBarPanel headerBarPanel
+        -ControlPanel controlPanel
+        -RadarPanel radarPanel
+        -ShipMonitorPanel shipMonitorPanel
+        -ConsolePanel consolePanel
+        -JSplitPane splitPane
+        -SimulationController controller
+        +MainGUI()
+        -configurarVentana() void
+        +logConsola(String mensaje) void
+        +mostrarSenalPerdida(SpaceStation station) void
+        +getHeaderBarPanel() HeaderBarPanel
+        +getControlPanel() ControlPanel
+        +getRadarPanel() RadarPanel
+        +getShipMonitorPanel() ShipMonitorPanel
+        +getConsolePanel() ConsolePanel
+        +getController() SimulationController
+        +main(String[] args)$ void
+    }
+
     class HeaderBarPanel {
         <<Componente Vista>>
         -JLabel lblTitulo
         -JLabel lblTickCount
-        +actualizarEstadoTick(int tick, String estado, String hora)
+        +HeaderBarPanel()
+        +actualizarEstadoTick(int tick, String estado, String hora) void
     }
+
     class ControlPanel {
         <<Componente Vista>>
-        -JComboBox cmbEstacion
+        -JComboBox~String~ cmbEstacion
         -JTextField txtApiKey
         -JButton btnIniciar
         -JButton btnDetener
         -JButton btnCambiarEstacion
-        -JComboBox cmbNaves
+        -JButton btnBitacoraMision
+        -JButton btnPanelesSolares
+        -JComboBox~String~ cmbNaves
         -JButton btnEvadeShip
-        -JButton btnSpecialAbility
-        -JButton btnRefuel
         -JButton btnLanzarCarguero
         -JButton btnGenerarCrisis
         -int cargueroCooldownTicks
-        +setCargueroCooldown(int ticksRestantes)
-        +getCargueroCooldownTicks() int
-        +actualizarComboNaves(List~OrbitalObject~ naves, JSplitPane sp)
-        +setEstadoOnline(boolean online)
+        +ControlPanel()
+        +setCargueroCooldown(int ticksRestantes) void
+        +actualizarEstadoPanelesSolares(boolean desplegados, boolean habilitado) void
+        +actualizarComboNaves(List~OrbitalObject~ naves, JSplitPane splitPane) void
+        +setEstadoOnline(boolean online) void
         +getSelectedNoradId() int
         +getSelectedShipIndex() int
-        +addIniciarListener(ActionListener l)
-        +addDetenerListener(ActionListener l)
     }
+
     class RadarPanel {
         <<Componente Vista>>
         -List~OrbitalObject~ naves
         -GeoPosition centroPos
         -double radioKm
+        -double sweepAngleRad
         -int selectedIndex
-        +setNaves(List~OrbitalObject~ naves)
-        +setCentro(GeoPosition pos, double radioKm)
-        +avanzarBarrido()
-        +getShipIndexAt(int x, int y) int
+        +RadarPanel()
+        +setNaves(List~OrbitalObject~ naves) void
+        +setCentro(GeoPosition pos, double radioKm) void
+        +avanzarBarrido() void
+        +getShipIndexAt(int mouseX, int mouseY) int
+        -calcularPosicionPantalla(GeoPosition pos, int cx, int cy, int radio) Point
+        #paintComponent(Graphics g) void
     }
+
+    class ConsolePanel {
+        <<Componente Vista>>
+        -JTextArea txtConsola
+        +ConsolePanel()
+        +log(String mensaje) void
+        +clear() void
+    }
+
     class ShipMonitorPanel {
         <<Componente Vista>>
         -JLabel lblImagenNave
         -JTextArea txtMonitorNave
-        +actualizar(OrbitalObject nave)
-        +mostrarSenalPerdida(SpaceStation station)
+        +ShipMonitorPanel()
+        +actualizar(OrbitalObject nave) void
+        +mostrarSenalPerdida(SpaceStation station) void
     }
-    class ConsolePanel {
-        <<Componente Vista>>
-        -JTextArea txtConsola
-        +log(String mensaje)
-        +clear()
-    }
+
     class ShipImageLoader {
-        <<Servicio UI>>
-        +cargarImagenNave(JLabel lbl, String nombreImagen)$
-        +obtenerImageIconEscalado(String nombreImagen, int w, int h)$ ImageIcon
-    }
-    class SimulationEngine {
-        <<Modelo de Simulación>>
-    }
-    class RadarRenderable {
-        <<interface Vista/Modelo>>
+        <<Servicio Utilitario UI>>
+        -Map~String_ImageIcon~ CACHE_ICONOS
+        +cargarImagenNave(JLabel labelDestino, String nombreImagen)$ void
+        +obtenerImageIconEscalado(String nombreImagen, int maxAncho, int maxAlto)$ ImageIcon
+        -resolverArchivoImagen(String nombreImagen)$ File
     }
 
-    MainGUI *-- "1" HeaderBarPanel : compone
-    MainGUI *-- "1" ControlPanel : compone
-    MainGUI *-- "1" RadarPanel : compone
-    MainGUI *-- "1" ShipMonitorPanel : compone
-    MainGUI *-- "1" ConsolePanel : compone
-    MainGUI *-- "1" SimulationController : delega al controlador
-    SimulationController o-- "1" MainGUI : actualiza vista
-    SimulationController o-- "1" SimulationEngine : orquesta modelo
-    SimulationController ..> CrisisController : invoca evaluación
-    CrisisController ..> CrisisDialogView : solicita mostrar diálogo
-    CrisisController ..> SimulationEngine : aplica impacto/evasión
-    RadarPanel ..> RadarRenderable : renderiza blips
-    ShipMonitorPanel ..> ShipImageLoader : carga foto
-    CrisisDialogView ..> ShipImageLoader : carga imagen destruida`,
-
-            // Tab 3: Arquitectura General (Tríada MVC - Iteración 4)
-            `classDiagram
-    class Vista_MainGUI {
-        <<Capa Vista - GUI>>
-    }
-    class Vista_Paneles {
-        <<Capa Vista - Componentes UI>>
-    }
-    class Vista_CrisisDialog {
-        <<Capa Vista - Modales Tácticos>>
-    }
+    %% ================= NIVEL 2: CAPA CONTROLADOR Y MODALES TÁCTICOS =================
     class SimulationController {
-        <<Capa Controlador - Orquestador>>
+        <<Controlador Principal>>
+        -MainGUI vista
+        -SimulationEngine engine
+        -AlertQueue alertQueue
+        -MissionController missionController
+        -Timer simulationTimer
+        -Timer radarSweepTimer
+        -boolean simulationRunning
+        -int tickCount
+        -int cargueroCooldownTicks
+        +SimulationController(MainGUI vista)
+        -configurarTimers() void
+        -registrarEventos() void
+        +iniciarSimulacion() void
+        +detenerSimulacion() void
+        +cambiarEstacion() void
+        +ejecutarTickSimulacion() void
+        +ejecutarManiobraEvasion() void
+        +generarCrisis() void
+        -manejarLanzamientoCarguero() void
+        -alternarPanelesSolares() void
+        -mostrarBitacoraMision() void
+        +sincronizarDatosRadar() void
+        +actualizarMonitorNave() void
     }
+
+    class AlertQueue {
+        <<Coordinador FIFO>>
+        -Queue~Runnable~ colaAlertas
+        -Runnable onPausarSimulacion
+        -Runnable onReanudarSimulacion
+        -boolean modalEnPantalla
+        +AlertQueue(Runnable onPausarSimulacion, Runnable onReanudarSimulacion)
+        +encolarAlerta(Runnable tareaModal) void
+        +encolarAlertaPrioritaria(Runnable tareaModal) void
+        +hayModalActivo() boolean
+        +limpiarCola() void
+    }
+
+    class FlightLogbookDialogView {
+        <<Vista Modal Bitácora>>
+        +mostrarBitacora(Component parent, FlightLogbook logbook, Consumer~String~ logConsola)$ void
+        -exportarArchivo(Component parent, String contenido, String nombreSug, String desc, String ext, JLabel lblFeed, Consumer~String~ log)$ void
+        -construirHtmlEstadisticas(FlightLogbook b)$ String
+    }
+
     class CrisisController {
-        <<Capa Controlador - Lógica Crisis>>
+        <<Controlador de Crisis>>
+        +evaluarEventosCrisis(Component parent, SimulationEngine engine, Runnable onPausar, Runnable onReanudar, Consumer~String~ log, Consumer~SpaceStation~ onDestruida)$ boolean
+        -buscarAmenazaRogue(SimulationEngine engine)$ RogueDebris
+        -procesarDecisionCrisis(Component parent, int seleccion, OrbitalObject target, SimulationEngine engine, Consumer~String~ log, Consumer~SpaceStation~ onDestruida)$ void
     }
+
+    class CrisisDialogView {
+        <<Vista Modal de Crisis>>
+        +mostrarDialogoDecisionCrisis(Component parent, String amenaza, double distKm, String objetivo, double consumo)$ int
+        +mostrarDialogoEstacionDestruida(Component parent, String imgDestruida, String txtDestruccion)$ void
+        +mostrarDialogoSimulacionFinalizada(Component parent, String nombreEstacion, String imgDestruida, String txtDestruccion)$ void
+    }
+
+    class MissionController {
+        <<Controlador de Misión>>
+        +int MAX_ACTIVE_CARGO_SHIPS
+        -SimulationEngine engine
+        -AlertQueue alertQueue
+        -Consumer~String~ logConsola
+        +MissionController(SimulationEngine engine, AlertQueue queue, Consumer~String~ log)
+        +lanzarCarguero(Component parent, int noradEstacion) boolean
+        +evaluarMisionesPorTick(Component parent, Runnable onRefreshUI) void
+        -buscarEstacion(int noradId) SpaceStation
+    }
+
+    class MissionDialogView {
+        <<Vista Modal de Misión>>
+        +mostrarAcopleExitoso(Component parent, String carguero, String estacion)$ void
+        +mostrarAcopleFallido(Component parent, String carguero, String estacion)$ void
+        +mostrarSinCombustible(Component parent, String carguero)$ void
+        +mostrarMisionCompletada(Component parent, String carguero, String estacion, double fuelTransferido)$ void
+    }
+
+    class DockingMinigameDialog {
+        <<Vista Modal Minijuego>>
+        +mostrarMinijuego(Component parent, CargoShip cargo, Consumer~String~ logConsola)$ boolean
+    }
+
+    class PrecisionGauge {
+        -double currentPosition
+        -double direction
+        -double speed
+        -double greenZoneStart
+        -double greenZoneEnd
+        -boolean stopped
+        -boolean lastHitResult
+        +PrecisionGauge()
+        +ajustarDificultadPorIntento(int attempt) void
+        +update() void
+        +frenar() boolean
+        +evaluarAcierto() boolean
+        +reiniciar() void
+    }
+
+    %% ================= NIVEL 3: MOTOR DE SIMULACIÓN, RED Y RADAR =================
     class SimulationEngine {
-        <<Capa Modelo - Motor de Negocio>>
+        -int currentTick
+        -List~OrbitalObject~ trackedObjects
+        -Radar radar
+        -N2YOApiClient apiClient
+        -OrbitalEventSpawner eventSpawner
+        -FlightLogbook flightLogbook
+        -int targetStationId
+        +SimulationEngine(String apiKey, int targetNoradId)
+        +tick() void
+        +setTargetStation(int noradId) void
+        +syncWithN2YO() void
+        +limpiarBasuraPasivaLejana() void
+        +spawnCargoShip(SpaceStation st) CargoShip
+        +evadeShip(int index) boolean
+        +forzarEvasionCrisis(OrbitalObject target) boolean
+        +sincronizarCarguerosConEstacion(OrbitalObject st, double dLat, double dLng, double dAlt) void
+        +removeShip(OrbitalObject ship) void
     }
-    class OrbitalObject {
-        <<Capa Modelo - Entidad Dominio>>
+
+    class FlightLogbook {
+        -String estacionActiva
+        -int ticksOperados
+        -double totalCombustibleReabastecido
+        -int intentosAcopleTotales
+        -int acoplesExitosos
+        -int evasionesNormalesExitosas
+        -int evasionesCrisisExitosas
+        -int impactosRecibidos
+        +registrarIntentoAcople(boolean exitoso) void
+        +registrarMisionCompletada(double litros) void
+        +registrarEvasionNormal(double litros) void
+        +registrarEvasionCrisis(double litros) void
+        +getPorcentajePrecisionAcople() double
+        +generarReporteTxt() String
+        +generarReporteJson() String
     }
+
     class Radar {
-        <<Capa Modelo - Telemetría>>
+        -String observerCity
+        -GeoPosition observerPosition
+        -double coverageRadiusKm
+        +Radar(String city, GeoPosition pos, double radiusKm)
+        +detectCollisionRisks(List~OrbitalObject~ all) List~String~
+        +actualizarUbicacion(GeoPosition nuevaPos) void
     }
-    class N2YOApiClient {
-        <<Capa Modelo - Integración REST>>
+
+    class OrbitalEventSpawner {
+        +evaluarEventosAleatoriosPorTick(List~OrbitalObject~ list) void
+        +generarPosicionPorDistanciaKm(GeoPosition centro, double minKm, double maxKm) GeoPosition
+        +spawnSpaceDebris(List~OrbitalObject~ list) boolean
+        +triggerCrisisEvent(List~OrbitalObject~ list) boolean
     }
+
     class TelemetryLogger {
-        <<Capa Modelo - Servicio Logging>>
+        -String MONITOR_FILE
+        +printHeader(int tick, String city)$ void
+        +printSpacecraftStatus(List~OrbitalObject~ ships)$ void
+        +generarResumenNave(OrbitalObject ship)$ String
+        +writeShipMonitorFile(OrbitalObject ship, String action)$ void
+        +launchMonitorConsole()$ void
     }
 
-    Vista_MainGUI *-- Vista_Paneles : ensambla
-    Vista_MainGUI --> SimulationController : notifica eventos de usuario
-    SimulationController o-- "1" SimulationEngine : modifica estado de negocio
-    SimulationController --> Vista_MainGUI : actualiza datos en pantalla
-    SimulationController ..> CrisisController : delega chequeo de riesgo
-    CrisisController ..> Vista_CrisisDialog : solicita orden al usuario
-    CrisisController --> SimulationEngine : ejecuta evasión o impacto
-    SimulationEngine *-- "0..*" OrbitalObject : gestiona entidades
-    SimulationEngine *-- "1" Radar : calcula proximidad física
-    SimulationEngine o-- "1" N2YOApiClient : sincroniza satélites en vivo
-    SimulationEngine ..> TelemetryLogger : emite telemetría`,
-
-            // Tab 4: Diagrama Completo Unificado de Todo el Sistema (Iteración 4)
-            `classDiagram
-    direction TB
-
-    %% ================= CAPA MODELO: COMPONENTES Y GEOMETRIA =================
-    class GeoPosition {
-        -double latitude
-        -double longitude
-        -double altitude
-        +distanceTo(GeoPosition other) double
+    class ExternalMonitorLauncher {
+        +lanzarConsolaPowerShell(String archivoMonitor)$ void
     }
 
-    class FuelTank {
-        -double capacity
-        -double currentLevel
-        -double consumptionRate
-        +consume(double amount) boolean
-        +refuel(double amount) void
-        +getPercentage() double
+    class N2YOApiClient {
+        -String apiKey
+        -HttpClient httpClient
+        -N2YOJsonParser jsonParser
+        +N2YOApiClient(String apiKey)
+        -sendGet(String url, Duration timeout) String
+        +fetchRealSatellite(int noradId) OrbitalObject
+        +fetchRealSatellitePosition(int noradId, GeoPosition fallback) GeoPosition
     }
 
-    class PercentageGauge {
-        -double level
-        +increase(double amount) void
-        +decrease(double amount) void
-        +isAbove(double threshold) boolean
+    class N2YOJsonParser {
+        +contienePosiciones(String json) boolean
+        +parseSatelliteName(String json, int noradId) String
+        +parsePositionFromJson(String json) GeoPosition
     }
 
-    class KerbalRole {
-        <<enumeration>>
-        PILOT
-        ENGINEER
-        SCIENTIST
+    class ApiConfig {
+        +String ENV_VAR_NAME
+        +String CONFIG_FILE_NAME
+        +String PROPERTY_KEY
+        +obtenerApiKey()$ String
+        +esClaveValida(String key)$ boolean
+        +enmascararKey(String key)$ String
     }
 
-    class Kerbal {
-        -String name
-        -KerbalRole role
-        -int courage
-        +ejecutarManiobraPilotaje() String
-        +esAptoParaPilotar() boolean
+    class SpacecraftFactory {
+        <<Factory / Creator>>
+        +crearDesdeDatosN2YO(int noradId, String name, GeoPosition pos)$ OrbitalObject
     }
 
-    %% ================= CAPA MODELO: INTERFACES =================
+    %% ================= NIVEL 4: JERARQUÍA DE DOMINIO ORBITAL =================
+    class OrbitalObject {
+        <<abstract>>
+        -SpacecraftInfo info
+        -GeoPosition position
+        -double velocityKmH
+        -String nombreImagen
+        +OrbitalObject(SpacecraftInfo info, GeoPosition pos, double vel, String img)
+        +move()* void
+        +getType()* String
+        +performSpecialAbility()* String
+        +getDetalleTelemetria()* String
+        +distanceTo(OrbitalObject other) double
+    }
+
     class RadarRenderable {
         <<interface>>
         +getColorRadar() Color
@@ -651,50 +1359,39 @@
         +tieneAnilloRadar() boolean
     }
 
-    class FuelCarrier {
-        <<interface>>
-        +getFuelTank() FuelTank
-        +getEtiquetaCombustible() String
-    }
-
-    class EvasiveCapable {
-        <<interface>>
-        +evade(double deltaLat, double deltaLng) boolean
-        +evade(double deltaLat, double deltaLng, double consumo) boolean
-        +getConsumoEvasion() double
-        +getConsumoEvasionCrisis() double
-    }
-
-    %% ================= CAPA MODELO: JERARQUIA ORBITAL =================
     class SpacecraftInfo {
         -String id
         -String name
         -int noradId
+        +SpacecraftInfo(String id, String name, int noradId)
         +getId() String
         +getName() String
         +getNoradId() int
     }
 
-    class OrbitalObject {
-        <<abstract>>
-        -SpacecraftInfo info
-        -GeoPosition position
-        -double velocityKmH
-        -String nombreImagen
-        +move()* void
-        +getType()* String
-        +performSpecialAbility()* String
-        +getDetalleTelemetria()* String
-        +distanceTo(OrbitalObject other) double
+    class GeoPosition {
+        +double EARTH_RADIUS_KM
+        -double latitude
+        -double longitude
+        -double altitude
+        +GeoPosition(double latitude, double longitude, double altitude)
+        +distanceTo(GeoPosition other) double
+        +distance3DTo(GeoPosition other) double
+        +surfaceDistanceTo(GeoPosition other) double
     }
 
-    class Spacecraft {
-        <<abstract>>
-        -FuelTank fuelTank
+    class SpaceDebris {
+        -double hazardLevel
+        +SpaceDebris(SpacecraftInfo info, GeoPosition pos, double hazard)
         +move() void
-        +evade(double deltaLat, double deltaLng) boolean
-        +refuel(double amount) boolean
-        +getFuelTank() FuelTank
+        +getType() String
+    }
+
+    class RogueDebris {
+        -OrbitalObject target
+        +RogueDebris(SpacecraftInfo info, GeoPosition pos, double hazard, OrbitalObject target)
+        +move() void
+        +getTarget() OrbitalObject
     }
 
     class SpaceStation {
@@ -706,269 +1403,179 @@
         -PercentageGauge batteryGauge
         -double temperature
         -boolean solarPanelsDeployed
+        +SpaceStation(SpacecraftInfo info, GeoPosition pos, String img, String type, String imgDest, String txtDest)
         +move() void
+        +toggleSolarPanels() String
+        +evade(double deltaLat, double deltaLng, double consumoLitros) boolean
         +refuelShip(Spacecraft ship) boolean
         +getDetalleTelemetria() String
     }
 
-    class CargoShip {
-        -double cargoCapacityTons
-        -double currentCargoTons
+    class PercentageGauge {
+        -double level
+        +PercentageGauge(double initialLevel)
+        +increase(double amount) void
+        +decrease(double amount) void
+        +isDepleted() boolean
+        +getLevel() double
+    }
+
+    class EvasiveCapable {
+        <<interface>>
+        +evade(double deltaLat, double deltaLng) boolean
+        +evade(double deltaLat, double deltaLng, double consumoLitros) boolean
+        +getConsumoEvasion() double
+        +getConsumoEvasionCrisis() double
+    }
+
+    class Spacecraft {
+        <<abstract>>
+        -FuelTank fuelTank
+        +Spacecraft(SpacecraftInfo info, GeoPosition pos, FuelTank tank, double vel, String img)
+        +move() void
+        +evade(double deltaLat, double deltaLng) boolean
+        +evade(double deltaLat, double deltaLng, double consumoLitros) boolean
+        +refuel(double amount) boolean
+        +getFuelTank() FuelTank
+    }
+
+    class FuelCarrier {
+        <<interface>>
+        +getFuelTank() FuelTank
+        +getEtiquetaCombustible() String
+    }
+
+    class FuelTank {
+        -double capacity
+        -double currentLevel
+        -double consumptionRate
+        +FuelTank(double capacity, double initialLevel, double consumptionRate)
+        +consume() boolean
+        +consume(double amount) boolean
+        +refuel(double amount) void
+        +isEmpty() boolean
+        +isFull() boolean
+        +getPercentage() double
+    }
+
+    class ExplorationProbe {
+        -double solarEfficiency
+        +ExplorationProbe(SpacecraftInfo info, GeoPosition pos, FuelTank tank, double eff)
         +performSpecialAbility() String
-        +getDetalleTelemetria() String
-        +iniciarDesorbitado() void
-        +avanzarDesorbitado() void
-        +isDesorbitando() boolean
     }
 
     class CrewShuttle {
         -List~Kerbal~ crew
+        +CrewShuttle(SpacecraftInfo info, GeoPosition pos, FuelTank tank)
         +addCrewMember(Kerbal k) void
         +agregarTripulante(String nom, KerbalRole r, int c) void
         +performSpecialAbility() String
     }
 
-    class ExplorationProbe {
-        -double solarEfficiency
-        +performSpecialAbility() String
+    class Kerbal {
+        -String name
+        -KerbalRole role
+        -int courage
+        +Kerbal(String name, KerbalRole role, int courage)
+        +ejecutarManiobraPilotaje() String
+        +esAptoParaPilotar() boolean
     }
 
-    class SpaceDebris {
-        -double hazardLevel
+    class KerbalRole {
+        <<enumeration>>
+        PILOT
+        ENGINEER
+        SCIENTIST
+        -String descripcion
+        +esAptoParaPilotar(int valentia) boolean
+        +ejecutarAccionEspecial(String nombre, int valentia) String
+    }
+
+    class CargoShip {
+        -double cargoCapacityTons
+        -double currentCargoTons
+        -SpaceStation targetStation
+        -MissionState missionState
+        -int dockingAttemptsRemaining
+        -double cargoFuel
+        -double totalFuelTransferred
+        -int desorbitadoTicksRestantes
+        +CargoShip(SpacecraftInfo info, GeoPosition pos, FuelTank tank, SpaceStation target, double cargoFuel, double capTons)
         +move() void
+        +avanzarHaciaEstacion() void
+        +ejecutarPasoTransferencia() void
+        +procesarIntentoFallido() boolean
+        +iniciarDesorbitado() void
+        +avanzarDesorbitado() void
+        +abortMission(String razon) void
+        +getDetalleTelemetria() String
     }
 
-    class RogueDebris {
-        -OrbitalObject target
-        +move() void
-        +getTarget() OrbitalObject
+    class MissionState {
+        <<enumeration>>
+        EN_TRANSITO
+        EN_RANGO_DE_ACOPLE
+        ACOPLE_EN_CURSO
+        ACOPLADA
+        TRANSFIRIENDO
+        DESORBITANDO
+        REINGRESO_CONCLUIDO
+        COMPLETADA
+        ABORTADA
+        -String descripcion
+        +getDescripcion() String
+        +isFinalizada() boolean
+        +isAcopladaOTransfiriendo() boolean
     }
 
-    %% ================= CAPA MODELO: RADAR, API Y MOTOR =================
-    class Radar {
-        -String observerCity
-        -GeoPosition observerPosition
-        -double coverageRadiusKm
-        +detectCollisionRisks(List~OrbitalObject~ all) List~String~
-        +actualizarUbicacion(GeoPosition nueva) void
-    }
+    %% ================= RELACIONES JERÁRQUICAS PLANARES =================
+    Main ..> MainGUI : Dependencia (1..1) inicia GUI
+    MainGUI "1" *-- "1" HeaderBarPanel : Composición (1..1) panel norte
+    MainGUI "1" *-- "1" ControlPanel : Composición (1..1) panel oeste
+    MainGUI "1" *-- "1" RadarPanel : Composición (1..1) panel central
+    MainGUI "1" *-- "1" ConsolePanel : Composición (1..1) panel sur
+    MainGUI "1" *-- "1" ShipMonitorPanel : Composición (1..1) panel este
+    ShipMonitorPanel ..> ShipImageLoader : Dependencia (carga íconos)
 
-    class N2YOJsonParser {
-        +contienePosiciones(String json) boolean
-        +parseSatelliteName(String json, int noradId) String
-        +parsePositionFromJson(String json) GeoPosition
-    }
+    MainGUI "1" *-- "1" SimulationController : Composición (1..1) delega eventos
+    SimulationController "1" *-- "1" AlertQueue : Composición (1..1) cola FIFO
+    SimulationController ..> FlightLogbookDialogView : Dependencia (abre bitácora)
+    SimulationController ..> CrisisController : Dependencia (evalúa amenazas)
+    CrisisController ..> CrisisDialogView : Dependencia (alerta impacto)
+    SimulationController "1" *-- "0..1" MissionController : Composición (1..1) logística
+    MissionController ..> MissionDialogView : Dependencia (reporte misión)
+    MissionController ..> DockingMinigameDialog : Dependencia (abre minijuego)
+    DockingMinigameDialog "1" *-- "1" PrecisionGauge : Composición (1..1) barra acople
 
-    class SpacecraftFactory {
-        +crearDesdeDatosN2YO(int noradId, String name, GeoPosition pos)$ OrbitalObject
-    }
+    SimulationController "1" *-- "0..1" SimulationEngine : Composición (1..1) administra motor
+    SimulationEngine "1" *-- "1" FlightLogbook : Composición (1..1) bitácora vuelo
+    SimulationEngine "1" *-- "1" Radar : Composición (1..1) escanea sector
+    SimulationEngine "1" *-- "1" OrbitalEventSpawner : Composición (1..1) genera eventos
+    SimulationEngine ..> TelemetryLogger : Dependencia (emite logs)
+    TelemetryLogger ..> ExternalMonitorLauncher : Dependencia (abre PS1)
+    SimulationEngine "1" o-- "1" N2YOApiClient : Agregación (1..1) cliente REST
+    N2YOApiClient "1" *-- "1" N2YOJsonParser : Composición (1..1) parsea JSON
+    N2YOApiClient ..> ApiConfig : Dependencia (lee API Key)
+    N2YOApiClient ..> SpacecraftFactory : Dependencia (crea estación)
 
-    class N2YOApiClient {
-        -String apiKey
-        -HttpClient httpClient
-        -N2YOJsonParser jsonParser
-        +fetchRealSatellite(int noradId) OrbitalObject
-        +fetchRealSatellitePosition(int noradId, GeoPosition fallback) GeoPosition
-    }
-
-    class OrbitalEventSpawner {
-        +evaluarEventosAleatoriosPorTick(List~OrbitalObject~ list) void
-        +spawnSpaceDebris(List~OrbitalObject~ list) boolean
-        +triggerCrisisEvent(List~OrbitalObject~ list) boolean
-    }
-
-    class TelemetryLogger {
-        +printHeader(int tick, String city)$ void
-        +printSpacecraftStatus(List~OrbitalObject~ ships)$ void
-        +printAlerts(List~String~ alerts)$ void
-        +generarResumenNave(OrbitalObject ship)$ String
-        +writeShipMonitorFile(OrbitalObject ship, String action)$ void
-        +launchMonitorConsole()$ void
-    }
-
-    class ExternalMonitorLauncher {
-        +lanzarConsolaPowerShell(String archivoMonitor)$ void
-    }
-
-    class SimulationEngine {
-        -int currentTick
-        -List~OrbitalObject~ trackedObjects
-        -Radar radar
-        -N2YOApiClient apiClient
-        -OrbitalEventSpawner eventSpawner
-        -int monitoredShipIndex
-        -int targetStationNoradId
-        +tick() void
-        +setTargetStation(int noradId) void
-        +syncWithN2YO() void
-        +evadeShip(int index) boolean
-        +forzarEvasionCrisis(OrbitalObject target) boolean
-        +sincronizarCarguerosConEstacion(OrbitalObject st, double dLat, double dLng, double dAlt) void
-        +refuelShipAtStation(int idx) boolean
-        +useSpecialAbility(int idx) String
-        +triggerCrisisEvent() boolean
-        +removeShip(OrbitalObject ship) void
-    }
-
-    %% ================= CAPA CONTROLADOR =================
-    class SimulationController {
-        -MainGUI vista
-        -SimulationEngine engine
-        -Timer simulationTimer
-        -Timer radarSweepTimer
-        -boolean simulationRunning
-        -int tickCount
-        +iniciarSimulacion() void
-        +detenerSimulacion() void
-        +cambiarEstacion() void
-        +ejecutarTickSimulacion() void
-        +ejecutarManiobraEvasion() void
-        +ejecutarHabilidadEspecial() void
-        +ejecutarRecargaCombustible() void
-        +generarCrisis() void
-        +sincronizarDatosRadar() void
-        +actualizarMonitorNave() void
-        +actualizarComboNaves() void
-    }
-
-    class CrisisController {
-        +evaluarEventosCrisis(Component parent, SimulationEngine engine, Runnable onPausar, Runnable onReanudar, Consumer log, Consumer onDestruida)$ boolean
-    }
-
-    %% ================= CAPA VISTA =================
-    class HeaderBarPanel {
-        -JLabel lblTitulo
-        -JLabel lblTickCount
-        +actualizarEstadoTick(int tick, String est, String hora) void
-    }
-
-    class ControlPanel {
-        -JComboBox cmbEstacion
-        -JTextField txtApiKey
-        -JButton btnIniciar
-        -JButton btnDetener
-        -JButton btnCambiarEstacion
-        -JComboBox cmbNaves
-        -JButton btnEvadeShip
-        -JButton btnSpecialAbility
-        -JButton btnRefuel
-        -JButton btnLanzarCarguero
-        -JButton btnGenerarCrisis
-        -int cargueroCooldownTicks
-        +setCargueroCooldown(int ticksRestantes)
-        +getCargueroCooldownTicks() int
-        +actualizarComboNaves(List~OrbitalObject~ naves, JSplitPane sp) void
-        +setEstadoOnline(boolean online) void
-    }
-
-    class RadarPanel {
-        -List~OrbitalObject~ naves
-        -GeoPosition centroPos
-        -double radioKm
-        -int selectedIndex
-        +setNaves(List~OrbitalObject~ naves) void
-        +setCentro(GeoPosition pos, double rKm) void
-        +avanzarBarrido() void
-        +getShipIndexAt(int x, int y) int
-    }
-
-    class ShipMonitorPanel {
-        -JLabel lblImagenNave
-        -JTextArea txtMonitorNave
-        +actualizar(OrbitalObject nave) void
-        +mostrarSenalPerdida(SpaceStation station) void
-    }
-
-    class ConsolePanel {
-        -JTextArea txtConsola
-        +log(String mensaje) void
-    }
-
-    class ShipImageLoader {
-        +cargarImagenNave(JLabel lbl, String img)$ void
-        +obtenerImageIconEscalado(String img, int w, int h)$ ImageIcon
-    }
-
-    class CrisisDialogView {
-        +mostrarDialogoDecisionCrisis(Component parent, String am, double d, String obj)$ int
-        +mostrarDialogoEstacionDestruida(Component parent, String img, String txt)$ void
-    }
-
-    class CrisisDialogHandler {
-        +evaluarEventosCrisis(...)$ boolean
-    }
-
-    class MainGUI {
-        -HeaderBarPanel headerBarPanel
-        -ControlPanel controlPanel
-        -RadarPanel radarPanel
-        -ShipMonitorPanel shipMonitorPanel
-        -ConsolePanel consolePanel
-        -SimulationController controller
-        +logConsola(String msg) void
-        +mostrarSenalPerdida(SpaceStation st) void
-    }
-
-    %% ================= RELACIONES DE HERENCIA E INTERFACES =================
-    RadarRenderable <|.. OrbitalObject
-    FuelCarrier <|.. Spacecraft
-    EvasiveCapable <|.. Spacecraft
-    FuelCarrier <|.. SpaceStation
-    EvasiveCapable <|.. SpaceStation
-    OrbitalObject <|-- Spacecraft
-    OrbitalObject <|-- SpaceStation
-    OrbitalObject <|-- SpaceDebris
-    Spacecraft <|-- CargoShip
-    Spacecraft <|-- CrewShuttle
-    Spacecraft <|-- ExplorationProbe
-    SpaceDebris <|-- RogueDebris
-
-    %% ================= RELACIONES DE DOMINIO Y COMPONENTES =================
-    OrbitalObject *-- "1" SpacecraftInfo : info
-    OrbitalObject *-- "1" GeoPosition : ubicacion
-    Spacecraft *-- "1" FuelTank : combustible
-    SpaceStation *-- "1" FuelTank : reserva acople
-    SpaceStation *-- "1" PercentageGauge : oxigeno
-    SpaceStation *-- "1" PercentageGauge : bateria
-    CrewShuttle *-- "0..*" Kerbal : tripulacion
-    Kerbal --> "1" KerbalRole : rol
-    RogueDebris --> "1" OrbitalObject : persigue
-
-    %% ================= RELACIONES DE MOTOR Y RADAR =================
-    Radar *-- "1" GeoPosition : observador
-    N2YOApiClient *-- "1" N2YOJsonParser : parsea JSON
-    N2YOApiClient ..> SpacecraftFactory : usa factoria
-    SpacecraftFactory ..> OrbitalObject : instancia
-    OrbitalEventSpawner ..> OrbitalObject : genera eventos
-    TelemetryLogger ..> ExternalMonitorLauncher : lanza proceso
-    TelemetryLogger ..> OrbitalObject : lee datos
-    TelemetryLogger ..> FuelCarrier : consulta tanque
-    SimulationEngine *-- "0..*" OrbitalObject : trackedObjects
-    SimulationEngine *-- "1" Radar : radar
-    SimulationEngine *-- "1" OrbitalEventSpawner : eventSpawner
-    SimulationEngine o-- "1" N2YOApiClient : apiClient
-    SimulationEngine ..> TelemetryLogger : emite telemetria
-    SimulationEngine ..> EvasiveCapable : ejecuta evasion
-
-    %% ================= RELACIONES MVC =================
-    MainGUI *-- "1" HeaderBarPanel : compone
-    MainGUI *-- "1" ControlPanel : compone
-    MainGUI *-- "1" RadarPanel : compone
-    MainGUI *-- "1" ShipMonitorPanel : compone
-    MainGUI *-- "1" ConsolePanel : compone
-    MainGUI *-- "1" SimulationController : delega al controlador
-
-    SimulationController o-- "1" MainGUI : actualiza vista
-    SimulationController o-- "1" SimulationEngine : orquesta modelo
-    SimulationController ..> CrisisController : delega crisis
-
-    CrisisController ..> CrisisDialogView : muestra dialogo modal
-    CrisisController ..> SimulationEngine : aplica consecuencias
-    CrisisDialogHandler ..> CrisisController : puente compatibilidad
-
-    RadarPanel ..> RadarRenderable : dibuja blips
-    ShipMonitorPanel ..> ShipImageLoader : carga imagenes
-    CrisisDialogView ..> ShipImageLoader : carga imagen destruida`
+    SimulationEngine "1" *-- "0..*" OrbitalObject : Composición (1..N) rastrea objetos
+    OrbitalObject ..|> RadarRenderable : Implementación
+    OrbitalObject "1" *-- "1" SpacecraftInfo : Composición (1..1) identidad
+    OrbitalObject "1" *-- "1" GeoPosition : Composición (1..1) coordenadas
+    OrbitalObject <|-- SpaceDebris : Herencia
+    SpaceDebris <|-- RogueDebris : Herencia
+    OrbitalObject <|-- SpaceStation : Herencia
+    SpaceStation "1" *-- "2" PercentageGauge : Composición (1..2) O2 y batería
+    SpaceStation ..|> EvasiveCapable : Implementación
+    OrbitalObject <|-- Spacecraft : Herencia
+    Spacecraft ..|> FuelCarrier : Implementación
+    Spacecraft "1" *-- "1" FuelTank : Composición (1..1) tanque
+    Spacecraft <|-- ExplorationProbe : Herencia
+    Spacecraft <|-- CrewShuttle : Herencia
+    CrewShuttle "1" *-- "0..*" Kerbal : Composición (1..N) tripulación
+    Kerbal "0..*" --> "1" KerbalRole : Asociación (N..1) rol
+    Spacecraft <|-- CargoShip : Herencia
+    CargoShip "0..*" --> "1" MissionState : Asociación (N..1) estado misión`
         ];
 
         let scale = 1;
@@ -989,6 +1596,12 @@
             target.innerHTML = '';
             const { svg } = await mermaid.render('mermaidGraph_' + Date.now(), code);
             target.innerHTML = svg;
+            const svgEl = target.querySelector('svg');
+            if (svgEl) {
+                svgEl.style.width = '1250px';
+                svgEl.style.height = 'auto';
+                svgEl.style.maxWidth = 'none';
+            }
             resetView();
         }
 
