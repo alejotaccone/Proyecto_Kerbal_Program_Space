@@ -18,24 +18,26 @@ public class SpacecraftFactory {
     public static OrbitalObject crearDesdeDatosN2YO(int noradId, String satName, GeoPosition pos) {
         String upper = (satName != null) ? satName.toUpperCase() : "";
         String craftId = "SAT-" + noradId;
-        SpacecraftInfo info = new SpacecraftInfo(craftId, satName + " (N2YO API)", noradId);
+        SpacecraftInfo info = new SpacecraftInfo(craftId, satName, noradId);
 
         if (upper.contains("TIANHE") || upper.contains("TIANGONG") || upper.contains("CSS") || upper.contains("CHINA") || noradId == 48274) {
+            SpacecraftInfo tiangongInfo = new SpacecraftInfo(craftId, "Tiangong (CSS)", noradId);
             return new SpaceStation(
-                info,
+                tiangongInfo,
                 pos,
                 "SpaceSation_China.jfif",
                 "Estación Espacial China (Tiangong)",
-                "ISS_Destruida.jpg",
+                "SpaceSation_China_Destruida.jfif",
                 "La Estación Espacial China (Tiangong) quedó totalmente inoperativa"
             );
         } else if (upper.contains("STATION") || upper.contains("ISS") || noradId == 25544) {
+            SpacecraftInfo issInfo = new SpacecraftInfo(craftId, "Estación Espacial Internacional (ISS)", noradId);
             return new SpaceStation(
-                info,
+                issInfo,
                 pos,
                 "SpaceStation_Internacional.jpg",
                 "Estación Espacial Internacional (ISS)",
-                "ISS_Destruida.jpg",
+                "SpaceStation_Internacional_Destruida.jfif",
                 "La Estación Espacial Internacional quedó totalmente inoperativa"
             );
         } else if (upper.contains("ONEWEB") || upper.contains("DEBRIS") || upper.contains("COSMOS") || upper.contains("DEB") || upper.contains("SL-")) {

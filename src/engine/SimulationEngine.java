@@ -23,6 +23,7 @@ public class SimulationEngine {
     private String lastMonitorAction;
     private int targetStationNoradId;
     private OrbitalEventSpawner eventSpawner;
+    private FlightLogbook flightLogbook;
 
     public SimulationEngine(String apiKey, int targetNoradId) {
         this(new N2YOApiClient(apiKey), new OrbitalEventSpawner(), targetNoradId);
@@ -33,6 +34,7 @@ public class SimulationEngine {
         this.trackedObjects = new ArrayList<>();
         this.apiClient = (apiClient != null) ? apiClient : new N2YOApiClient(null);
         this.eventSpawner = (eventSpawner != null) ? eventSpawner : new OrbitalEventSpawner();
+        this.flightLogbook = new FlightLogbook();
         this.monitoredShipIndex = -1;
         this.lastMonitorAction = "";
         // Inicializar el radar con coordenadas 0,0 por defecto
@@ -77,6 +79,9 @@ public class SimulationEngine {
         if (station != null) {
             this.trackedObjects.clear();
             this.trackedObjects.add(station);
+            if (this.flightLogbook != null) {
+                this.flightLogbook.setEstacionActiva(station.getName());
+            }
             
             // Actualizar el "radar" local para que se centre en la estación
             GeoPosition pos = station.getPosition();
@@ -213,6 +218,9 @@ public class SimulationEngine {
 
     private void avanzarReloj() {
         currentTick++;
+        if (flightLogbook != null) {
+            flightLogbook.registrarTick();
+        }
         TelemetryLogger.printHeader(currentTick, radar.getObserverCity());
     }
 
@@ -275,6 +283,9 @@ public class SimulationEngine {
         double dLng = 0.5;
         boolean success = evasiveShip.evade(dLat, dLng, consumo);
         if (success) {
+            if (flightLogbook != null) {
+                flightLogbook.registrarEvasionNormal(consumo);
+            }
             sincronizarCarguerosConEstacion(craft, dLat, dLng, 0.0);
             actualizarPosicionRadar(craft);
         }
@@ -302,6 +313,9 @@ public class SimulationEngine {
         double dLng = 0.8;
         boolean success = evasive.evade(dLat, dLng, consumo);
         if (success) {
+            if (flightLogbook != null) {
+                flightLogbook.registrarEvasionCrisis(consumo);
+            }
             sincronizarCarguerosConEstacion(target, dLat, dLng, 0.0);
             actualizarPosicionRadar(target);
         }
@@ -420,7 +434,14 @@ public class SimulationEngine {
 
         CargoShip cargo = new CargoShip(info, spawnPos, propulsionTank, station, cargoFuel, cargoCapacityTons);
         this.trackedObjects.add(cargo);
+        if (this.flightLogbook != null) {
+            this.flightLogbook.registrarLanzamientoCarguero();
+        }
         TelemetryLogger.printMessage("[MISIÓN]: Carguero [" + shipName + "] desplegado en órbita a " + String.format("%.1f", distKm) + " km de " + station.getName() + ".");
         return cargo;
+    }
+
+    public FlightLogbook getFlightLogbook() {
+        return flightLogbook;
     }
 }

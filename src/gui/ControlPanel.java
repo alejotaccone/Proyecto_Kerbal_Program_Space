@@ -42,6 +42,7 @@ public class ControlPanel extends JPanel {
     // Operaciones de Misión y Control de Flota
     private JButton btnLanzarCarguero;
     private JButton btnGenerarCrisis;
+    private JButton btnBitacoraMision;
     private JComboBox<String> cmbNaves;
     private JButton btnEvadeShip;
 
@@ -138,6 +139,12 @@ public class ControlPanel extends JPanel {
         btnGenerarCrisis.setEnabled(false);
         btnGenerarCrisis.setToolTipText("Inyecta una anomalía cinética (Rogue Debris) en rumbo de impacto para probar defensas.");
         panel.add(btnGenerarCrisis);
+        panel.add(Box.createVerticalStrut(6));
+
+        btnBitacoraMision = crearBoton("[#] Registro de Misión", COLOR_ACCENT_CYAN);
+        btnBitacoraMision.setEnabled(true);
+        btnBitacoraMision.setToolTipText("Abre la Bitácora de Misión y Estadísticas de Vuelo con opción de exportar a .txt o .json.");
+        panel.add(btnBitacoraMision);
         panel.add(Box.createVerticalStrut(15));
 
         // ---- SECCIÓN: CONTROL DE FLOTA INDIVIDUAL ----
@@ -476,6 +483,7 @@ public class ControlPanel extends JPanel {
     public void addEvadeShipListener(ActionListener l) { btnEvadeShip.addActionListener(l); }
     public void addLanzarCargueroListener(ActionListener l) { btnLanzarCarguero.addActionListener(l); }
     public void addGenerarCrisisListener(ActionListener l) { btnGenerarCrisis.addActionListener(l); }
+    public void addBitacoraMisionListener(ActionListener l) { btnBitacoraMision.addActionListener(l); }
     public void addSeleccionarNaveListener(ActionListener l) { cmbNaves.addActionListener(l); }
 
     public JButton getBtnIniciar() { return btnIniciar; }
@@ -483,6 +491,7 @@ public class ControlPanel extends JPanel {
     public JButton getBtnCambiarEstacion() { return btnCambiarEstacion; }
     public JButton getBtnPanelesSolares() { return btnPanelesSolares; }
     public JButton getBtnLanzarCarguero() { return btnLanzarCarguero; }
+    public JButton getBtnBitacoraMision() { return btnBitacoraMision; }
 
     /**
      * Panel interno con Scrollable que obliga a que su ancho coincida siempre

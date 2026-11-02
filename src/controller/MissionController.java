@@ -112,11 +112,23 @@ public class MissionController {
                 final String nombreEstacion = (cargo.getTargetStation() != null) ? cargo.getTargetStation().getName() : "Estación";
 
                 alertQueue.encolarAlerta(() -> {
+                    int intentosAntes = cargo.getDockingAttemptsRemaining();
                     boolean acierto = DockingMinigameDialog.mostrarMinijuego(
                         parent,
                         cargo,
                         logConsola
                     );
+                    int intentosFalladosEnSesion = intentosAntes - cargo.getDockingAttemptsRemaining();
+                    if (engine.getFlightLogbook() != null) {
+                        for (int f = 0; f < intentosFalladosEnSesion; f++) {
+                            engine.getFlightLogbook().registrarIntentoAcople(false);
+                        }
+                        if (acierto) {
+                            engine.getFlightLogbook().registrarIntentoAcople(true);
+                        } else {
+                            engine.getFlightLogbook().registrarMisionAbortada();
+                        }
+                    }
 
                     if (acierto) {
                         cargo.registrarAcopleExitoso();
@@ -141,6 +153,9 @@ public class MissionController {
             // B. Carguero sin combustible en tránsito
             else if (estado == MissionState.ABORTADA && !misionesAbortadasNotificadas.contains(cargo)) {
                 misionesAbortadasNotificadas.add(cargo);
+                if (engine.getFlightLogbook() != null) {
+                    engine.getFlightLogbook().registrarMisionAbortada();
+                }
                 if (cargo.getAbortReason() != null && cargo.getAbortReason().toLowerCase().contains("sin combustible")) {
                     final String nombreCarguero = cargo.getName();
                     alertQueue.encolarAlerta(() -> MissionDialogView.mostrarSinCombustible(parent, nombreCarguero));
@@ -154,6 +169,9 @@ public class MissionController {
             // C. Misión de Reabastecimiento Completada -> Iniciar Desorbitado Cinemático
             else if (estado == MissionState.COMPLETADA && !misionesCompletadasNotificadas.contains(cargo)) {
                 misionesCompletadasNotificadas.add(cargo);
+                if (engine.getFlightLogbook() != null) {
+                    engine.getFlightLogbook().registrarMisionCompletada(cargo.getTotalFuelTransferred());
+                }
                 cargo.iniciarDesorbitado();
                 logConsola.accept(String.format(
                     "[DESORBITADO]: Suministros entregados por [%s] (+%.1f L). Desacoplando e iniciando ignición de retropropulsión para reingreso atmosférico.",

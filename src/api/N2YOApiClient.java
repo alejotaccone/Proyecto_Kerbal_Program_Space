@@ -86,7 +86,9 @@ public class N2YOApiClient {
      * Si no hay API Key o falla la conexión, fabrica un objeto orbital con posición predeterminada de contingencia.
      */
     public OrbitalObject fetchRealSatellite(int noradId) {
-        GeoPosition posDefecto = new GeoPosition(-34.60, -58.38, 420.0);
+        GeoPosition posDefecto = (noradId == NORAD_TIANGONG)
+                ? new GeoPosition(28.45, 112.90, 390.0)
+                : new GeoPosition(-34.60, -58.38, 420.0);
         String nombreFallback = (noradId == NORAD_TIANGONG) ? "Tiangong (CSS)" : "Estación Espacial Internacional (ISS)";
 
         if (ApiConfig.esClaveValida(apiKey)) {
@@ -102,7 +104,7 @@ public class N2YOApiClient {
         }
 
         // Si no hay key o la red falló, crear la estación con datos seguros de contingencia
-        return SpacecraftFactory.crearDesdeDatosN2YO(noradId, nombreFallback + " [Modo Local]", posDefecto);
+        return SpacecraftFactory.crearDesdeDatosN2YO(noradId, nombreFallback, posDefecto);
     }
 
     public void setApiKey(String apiKey) {

@@ -22,7 +22,7 @@ public class SpaceStation extends OrbitalObject implements FuelCarrier, EvasiveC
             position,
             "SpaceStation_Internacional.jpg",
             "Estación Espacial Internacional (ISS)",
-            "ISS_Destruida.jpg",
+            "SpaceStation_Internacional_Destruida.jfif",
             "La Estación Espacial Internacional quedó totalmente inoperativa"
         );
     }
@@ -33,7 +33,7 @@ public class SpaceStation extends OrbitalObject implements FuelCarrier, EvasiveC
             position,
             nombreImagen,
             stationType,
-            "ISS_Destruida.jpg",
+            "SpaceStation_Internacional_Destruida.jfif",
             "La " + (stationType != null ? stationType : "Estación Espacial") + " quedó totalmente inoperativa"
         );
     }
@@ -53,7 +53,7 @@ public class SpaceStation extends OrbitalObject implements FuelCarrier, EvasiveC
         // La estación espacial es un objeto orbital con velocidad orbital estándar (~27600 km/h)
         super(info, position, 27600.0, nombreImagen);
         this.stationType = stationType;
-        this.imagenDestruida = (imagenDestruida != null && !imagenDestruida.isEmpty()) ? imagenDestruida : "ISS_Destruida.jpg";
+        this.imagenDestruida = (imagenDestruida != null && !imagenDestruida.isEmpty()) ? imagenDestruida : "SpaceStation_Internacional_Destruida.jfif";
         this.textoDestruccion = (textoDestruccion != null && !textoDestruccion.isEmpty())
                 ? textoDestruccion
                 : "La Estación Espacial quedó totalmente inoperativa";

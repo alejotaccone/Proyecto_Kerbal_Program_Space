@@ -32,6 +32,7 @@ public class EvasionAndCooldownCheck {
         testDesorbitadoCinematico();
         testAnomaliaUnificadaUnTickParaCrisis();
         testLimpiezaBasuraPasivaMasDe200Km();
+        testBitacoraMisionYExportacion();
 
         System.out.println("=============================================================");
         System.out.println("RESULTADO: TODAS LAS PRUEBAS DE EVASIÓN Y COOLDOWN PASARON CON ÉXITO.");
@@ -357,5 +358,36 @@ public class EvasionAndCooldownCheck {
         }
 
         System.out.println("[OK] Caso 9 - Basura espacial pasiva desaparece automáticamente al superar los 200 km de distancia de la estación.");
+    }
+
+    private static void testBitacoraMisionYExportacion() {
+        engine.FlightLogbook logbook = new engine.FlightLogbook();
+        logbook.setEstacionActiva("ISS Test");
+        logbook.registrarTick();
+        logbook.registrarTick();
+        logbook.registrarLanzamientoCarguero();
+        logbook.registrarIntentoAcople(false);
+        logbook.registrarIntentoAcople(true);
+        logbook.registrarMisionCompletada(600.0);
+        logbook.registrarEvasionNormal(100.0);
+        logbook.registrarEvasionCrisis(200.0);
+
+        if (Math.abs(logbook.getPorcentajePrecisionAcople() - 50.0) > 0.01) {
+            throw new AssertionError("La precisión de acople con 1 fallo y 1 acierto debe ser 50.0%, fue: " + logbook.getPorcentajePrecisionAcople());
+        }
+        if (Math.abs(logbook.getTotalCombustibleReabastecido() - 600.0) > 0.01) {
+            throw new AssertionError("El combustible reabastecido debe ser 600.0 L.");
+        }
+        if (logbook.getTotalEvasionesExitosas() != 2 || Math.abs(logbook.getCombustibleConsumidoEvasiones() - 300.0) > 0.01) {
+            throw new AssertionError("Las evasiones totales deben ser 2 y el combustible gastado 300.0 L.");
+        }
+
+        String txt = logbook.generarReporteTxt();
+        String json = logbook.generarReporteJson();
+        if (!txt.contains("600.0 L") || !txt.contains("50.0%") || !json.contains("\"porcentajePrecision\": 50.0")) {
+            throw new AssertionError("Los reportes .txt y .json no contienen las métricas esperadas.");
+        }
+
+        System.out.println("[OK] Caso 10 - Bitácora de Misión (FlightLogbook): Calcula precisión de acople (50.0%), evasiones (2), combustible (+600 L) y genera reportes .txt y .json.");
     }
 }

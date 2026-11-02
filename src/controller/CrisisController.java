@@ -127,6 +127,10 @@ public class CrisisController {
             SimulationEngine engine, 
             Consumer<SpaceStation> onEstacionDestruida) {
 
+        if (engine != null && engine.getFlightLogbook() != null) {
+            engine.getFlightLogbook().registrarImpactoRecibido();
+        }
+
         if (target instanceof SpaceStation) {
             SpaceStation station = (SpaceStation) target;
 
@@ -147,15 +151,13 @@ public class CrisisController {
                 onEstacionDestruida.accept(station);
             }
 
-            // Delegar a la Vista la presentación del cartel de destrucción
-            CrisisDialogView.mostrarDialogoEstacionDestruida(
-                    parent, 
-                    station.getImagenDestruida(), 
+            // Mostrar cartel unificado de destrucción de la estación y fin de la simulación con su imagen correspondiente
+            CrisisDialogView.mostrarDialogoSimulacionFinalizada(
+                    parent,
+                    station.getName(),
+                    station.getImagenDestruida(),
                     station.getTextoDestruccion()
             );
-
-            // Mostrar cartel final indicando que la simulación concluyó por destrucción de la estación
-            CrisisDialogView.mostrarDialogoSimulacionFinalizada(parent, station.getName());
         }
 
         // Modificar el Modelo eliminando el objeto destruido

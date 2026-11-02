@@ -96,6 +96,7 @@ public class SimulationController {
         vista.getControlPanel().addGenerarCrisisListener(e -> generarCrisis());
         vista.getControlPanel().addLanzarCargueroListener(e -> manejarLanzamientoCarguero());
         vista.getControlPanel().addPanelesSolaresListener(e -> alternarPanelesSolares());
+        vista.getControlPanel().addBitacoraMisionListener(e -> mostrarBitacoraMision());
 
         // 8. Selector de Nave en ComboBox
         vista.getControlPanel().addSeleccionarNaveListener(e -> {
@@ -516,6 +517,23 @@ public class SimulationController {
 
     public int getCargueroCooldownTicks() {
         return cargueroCooldownTicks;
+    }
+
+    public void mostrarBitacoraMision() {
+        boolean wasRunning = simulationRunning;
+        if (wasRunning) {
+            simulationTimer.stop();
+            radarSweepTimer.stop();
+        }
+        try {
+            engine.FlightLogbook logbook = (engine != null) ? engine.getFlightLogbook() : null;
+            gui.FlightLogbookDialogView.mostrarBitacora(vista, logbook, vista::logConsola);
+        } finally {
+            if (wasRunning && simulationRunning && (alertQueue == null || !alertQueue.hayModalActivo())) {
+                simulationTimer.start();
+                radarSweepTimer.start();
+            }
+        }
     }
 }
 

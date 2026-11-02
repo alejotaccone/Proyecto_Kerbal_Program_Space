@@ -168,7 +168,9 @@ public class CrisisDialogView {
     /**
      * Despliega el cartel táctico final indicando que la simulación concluyó por pérdida total de la estación.
      */
-    public static void mostrarDialogoSimulacionFinalizada(Component parent, String nombreEstacion) {
+    public static void mostrarDialogoSimulacionFinalizada(Component parent, String nombreEstacion, String imagenDestruida, String textoDestruccion) {
+        ImageIcon iconDestruida = ShipImageLoader.obtenerImageIconEscalado(imagenDestruida, 380, 220);
+
         Window owner = SwingUtilities.getWindowAncestor(parent);
         JDialog dialog = (owner instanceof Frame) ? new JDialog((Frame) owner, true) : new JDialog((Dialog) owner, true);
         dialog.setUndecorated(true);
@@ -180,24 +182,40 @@ public class CrisisDialogView {
             BorderFactory.createEmptyBorder(18, 22, 18, 22)
         ));
 
-        JLabel lblHeader = new JLabel("═══ [■] SIMULACIÓN FINALIZADA ═══");
-        lblHeader.setFont(new Font("Consolas", Font.BOLD, 14));
+        JLabel lblHeader = new JLabel("═══ [!] ESTACIÓN DESTRUIDA — SIMULACIÓN FINALIZADA ═══");
+        lblHeader.setFont(new Font("Consolas", Font.BOLD, 13));
         lblHeader.setForeground(new Color(255, 60, 60));
         lblHeader.setHorizontalAlignment(SwingConstants.CENTER);
         mainPanel.add(lblHeader, BorderLayout.NORTH);
 
+        JPanel centerPanel = new JPanel(new BorderLayout(0, 10));
+        centerPanel.setOpaque(false);
+
+        if (iconDestruida != null) {
+            JLabel lblImg = new JLabel(iconDestruida);
+            lblImg.setHorizontalAlignment(SwingConstants.CENTER);
+            lblImg.setBorder(BorderFactory.createLineBorder(new Color(100, 30, 30), 1));
+            centerPanel.add(lblImg, BorderLayout.NORTH);
+        }
+
         String estacionStr = (nombreEstacion != null && !nombreEstacion.isEmpty()) ? nombreEstacion : "Estación Espacial";
+        String detalleDestruccion = (textoDestruccion != null && !textoDestruccion.isEmpty())
+                ? textoDestruccion
+                : "La " + estacionStr + " quedó totalmente inoperativa.";
         String html = String.format(
-            "<html><div style='text-align: center; font-family: Consolas; font-size: 11px; color: #FF7777; width: 350px;'>" +
+            "<html><div style='text-align: center; font-family: Consolas; font-size: 11px; color: #FF7777; width: 370px;'>" +
+            "<b style='color: #FF5555; font-size: 12px;'>%s</b><br><br>" +
             "La pérdida catastrófica de <b style='color: #00FFFF;'>[%s]</b> ha provocado el cese inmediato de todas las operaciones orbitales en el sector.<br><br>" +
             "<span style='color: #CCCCCC;'>Todos los sistemas de rastreo, telemetría y misiones de reabastecimiento han sido desconectados.</span><br><br>" +
             "<span style='color: #00FF88;'>Podés reiniciar el simulador o seleccionar otra estación desde el Centro de Comando.</span>" +
             "</div></html>",
-            estacionStr
+            detalleDestruccion, estacionStr
         );
         JLabel lblBody = new JLabel(html);
         lblBody.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(lblBody, BorderLayout.CENTER);
+        centerPanel.add(lblBody, BorderLayout.CENTER);
+
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
 
         JButton btnCerrar = crearBotonTactico("[ CERRAR OPERACIONES / VOLVER AL COMANDO ]", new Color(0, 230, 100));
         btnCerrar.addActionListener(e -> dialog.dispose());

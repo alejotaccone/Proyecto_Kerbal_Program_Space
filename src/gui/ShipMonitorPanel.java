@@ -52,6 +52,8 @@ public class ShipMonitorPanel extends JPanel {
 
         txtMonitorNave = new JTextArea();
         txtMonitorNave.setEditable(false);
+        txtMonitorNave.setLineWrap(true);
+        txtMonitorNave.setWrapStyleWord(true);
         txtMonitorNave.setBackground(new Color(8, 12, 8));
         txtMonitorNave.setForeground(new Color(150, 255, 150));
         txtMonitorNave.setFont(new Font("Consolas", Font.PLAIN, 12));
@@ -59,6 +61,7 @@ public class ShipMonitorPanel extends JPanel {
         txtMonitorNave.setText("\nNo hay nave seleccionada");
 
         JScrollPane scroll = new JScrollPane(txtMonitorNave);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1));
         scroll.setBackground(COLOR_PANEL_BG);
         scroll.getViewport().setBackground(COLOR_PANEL_BG);
