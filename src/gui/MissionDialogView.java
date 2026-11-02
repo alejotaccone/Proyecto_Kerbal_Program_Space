@@ -129,6 +129,8 @@ public class MissionDialogView {
         btnCerrar.setFont(new Font("Consolas", Font.BOLD, 12));
         btnCerrar.setForeground(colorTema);
         btnCerrar.setBackground(new Color(15, 30, 15));
+        btnCerrar.setContentAreaFilled(false);
+        btnCerrar.setOpaque(true);
         btnCerrar.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(colorTema, 1),
             BorderFactory.createEmptyBorder(8, 20, 8, 20)

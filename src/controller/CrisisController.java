@@ -142,6 +142,11 @@ public class CrisisController {
                 }
             }
 
+            // Notificar a la Vista principal para actualizar el monitor lateral (Señal_Perdida) y detener simulación
+            if (onEstacionDestruida != null) {
+                onEstacionDestruida.accept(station);
+            }
+
             // Delegar a la Vista la presentación del cartel de destrucción
             CrisisDialogView.mostrarDialogoEstacionDestruida(
                     parent, 
@@ -149,10 +154,8 @@ public class CrisisController {
                     station.getTextoDestruccion()
             );
 
-            // Notificar a la Vista principal para actualizar el monitor lateral (Señal_Perdida)
-            if (onEstacionDestruida != null) {
-                onEstacionDestruida.accept(station);
-            }
+            // Mostrar cartel final indicando que la simulación concluyó por destrucción de la estación
+            CrisisDialogView.mostrarDialogoSimulacionFinalizada(parent, station.getName());
         }
 
         // Modificar el Modelo eliminando el objeto destruido

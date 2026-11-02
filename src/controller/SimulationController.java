@@ -364,36 +364,12 @@ public class SimulationController {
                     actualizarComboNaves();
                     vista.getRadarPanel().repaint();
 
-                    // Delegar al CrisisController la evaluación de colisiones inminentes
-                    boolean crisisOcurrio = CrisisController.evaluarEventosCrisis(
-                            vista,
-                            engine,
-                            () -> {
-                                simulationTimer.stop();
-                                radarSweepTimer.stop();
-                            },
-                            () -> {
-                                if (simulationRunning) {
-                                    simulationTimer.start();
-                                    radarSweepTimer.start();
-                                }
-                            },
-                            vista::logConsola,
-                            station -> manejarEstacionDestruida(station)
-                    );
-
-                    if (crisisOcurrio) {
-                        sincronizarDatosRadar();
-                        actualizarComboNaves();
-                        actualizarMonitorNave();
-                        vista.getRadarPanel().repaint();
-                    }
-
                     if (cargueroCooldownTicks > 0) {
                         cargueroCooldownTicks--;
                         vista.getControlPanel().setCargueroCooldown(cargueroCooldownTicks);
                     }
 
+                    // 1. Primero evaluar y encolar las misiones de reabastecimiento (prioridad a llenar combustible)
                     if (missionController != null) {
                         missionController.evaluarMisionesPorTick(vista, () -> {
                             actualizarComboNaves();
@@ -401,6 +377,25 @@ public class SimulationController {
                             vista.getRadarPanel().repaint();
                         });
                     }
+
+                    // 2. Luego encolar la evaluación de crisis en la misma AlertQueue (se ejecuta después del reabastecimiento)
+                    alertQueue.encolarAlerta(() -> {
+                        boolean crisisOcurrio = CrisisController.evaluarEventosCrisis(
+                                vista,
+                                engine,
+                                null,
+                                null,
+                                vista::logConsola,
+                                station -> manejarEstacionDestruida(station)
+                        );
+
+                        if (crisisOcurrio) {
+                            sincronizarDatosRadar();
+                            actualizarComboNaves();
+                            actualizarMonitorNave();
+                            vista.getRadarPanel().repaint();
+                        }
+                    });
 
                 } catch (Exception ex) {
                     vista.logConsola("[ERROR]: Fallo en tick #" + tickActual + ": " + ex.getMessage());
@@ -415,7 +410,24 @@ public class SimulationController {
     private void manejarEstacionDestruida(SpaceStation station) {
         this.estacionDestruida = true;
         this.estacionDestruidaRef = station;
+        this.simulationRunning = false;
+        simulationTimer.stop();
+        radarSweepTimer.stop();
+        if (alertQueue != null) {
+            alertQueue.limpiarCola();
+        }
+        if (engine != null && engine.getTrackedObjects() != null) {
+            engine.getTrackedObjects().clear();
+        }
+        cargueroCooldownTicks = 0;
+        vista.getControlPanel().setCargueroCooldown(0);
+        vista.getControlPanel().setEstadoOnline(false);
+        vista.getControlPanel().setNavesRastreadasCount(0);
+        vista.getHeaderBarPanel().setTextoEstado("TICK: " + tickCount + " | ESTADO: SEÑAL PERDIDA (SIMULACIÓN FINALIZADA)");
         vista.mostrarSenalPerdida(station);
+        vista.logConsola("══════════════════════════════════════════════════════════════");
+        vista.logConsola("  [FIN DE SIMULACIÓN]: Cese total de operaciones por destrucción de la estación.");
+        vista.logConsola("══════════════════════════════════════════════════════════════");
     }
 
     public void sincronizarDatosRadar() {

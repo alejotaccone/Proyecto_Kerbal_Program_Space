@@ -166,6 +166,54 @@ public class CrisisDialogView {
     }
 
     /**
+     * Despliega el cartel táctico final indicando que la simulación concluyó por pérdida total de la estación.
+     */
+    public static void mostrarDialogoSimulacionFinalizada(Component parent, String nombreEstacion) {
+        Window owner = SwingUtilities.getWindowAncestor(parent);
+        JDialog dialog = (owner instanceof Frame) ? new JDialog((Frame) owner, true) : new JDialog((Dialog) owner, true);
+        dialog.setUndecorated(true);
+
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 14));
+        mainPanel.setBackground(new Color(8, 14, 8));
+        mainPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 60, 60), 2),
+            BorderFactory.createEmptyBorder(18, 22, 18, 22)
+        ));
+
+        JLabel lblHeader = new JLabel("═══ [■] SIMULACIÓN FINALIZADA ═══");
+        lblHeader.setFont(new Font("Consolas", Font.BOLD, 14));
+        lblHeader.setForeground(new Color(255, 60, 60));
+        lblHeader.setHorizontalAlignment(SwingConstants.CENTER);
+        mainPanel.add(lblHeader, BorderLayout.NORTH);
+
+        String estacionStr = (nombreEstacion != null && !nombreEstacion.isEmpty()) ? nombreEstacion : "Estación Espacial";
+        String html = String.format(
+            "<html><div style='text-align: center; font-family: Consolas; font-size: 11px; color: #FF7777; width: 350px;'>" +
+            "La pérdida catastrófica de <b style='color: #00FFFF;'>[%s]</b> ha provocado el cese inmediato de todas las operaciones orbitales en el sector.<br><br>" +
+            "<span style='color: #CCCCCC;'>Todos los sistemas de rastreo, telemetría y misiones de reabastecimiento han sido desconectados.</span><br><br>" +
+            "<span style='color: #00FF88;'>Podés reiniciar el simulador o seleccionar otra estación desde el Centro de Comando.</span>" +
+            "</div></html>",
+            estacionStr
+        );
+        JLabel lblBody = new JLabel(html);
+        lblBody.setHorizontalAlignment(SwingConstants.CENTER);
+        mainPanel.add(lblBody, BorderLayout.CENTER);
+
+        JButton btnCerrar = crearBotonTactico("[ CERRAR OPERACIONES / VOLVER AL COMANDO ]", new Color(0, 230, 100));
+        btnCerrar.addActionListener(e -> dialog.dispose());
+
+        JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        southPanel.setOpaque(false);
+        southPanel.add(btnCerrar);
+        mainPanel.add(southPanel, BorderLayout.SOUTH);
+
+        dialog.setContentPane(mainPanel);
+        dialog.pack();
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
+    }
+
+    /**
      * Crea un botón estilizado según la estética cibernética oscura de la aplicación.
      */
     private static JButton crearBotonTactico(String texto, Color colorTexto) {
@@ -173,6 +221,8 @@ public class CrisisDialogView {
         btn.setFont(new Font("Consolas", Font.BOLD, 12));
         btn.setForeground(colorTexto);
         btn.setBackground(new Color(15, 25, 15));
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(true);
         btn.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(colorTexto, 1),
             BorderFactory.createEmptyBorder(8, 16, 8, 16)

@@ -86,4 +86,9 @@ public class AlertQueue {
     public synchronized boolean hayModalActivo() {
         return modalEnPantalla || !colaAlertas.isEmpty();
     }
+
+    public synchronized void limpiarCola() {
+        colaAlertas.clear();
+        modalEnPantalla = false;
+    }
 }

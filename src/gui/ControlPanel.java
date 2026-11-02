@@ -74,8 +74,7 @@ public class ControlPanel extends JPanel {
         cmbEstacion.setEditable(false);
         cmbEstacion.setSelectedIndex(0);
         cmbEstacion.setPrototypeDisplayValue("Estación Espacial Internacional");
-        cmbEstacion.setBackground(new Color(20, 30, 20));
-        cmbEstacion.setForeground(COLOR_TEXT_PRIMARY);
+        estilizarComboNaval(cmbEstacion);
         cmbEstacion.setFont(new Font("Consolas", Font.PLAIN, 12));
         cmbEstacion.setPreferredSize(new Dimension(260, 32));
         cmbEstacion.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
@@ -148,8 +147,7 @@ public class ControlPanel extends JPanel {
         panel.add(crearEtiquetaCampo("Seleccionar Nave:"));
         cmbNaves = new JComboBox<>();
         cmbNaves.setPrototypeDisplayValue("1. Estación Espacial Internacional");
-        cmbNaves.setBackground(new Color(20, 30, 20));
-        cmbNaves.setForeground(COLOR_TEXT_PRIMARY);
+        estilizarComboNaval(cmbNaves);
         cmbNaves.setFont(new Font("Consolas", Font.PLAIN, 11));
         cmbNaves.setPreferredSize(new Dimension(260, 30));
         cmbNaves.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
@@ -229,13 +227,86 @@ public class ControlPanel extends JPanel {
         return lbl;
     }
 
+    private void estilizarComboNaval(JComboBox<String> combo) {
+        combo.setBackground(new Color(8, 22, 12));
+        combo.setForeground(COLOR_TEXT_PRIMARY);
+        combo.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1));
+        combo.setUI(new javax.swing.plaf.basic.BasicComboBoxUI() {
+            @Override
+            protected JButton createArrowButton() {
+                JButton btn = new JButton("▼");
+                btn.setFont(new Font("Consolas", Font.BOLD, 10));
+                btn.setForeground(COLOR_TEXT_PRIMARY);
+                btn.setBackground(new Color(0, 45, 18));
+                btn.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, COLOR_BORDER));
+                btn.setFocusPainted(false);
+                btn.setContentAreaFilled(false);
+                btn.setOpaque(true);
+                return btn;
+            }
+            @Override
+            public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+                g.setColor(new Color(8, 22, 12));
+                g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            }
+        });
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                JLabel lbl = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                lbl.setFont(combo.getFont());
+                lbl.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
+                if (isSelected) {
+                    lbl.setBackground(new Color(0, 85, 35));
+                    lbl.setForeground(Color.WHITE);
+                } else {
+                    lbl.setBackground(new Color(8, 22, 12));
+                    lbl.setForeground(COLOR_TEXT_PRIMARY);
+                }
+                return lbl;
+            }
+        });
+    }
+
     private JButton crearBoton(String texto, Color colorTexto) {
-        JButton btn = new JButton(texto);
+        JButton btn = new JButton(texto) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+                if (!isEnabled()) {
+                    g2.setColor(new Color(10, 16, 12));
+                } else if (getModel().isPressed()) {
+                    g2.setColor(new Color(0, 115, 50));
+                } else if (getModel().isRollover()) {
+                    g2.setColor(COLOR_BUTTON_HOVER);
+                } else {
+                    g2.setColor(getBackground());
+                }
+                g2.fillRect(0, 0, getWidth(), getHeight());
+
+                // Indicador táctico lateral tipo consola naval
+                g2.setColor(isEnabled() ? colorTexto : new Color(35, 55, 40));
+                g2.fillRect(0, 0, 4, getHeight());
+
+                // Texto centrado con color táctico propio
+                g2.setFont(getFont());
+                g2.setColor(isEnabled() ? getForeground() : new Color(60, 95, 70));
+                FontMetrics fm = g2.getFontMetrics();
+                int textX = (getWidth() - fm.stringWidth(getText())) / 2;
+                int textY = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(getText(), Math.max(8, textX), textY);
+
+                g2.dispose();
+            }
+        };
         btn.setFont(new Font("Consolas", Font.BOLD, 11));
         btn.setForeground(colorTexto);
         btn.setBackground(COLOR_BUTTON_BG);
-        btn.setOpaque(true);
-        btn.setContentAreaFilled(true);
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
         btn.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(COLOR_BORDER, 1),
             BorderFactory.createEmptyBorder(7, 8, 7, 8)
@@ -251,11 +322,13 @@ public class ControlPanel extends JPanel {
             public void mouseEntered(MouseEvent e) {
                 if (btn.isEnabled()) {
                     btn.setBackground(COLOR_BUTTON_HOVER);
+                    btn.repaint();
                 }
             }
             @Override
             public void mouseExited(MouseEvent e) {
                 btn.setBackground(COLOR_BUTTON_BG);
+                btn.repaint();
             }
         });
 
