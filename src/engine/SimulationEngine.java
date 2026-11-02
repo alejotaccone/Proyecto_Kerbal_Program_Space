@@ -128,7 +128,18 @@ public class SimulationEngine {
                 craft.getPosition().setAltitude(updatedPos.getAltitude());
 
                 sincronizarCarguerosConEstacion(craft, dLat, dLng, dAlt);
+                for (OrbitalObject obj : trackedObjects) {
+                    if (obj instanceof model.spacecraft.RogueDebris) {
+                        model.spacecraft.RogueDebris rogue = (model.spacecraft.RogueDebris) obj;
+                        if (rogue.getTarget() == craft && rogue.getPosition() != null) {
+                            rogue.getPosition().setLatitude(rogue.getPosition().getLatitude() + dLat);
+                            rogue.getPosition().setLongitude(rogue.getPosition().getLongitude() + dLng);
+                            rogue.getPosition().setAltitude(rogue.getPosition().getAltitude() + dAlt);
+                        }
+                    }
+                }
                 actualizarPosicionRadar(craft);
+                limpiarBasuraPasivaLejana();
             }
         }
     }
@@ -171,9 +182,33 @@ public class SimulationEngine {
     public void tick() {
         avanzarReloj();
         moverObjetos();
+        limpiarBasuraPasivaLejana();
         generarEventosAleatorios();
         sincronizarRedSiCorresponde();
         reportarTelemetriaYAlertas();
+    }
+
+    /**
+     * Elimina del rastreo aquellos fragmentos de basura espacial pasiva que hayan superado
+     * los 200 km de distancia respecto de la estación espacial objetivo.
+     */
+    public void limpiarBasuraPasivaLejana() {
+        SpaceStation station = getTargetStation();
+        if (station == null || trackedObjects == null) return;
+
+        java.util.Iterator<OrbitalObject> it = trackedObjects.iterator();
+        while (it.hasNext()) {
+            OrbitalObject obj = it.next();
+            if (obj instanceof model.spacecraft.SpaceDebris && !(obj instanceof model.spacecraft.RogueDebris)) {
+                if (obj.distanceTo(station) > 200.0) {
+                    it.remove();
+                    TelemetryLogger.printMessage("[Radar]: Basura Espacial [" + obj.getName() + "] superó los 200 km de distancia y salió del rango de seguimiento.");
+                }
+            }
+        }
+        if (monitoredShipIndex >= trackedObjects.size()) {
+            monitoredShipIndex = -1;
+        }
     }
 
     private void avanzarReloj() {

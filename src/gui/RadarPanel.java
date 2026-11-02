@@ -318,7 +318,7 @@ public class RadarPanel extends JPanel {
         Point targetPos = calcularPosicionPantalla(threat.getTarget(), centroX, centroY, radio);
 
         double distKm = threat.distanceTo(threat.getTarget());
-        int ticksEst = (int) Math.max(1, Math.ceil(distKm / 33.0));
+        int ticksEst = (distKm <= 100.0) ? 0 : (int) Math.max(1, Math.ceil((distKm - 100.0) / 35.0));
 
         Stroke strokeOriginal = g2.getStroke();
         Color colorOriginal = g2.getColor();

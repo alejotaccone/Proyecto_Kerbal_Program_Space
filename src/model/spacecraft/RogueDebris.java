@@ -32,30 +32,19 @@ public class RogueDebris extends SpaceDebris {
             double deltaLng = targetLng - currentLng;
             double deltaAlt = targetAlt - currentAlt;
             
-            double distHorizontal = Math.sqrt(deltaLat * deltaLat + deltaLng * deltaLng);
-            
-            if (distHorizontal > 0) {
-                // Se mueve rápidamente hacia el objetivo (~0.3 grados por tick, aprox 30km)
-                double step = 0.3;
-                if (distHorizontal < step) {
-                    // Si está muy cerca en horizontal, converge directamente al blanco
+            double distKm = distanceTo(target);
+            if (distKm > 0.1) {
+                // Avanza ~35 km por tick directamente hacia el objetivo en el espacio 3D
+                double stepKm = 35.0;
+                if (distKm <= stepKm) {
                     getPosition().setLatitude(targetLat);
                     getPosition().setLongitude(targetLng);
                     getPosition().setAltitude(targetAlt);
                 } else {
-                    double factor = step / distHorizontal;
+                    double factor = stepKm / distKm;
                     getPosition().setLatitude(currentLat + deltaLat * factor);
                     getPosition().setLongitude(currentLng + deltaLng * factor);
-                    // Convergencia de altitud proporcional al avance horizontal
-                    getPosition().setAltitude(currentAlt + deltaAlt * Math.min(1.0, factor));
-                }
-            } else if (Math.abs(deltaAlt) > 0.1) {
-                // Si ya está alineado en coordenadas horizontales pero difiere en altitud
-                double altStep = 30.0; // km por tick
-                if (Math.abs(deltaAlt) < altStep) {
-                    getPosition().setAltitude(targetAlt);
-                } else {
-                    getPosition().setAltitude(currentAlt + Math.signum(deltaAlt) * altStep);
+                    getPosition().setAltitude(currentAlt + deltaAlt * factor);
                 }
             }
         }

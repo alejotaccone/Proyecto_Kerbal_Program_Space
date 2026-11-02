@@ -16,14 +16,17 @@ import model.spacecraft.SpacecraftInfo;
 public class OrbitalEventSpawner {
 
     /**
-     * Evalúa probabilidades aleatorias por tick para generar eventos en el sector.
+     * Evalúa probabilidades independientes por tick para generar basura espacial pasiva (decorativa)
+     * y anomalías cinéticas hostiles (RogueDebris).
+     * - Basura Espacial Pasiva: 50% de probabilidad por tick (aparece más rápido, ronda el espacio sin atacar).
+     * - Anomalía Cinética Hostil: 30% de probabilidad por tick (activa la dinámica de evasión o choque).
      */
     public void evaluarEventosAleatoriosPorTick(List<OrbitalObject> trackedObjects) {
-        double rand = Math.random();
-        if (rand < 0.15) {
-            spawnSpaceDebris(trackedObjects);   // 15% probabilidad por tick (~1 basura pasiva cada minuto)
-        } else if (rand < 0.20) {
-            triggerCrisisEvent(trackedObjects); // 5% probabilidad por tick (~1 amenaza hostil cada 3-4 minutos)
+        if (Math.random() < 0.50) {
+            spawnSpaceDebris(trackedObjects);   // 50% probabilidad por tick de basura pasiva decorativa
+        }
+        if (Math.random() < 0.30) {
+            triggerCrisisEvent(trackedObjects); // 30% probabilidad por tick de generar Anomalía Cinética
         }
     }
 
@@ -41,7 +44,7 @@ public class OrbitalEventSpawner {
     }
 
     /**
-     * Genera una posición geográfica polar aleatoria alrededor de una coordenada central.
+     * Genera una posición geográfica polar aleatoria alrededor de una coordenada central (en grados).
      */
     public GeoPosition generarPosicionCercana(GeoPosition centro, double minDistDeg, double maxDistDeg) {
         if (centro == null) return null;
@@ -53,7 +56,28 @@ public class OrbitalEventSpawner {
     }
 
     /**
+     * Genera una posición geográfica a una distancia física exacta en kilómetros alrededor del centro,
+     * compensando la curvatura orbital y el coseno de la latitud para que la distancia 3D sea consistente.
+     */
+    public GeoPosition generarPosicionPorDistanciaKm(GeoPosition centro, double minDistKm, double maxDistKm) {
+        if (centro == null) return null;
+        double angle = Math.random() * 2 * Math.PI;
+        double distKm = minDistKm + Math.random() * (maxDistKm - minDistKm);
+
+        double r = GeoPosition.EARTH_RADIUS_KM + centro.getAltitude();
+        double kmPerDegLat = Math.toRadians(1.0) * r;
+        double cosLat = Math.max(0.2, Math.abs(Math.cos(Math.toRadians(centro.getLatitude()))));
+        double kmPerDegLng = kmPerDegLat * cosLat;
+
+        double dLat = (distKm * Math.cos(angle)) / kmPerDegLat;
+        double dLng = (distKm * Math.sin(angle)) / kmPerDegLng;
+
+        return new GeoPosition(centro.getLatitude() + dLat, centro.getLongitude() + dLng, centro.getAltitude());
+    }
+
+    /**
      * Genera un fragmento de basura espacial pasiva cerca de la estación objetivo.
+     * Es meramente decorativa: ronda por el espacio dentro del radio del radar sin atacar.
      */
     public boolean spawnSpaceDebris(List<OrbitalObject> trackedObjects) {
         if (trackedObjects == null || trackedObjects.isEmpty()) return false;
@@ -62,11 +86,11 @@ public class OrbitalEventSpawner {
                 .filter(nave -> (nave instanceof SpaceDebris && !(nave instanceof RogueDebris)))
                 .count();
 
-        if (countDebris >= 3) return false; // Límite máximo de 3 basuras pasivas en pantalla
+        if (countDebris >= 4) return false; // Límite máximo de 4 basuras pasivas decorativas en pantalla
 
         OrbitalObject station = buscarEstacionObjetivo(trackedObjects);
         if (station != null && station.getPosition() != null) {
-            GeoPosition spawnPos = generarPosicionCercana(station.getPosition(), 0.25, 0.80);
+            GeoPosition spawnPos = generarPosicionPorDistanciaKm(station.getPosition(), 30.0, 85.0);
             SpaceDebris debris = fabricarBasuraPasiva(spawnPos);
 
             trackedObjects.add(debris);
@@ -78,6 +102,8 @@ public class OrbitalEventSpawner {
 
     /**
      * Genera una anomalía cinética (Rogue Debris) en trayectoria de colisión con la estación.
+     * Aparece entre 108 y 115 km para que permanezca visible durante 1 tick en el radar con su
+     * vector predictivo antes de ingresar al umbral crítico (< 100 km) en el siguiente tick.
      */
     public boolean triggerCrisisEvent(List<OrbitalObject> trackedObjects) {
         if (trackedObjects == null || trackedObjects.isEmpty()) return false;
@@ -86,7 +112,7 @@ public class OrbitalEventSpawner {
         if (!hasRogue) {
             OrbitalObject target = buscarEstacionObjetivo(trackedObjects);
             if (target != null && target.getPosition() != null) {
-                GeoPosition spawnPos = generarPosicionCercana(target.getPosition(), 0.9, 0.9);
+                GeoPosition spawnPos = generarPosicionPorDistanciaKm(target.getPosition(), 108.0, 115.0);
                 RogueDebris rogue = fabricarAnomaliaHostil(spawnPos, target);
 
                 trackedObjects.add(rogue);

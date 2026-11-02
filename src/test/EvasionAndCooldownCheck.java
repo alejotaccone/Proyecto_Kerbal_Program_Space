@@ -30,6 +30,8 @@ public class EvasionAndCooldownCheck {
         testCooldownLanzamientoCarguero();
         testSincronizacionCargueroEnEvasion();
         testDesorbitadoCinematico();
+        testAnomaliaUnificadaUnTickParaCrisis();
+        testLimpiezaBasuraPasivaMasDe200Km();
 
         System.out.println("=============================================================");
         System.out.println("RESULTADO: TODAS LAS PRUEBAS DE EVASIÓN Y COOLDOWN PASARON CON ÉXITO.");
@@ -288,5 +290,72 @@ public class EvasionAndCooldownCheck {
         }
 
         System.out.println("[OK] Caso 7 - Cinemática de desorbitado: Transición visual a CargoShipProgress_Desorbitando.jpg, descenso de altitud y conclusión de reingreso.");
+    }
+
+    private static void testAnomaliaUnificadaUnTickParaCrisis() {
+        engine.SimulationEngine engine = new engine.SimulationEngine("", 25544);
+        SpaceStation station = engine.getTargetStation();
+
+        boolean spawned = engine.triggerCrisisEvent();
+        if (!spawned) {
+            throw new AssertionError("No se pudo generar la anomalía cinética.");
+        }
+
+        model.spacecraft.RogueDebris rogue = null;
+        for (model.spacecraft.OrbitalObject obj : engine.getTrackedObjects()) {
+            if (obj instanceof model.spacecraft.RogueDebris) {
+                rogue = (model.spacecraft.RogueDebris) obj;
+                break;
+            }
+        }
+        if (rogue == null) {
+            throw new AssertionError("No se encontró la instancia de RogueDebris en trackedObjects.");
+        }
+
+        double distInicial = rogue.distanceTo(station);
+        if (distInicial < 100.0 || distInicial > 125.0) {
+            throw new AssertionError("La anomalía debe aparecer justo fuera del umbral de 100 km (entre 100 y 125 km) para ser visible 1 tick en radar, pero apareció a: " + distInicial + " km");
+        }
+
+        // Al avanzar 1 tick, debe ingresar a la zona de crisis (< 100 km)
+        rogue.move();
+        double distPostUnTick = rogue.distanceTo(station);
+        if (distPostUnTick >= 100.0) {
+            throw new AssertionError("Tras 1 tick la anomalía debió ingresar a la zona crítica (< 100 km), pero quedó a: " + distPostUnTick + " km");
+        }
+
+        System.out.println(String.format(java.util.Locale.US,
+                "[OK] Caso 8 - Anomalía unificada a 1 tick de impacto: nace a %.1f km (>100 km, visible en radar) y tras 1 tick avanza a %.1f km (<100 km, dispara dinámica de evasión/choque).",
+                distInicial, distPostUnTick));
+    }
+
+    private static void testLimpiezaBasuraPasivaMasDe200Km() {
+        engine.SimulationEngine engine = new engine.SimulationEngine("", 25544);
+        SpaceStation station = engine.getTargetStation();
+
+        model.spacecraft.SpaceDebris debrisCercana = new model.spacecraft.SpaceDebris(
+                new SpacecraftInfo("DEB-1", "Basura Cercana", 90001),
+                new GeoPosition(station.getPosition().getLatitude() + 0.3, station.getPosition().getLongitude(), station.getPosition().getAltitude()),
+                5.0
+        );
+        model.spacecraft.SpaceDebris debrisLejana = new model.spacecraft.SpaceDebris(
+                new SpacecraftInfo("DEB-2", "Basura Lejana", 90002),
+                new GeoPosition(station.getPosition().getLatitude() + 2.5, station.getPosition().getLongitude(), station.getPosition().getAltitude()),
+                5.0
+        );
+
+        engine.getTrackedObjects().add(debrisCercana);
+        engine.getTrackedObjects().add(debrisLejana);
+
+        engine.limpiarBasuraPasivaLejana();
+
+        if (!engine.getTrackedObjects().contains(debrisCercana)) {
+            throw new AssertionError("La basura pasiva a < 200 km NO debía eliminarse.");
+        }
+        if (engine.getTrackedObjects().contains(debrisLejana)) {
+            throw new AssertionError("La basura pasiva a > 200 km debía desaparecer automáticamente.");
+        }
+
+        System.out.println("[OK] Caso 9 - Basura espacial pasiva desaparece automáticamente al superar los 200 km de distancia de la estación.");
     }
 }

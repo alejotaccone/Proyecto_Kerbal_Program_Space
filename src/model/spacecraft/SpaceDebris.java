@@ -4,16 +4,24 @@ import model.geometry.GeoPosition;
 
 public class SpaceDebris extends OrbitalObject {
     private double hazardLevel;
+    private double driftAngle;
 
     public SpaceDebris(SpacecraftInfo info, GeoPosition position, double hazardLevel) {
         // La basura espacial no tiene motor/propulsión: extiende OrbitalObject directamente
         super(info, position, 28000.0, "SpaceDebris.jpg");
         this.hazardLevel = hazardLevel;
+        this.driftAngle = Math.random() * 2 * Math.PI;
     }
 
     @Override
     public void move() {
-        // La posición se sincroniza en tiempo real desde la API N2YO.
+        // Deriva orbital pasiva alrededor del sector (~22 km por tick) hasta alejarse del radar (>200 km)
+        if (getPosition() != null) {
+            driftAngle += (Math.random() - 0.5) * 0.25;
+            double driftStepDeg = 0.20; // ~22 km de deriva por tick
+            getPosition().setLatitude(getPosition().getLatitude() + Math.cos(driftAngle) * driftStepDeg);
+            getPosition().setLongitude(getPosition().getLongitude() + Math.sin(driftAngle) * driftStepDeg);
+        }
     }
 
     @Override

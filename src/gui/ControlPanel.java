@@ -57,7 +57,7 @@ public class ControlPanel extends JPanel {
     }
 
     private void inicializarComponentes() {
-        JPanel panel = new JPanel();
+        JPanel panel = new ScrollableControlPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(COLOR_PANEL_BG);
 
@@ -73,9 +73,11 @@ public class ControlPanel extends JPanel {
         cmbEstacion = new JComboBox<>(estacionesPredefinidas);
         cmbEstacion.setEditable(false);
         cmbEstacion.setSelectedIndex(0);
+        cmbEstacion.setPrototypeDisplayValue("Estación Espacial Internacional");
         cmbEstacion.setBackground(new Color(20, 30, 20));
         cmbEstacion.setForeground(COLOR_TEXT_PRIMARY);
         cmbEstacion.setFont(new Font("Consolas", Font.PLAIN, 12));
+        cmbEstacion.setPreferredSize(new Dimension(260, 32));
         cmbEstacion.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         cmbEstacion.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(cmbEstacion);
@@ -145,9 +147,11 @@ public class ControlPanel extends JPanel {
 
         panel.add(crearEtiquetaCampo("Seleccionar Nave:"));
         cmbNaves = new JComboBox<>();
+        cmbNaves.setPrototypeDisplayValue("1. Estación Espacial Internacional");
         cmbNaves.setBackground(new Color(20, 30, 20));
         cmbNaves.setForeground(COLOR_TEXT_PRIMARY);
         cmbNaves.setFont(new Font("Consolas", Font.PLAIN, 11));
+        cmbNaves.setPreferredSize(new Dimension(260, 30));
         cmbNaves.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         cmbNaves.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(cmbNaves);
@@ -230,6 +234,8 @@ public class ControlPanel extends JPanel {
         btn.setFont(new Font("Consolas", Font.BOLD, 11));
         btn.setForeground(colorTexto);
         btn.setBackground(COLOR_BUTTON_BG);
+        btn.setOpaque(true);
+        btn.setContentAreaFilled(true);
         btn.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(COLOR_BORDER, 1),
             BorderFactory.createEmptyBorder(7, 8, 7, 8)
@@ -237,6 +243,7 @@ public class ControlPanel extends JPanel {
         btn.setFocusPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btn.setPreferredSize(new Dimension(260, 35));
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
 
         btn.addMouseListener(new MouseAdapter() {
@@ -403,4 +410,32 @@ public class ControlPanel extends JPanel {
     public JButton getBtnCambiarEstacion() { return btnCambiarEstacion; }
     public JButton getBtnPanelesSolares() { return btnPanelesSolares; }
     public JButton getBtnLanzarCarguero() { return btnLanzarCarguero; }
+
+    /**
+     * Panel interno con Scrollable que obliga a que su ancho coincida siempre
+     * con el ancho visible del JScrollPane, evitando que textos largos en JComboBox
+     * ensanchen el BoxLayout y estiren los botones fuera de la vista.
+     */
+    private static class ScrollableControlPanel extends JPanel implements Scrollable {
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return 16;
+        }
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return 48;
+        }
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
+    }
 }
